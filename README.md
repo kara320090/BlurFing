@@ -9,8 +9,9 @@ SNS 사진 속 손가락 지문 노출을 줄이는 Android 보호 앱 프로젝
 ## 시작하기
 1. [안티그래비티 실행 프롬프트](docs/antigravity-prompt.md)를 읽고 개발 에이전트에 전달합니다.
 2. [요구사항](docs/requirements.md)과 [구조 및 경계](docs/architecture.md)를 확인합니다.
-3. [우선 작업 목록](docs/backlog.md)에서 작업을 선택하고 기능 브랜치에서 구현합니다.
+3. [우선 작업 목록](docs/backlog.md)에서 작업을 선택하고 main에서 구현합니다.
 4. [협업 규칙](CONTRIBUTING.md)에 따라 변경과 실제 검증 결과를 기록합니다.
+5. 팀장은 [main 작업 및 검토 절차](docs/main-workflow.md)에 따라 팀원 변경 검토와 앱·통합 개발을 병행합니다.
 
 ## 팀의 개발 역할
 | 담당 | 책임 |
