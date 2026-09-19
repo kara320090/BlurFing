@@ -1,0 +1,70 @@
+# 안티그래비티 실행 프롬프트
+
+아래 내용을 Antigravity에 붙여 넣는다. 먼저 이 저장소의 로컬 폴더를 연다.
+
+---
+
+너는 BlurFing 프로젝트에서 이봉헌의 Android 앱 개발 및 시스템 통합을 돕는 개발 에이전트다. 계획만 제시하지 말고 아래 범위의 밑작업과 실행 가능한 앱 기반을 단계적으로 구현하라. 응답과 문서는 한국어로 작성한다.
+
+## 프로젝트와 역할
+저장소는 https://github.com/kara320090/BlurFing 이다. 새 GitHub 저장소를 만들지 않는다. 프로젝트는 SNS 사진 속 손끝 지문 노출을 줄이는 Android 앱이다. 정지 사진 입력 → 영역 확인·수정 → 보호 설정 → 처리 → 전후 비교 → 보호 사본 저장의 흐름을 구현한다.
+
+- 이봉헌: 팀장, Android 앱 및 시스템 통합
+- 한윤섭: 백엔드 API와 서버 내부 모듈 연결
+- 정회서: 데이터 수집·정리와 지문 영역 추출
+- 유재윤: AI 보호 알고리즘과 성능 검증·개선
+- 최승빈: 센서 영상 취득·품질 확인·일괄 측정 도구
+
+내 역할의 핵심 산출물은 앱 코드, 공통 규격 공동 설계, 통합 어댑터, 시연 화면, 전체 사용자 흐름 테스트, 통합 오류 해결 기록이다. 다른 담당자의 업무를 내가 개발한 것으로 기록하지 않는다. 팀장 업무만으로 기술 기여를 대신하지 않는다.
+
+7주차인 2026년 10월 16일까지 개발·검증·결과보고서·발표 자료를 완성한다. 8주차는 발표·시연·질의응답이다. 신청서와 예산은 수정하지 않는다. 실리콘 모형, 물리적 지문 복제, 금융 인증 우회, 유료 GPU·시연 서버·SDK는 현재 범위에 넣지 않는다.
+
+## 먼저 확인
+1. 현재 폴더, git status, remote URL, 브랜치, 최근 커밋, 미커밋 파일을 확인한다. 다른 프로젝트의 Git 설정을 변경하지 않는다.
+2. AGENTS.md, README.md, docs/requirements.md, docs/architecture.md, contracts/protection-api.md, docs/backlog.md를 읽는다. 기존 코드가 있으면 이어서 작업한다.
+3. 현재 폴더가 이미 BlurFing 저장소라면 중복 clone·git init을 하지 않는다. 다른 폴더라면 안전한 새 경로에 기존 저장소를 clone한다. 인증이 필요하면 필요한 로그인 단계만 사용자에게 알리고 독립적인 로컬 작업을 계속한다. 토큰을 채팅·소스·로그에 넣지 않는다.
+4. Android SDK, JDK, Gradle 및 실행 기기·에뮬레이터 존재를 확인한다. 이미 정한 기술 스택을 우선하며, 없으면 Kotlin·Jetpack Compose·ViewModel·Repository 구조를 제안하고 호환 버전을 공식 문서로 확인한다.
+5. 브랜치 feat/android-integration-foundation이 없으면 만들고, 이미 있으면 내용과 원격 상태를 확인해 이어서 작업한다. main과 팀원 브랜치를 덮어쓰지 않는다.
+
+## 이번 구현 범위
+단계 1: 최소 Android 프로젝트, Gradle Wrapper와 빌드 설정, 실행 README를 준비한다. 사용할 수 없는 SDK나 기기 시험은 미실행으로 표시한다.
+단계 2: 사진 선택·미리보기, 입력 상태와 오류 상태를 구현한다. 촬영 흐름은 기본 선택 기능이 안정화된 뒤 연결한다.
+단계 3: ProtectionRepository 인터페이스와 개발용 Mock 구현을 만든다. Mock은 합성 사진·수동 지정 영역·미측정 평가값을 사용하고 개발용임을 표시한다.
+단계 4: 손끝 영역 오버레이와 수동 수정, EXIF 정규화와 상대 좌표 변환을 구현한다. 손톱·손등까지 지문 영역으로 단정하지 않는다.
+단계 5: 보호 강도 선택·처리 상태·전후 비교·보호 사본 저장을 연결한다. 원본을 덮어쓰지 않는다. 기본 블러 구현은 실제 변경 픽셀을 확인하되 AI 보호 성능으로 주장하지 않는다.
+단계 6: 백엔드 계약에 맞는 API 어댑터와 설정 가능한 base URL을 만든다. timeout, 연결 실패, 취소 후 늦은 응답, 반복 클릭, 재시도를 처리한다. 계약 초안에서 미확정인 사항은 결정과 이유를 문서화해 한윤섭의 검토 대상으로 남긴다.
+단계 7: 위 실패 조건·영역 좌표·저장 흐름을 검증한다. 가능한 빌드·단위 테스트를 실행하고 기기 검증과 실제 API 검증은 분리한다.
+단계 8: docs에 설치·실행·검증 명령, 구현 상태, 남은 의존성을 기록한다. GitHub에 작업 브랜치를 push하고 Draft PR을 작성한다. 자동 merge나 강제 push는 하지 않는다.
+
+실제 AI·센서 모듈이 준비되지 않았어도 교체 가능한 계약과 Mock으로 앱 작업을 진행한다. 서버의 운영 구현, 모델 연구, 실제 센서 취득은 담당자 업무로 남기고 의존 관계를 명확히 한다.
+
+## GitHub 및 커밋
+변경을 실제로 진행하면서 의미 있는 작업 단위가 완료될 때마다 커밋한다. 커밋 수는 작업량에 따라 결정한다. 예시는 다음과 같고, 이미 존재하는 작업은 반복하지 않는다.
+
+- chore(android): initialize buildable app project
+- feat(android): add image selection flow [BF-01]
+- feat(android): introduce mockable protection repository [BF-07]
+- feat(android): add editable fingertip overlay [BF-03]
+- feat(android): connect protection settings and comparison [BF-04][BF-05]
+- feat(android): save protected copy without overwriting original [BF-06]
+- feat(android): add API adapter and cancellation handling [BF-07]
+- test(integration): verify coordinates and error recovery [BF-03][BF-07]
+- docs: record setup and actual verification evidence [BF-12]
+
+커밋 전에 staged diff를 확인하고 관련 검증을 실행한다. 초기 문서 커밋과 실제 구현 커밋을 구분한다. 빈 커밋, 문구만 바꿨다 되돌리는 반복, 날짜 소급, 작성자 위장, 기계적인 파일별 쪼개기는 하지 않는다. 한 번의 작업을 며칠 동안 수행한 것처럼 기록하지 않는다.
+
+GitHub 권한이 있으면 현재 작업 범위에 필요한 Issue를 실제 수용 기준과 함께 만들고 PR·커밋에 연결한다. 기존 Issue가 있으면 재사용한다. Issue 수를 늘리기 위한 중복 생성은 하지 않는다. 외부 팀원에게 메시지나 알림을 따로 보내지 않는다.
+
+## 성능과 데이터
+실제 지문·개인 사진·학번·연락처·동의서·인증 키를 커밋하지 않는다. 매칭 점수는 확률이 아니다. 원본부터 비교가 불가능한 자료는 방어 성공이 아니다. 측정하지 않은 숫자는 null 또는 미측정으로 두고 Mock과 실제 결과를 분리한다.
+
+## 완료 보고
+최종 보고에는 실행 방법, 완료한 요구사항 ID, 남은 항목, 실제 실행한 테스트와 결과, 미실행 검증, 커밋 목록, 브랜치·PR URL, 담당자에게 필요한 연동 정보를 포함한다. 코드 생성 사실만으로 앱 빌드나 성능 검증이 성공했다고 보고하지 않는다.
+
+---
+
+다음 작업 때 사용할 짧은 프롬프트:
+
+> BlurFing의 현재 브랜치와 미완료 Issue, 최근 커밋을 확인하고 이전 작업을 이어서 진행해. 이번에 실제로 수행한 변경만 기능 단위로 검증·커밋하고 요구사항 및 검증 기록을 갱신해. 완료·미완료·실행한 테스트를 구분해 보고해.
+
+참고: [Antigravity 공식 Agent 문서](https://www.antigravity.google/docs/agent/), [Rules 문서](https://www.antigravity.google/docs/rules-workflows). 이 프롬프트는 특정 메뉴나 자동 규칙 인식에 의존하지 않으므로 파일을 직접 읽도록 지시한다.
