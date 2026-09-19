@@ -1,0 +1,33 @@
+# Credentials and local environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+local.properties
+.idea/
+.vscode/
+.gradle/
+**/build/
+**/__pycache__/
+*.py[cod]
+.venv/
+venv/
+node_modules/
+.DS_Store
+Thumbs.db
+# Private images, sensor captures, agreements and experiment outputs
+private/
+data/raw/
+data/processed/
+datasets/
+captures/
+consent/
+experiments/private/
+artifacts/
+*.hwp
+*.hwpx
+*.docx
+*.pdf
+*.jks
+*.keystore
