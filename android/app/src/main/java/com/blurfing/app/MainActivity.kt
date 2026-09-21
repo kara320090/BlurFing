@@ -68,9 +68,10 @@ class MainActivity : ComponentActivity() {
                                 ScreenStep.PROCESSING -> {
                                     ProcessingScreen(
                                         isProcessing = state.isProcessing,
-                                        onStartProcessing = { method, strength ->
-                                            viewModel.startProtection(method, strength)
+                                        onStartProcessing = { method, strength, serverUrl ->
+                                            viewModel.startProtection(method, strength, serverUrl)
                                         },
+                                        processingError = state.processingError,
                                         onCancelProcessing = { viewModel.cancelProtection() },
                                         onBack = { viewModel.navigateToStep(ScreenStep.REGION_EDITOR) }
                                     )

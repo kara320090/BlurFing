@@ -20,6 +20,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.blurfing.app.model.ProtectionResponse
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ComparisonScreen(
     originalBitmap: Bitmap,
@@ -66,7 +67,7 @@ fun ComparisonScreen(
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        text = if (showProtectedOnly) "✓ 보호본 표시 중 (지문 약화)" else "● 원본 표시 중 (지문 노출)",
+                        text = if (showProtectedOnly) "✓ 처리본 표시 중" else "● 원본 표시 중",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = if (showProtectedOnly) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -115,6 +116,10 @@ fun ComparisonScreen(
                         textAlign = TextAlign.Center
                     )
                 }
+            }
+            if (response?.resultKind == "real") {
+                Text("서버 처리 이미지 · 지문 보호 성능은 별도 평가가 필요합니다.",
+                    style = MaterialTheme.typography.bodySmall)
             }
 
             // 하단 저장 버튼

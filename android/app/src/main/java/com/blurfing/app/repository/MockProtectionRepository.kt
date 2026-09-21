@@ -1,6 +1,6 @@
 package com.blurfing.app.repository
 
-import android.util.Base64
+import java.util.Base64
 import com.blurfing.app.model.NormalizedRegion
 import com.blurfing.app.model.ProtectionRequest
 import com.blurfing.app.model.ProtectionResponse
@@ -42,7 +42,7 @@ class MockProtectionRepository(
         )
 
         // Mock 응답에서는 원본 바이트를 Base64로 반환하되, 실제 픽셀 블러 처리는 LocalBlurProcessor 또는 실제 서버에서 수행됨
-        val base64Image = Base64.encodeToString(imageBytes, Base64.NO_WRAP)
+        val base64Image = Base64.getEncoder().encodeToString(imageBytes)
 
         val response = ProtectionResponse(
             requestId = request.requestId,
