@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.blurfing.app.viewmodel.UiState
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ImagePickerScreen(
     uiState: UiState,
@@ -74,7 +75,7 @@ fun ImagePickerScreen(
                             textAlign = TextAlign.Center
                         )
                         Text(
-                            text = "갤러리에서 손가락이 포함된 정지 사진을 선택하면\n지문 노출 영역을 탐지하고 보호 처리를 적용합니다.",
+                            text = "손가락이 포함된 사진을 선택하고\n직접 손끝 영역을 확인한 뒤 처리하세요.",
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -107,7 +108,7 @@ fun ImagePickerScreen(
                     }
                 }
 
-                is UiState.ImageLoaded -> {
+                is UiState.Ready -> {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -125,7 +126,7 @@ fun ImagePickerScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Image(
-                                    bitmap = uiState.bitmap.asImageBitmap(),
+                                    bitmap = uiState.originalBitmap.asImageBitmap(),
                                     contentDescription = "선택된 사진 미리보기",
                                     modifier = Modifier.fillMaxSize()
                                 )
@@ -133,7 +134,7 @@ fun ImagePickerScreen(
                         }
 
                         Text(
-                            text = "이미지 크기: ${uiState.width} x ${uiState.height} px",
+                            text = "이미지 크기: ${uiState.originalBitmap.width} x ${uiState.originalBitmap.height} px",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

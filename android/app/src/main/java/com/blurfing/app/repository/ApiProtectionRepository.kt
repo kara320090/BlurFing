@@ -5,7 +5,9 @@ import com.blurfing.app.model.ProtectionRequest
 import com.blurfing.app.model.ProtectionResponse
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
@@ -13,31 +15,22 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
 
-/**
- * contracts/protection-api.md 규격을 준수하는 백엔드 API 연동 어댑터 (BF-07).
- *
- * 담당: 이봉헌 (Android 앱 및 시스템 통합)
- * 연동 대상: 한윤섭 (백엔드 API 및 서버 모듈)
- *
- * 주요 처리 사항:
- * - 동적 base URL 구성 (로컬 에뮬레이터 10.0.2.2:8000 또는 실제 호스트)
- * - 설정 가능한 타임아웃 (기본 30초)
- * - 연결 실패, 시간 초과, 취소 처리
- * - 클라이언트 측 request_id 기반 늦은 응답 무시
- * - 최대 파일 크기 (기본 15MB) 사전 검사
- */
+/** Android 담당의 통신 어댑터. 서버 구현은 backend/ 담당자가 제공한다. */
 class ApiProtectionRepository(
-    private val baseUrl: String = "http://10.0.2.2:8000",
-    private val maxImageSizeBytes: Long = 15 * 1024 * 1024L, // 15MB
+    private val baseUrl: String = BackendAddress.EMULATOR_DEFAULT,
+    private val maxImageSizeBytes: Long = 15 * 1024 * 1024L,
     private val timeoutSeconds: Long = 30L,
     private val client: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(timeoutSeconds, TimeUnit.SECONDS)
         .readTimeout(timeoutSeconds, TimeUnit.SECONDS)
         .writeTimeout(timeoutSeconds, TimeUnit.SECONDS)
+        .callTimeout(timeoutSeconds, TimeUnit.SECONDS)
+        .followRedirects(false)
+        .followSslRedirects(false)
         .build()
 ) : ProtectionRepository {
-
     private val json = Json { ignoreUnknownKeys = true }
     private val activeCalls = ConcurrentHashMap<String, Call>()
     private val cancelledRequestIds = ConcurrentHashMap.newKeySet<String>()
@@ -47,88 +40,108 @@ class ApiProtectionRepository(
         imageBytes: ByteArray
     ): Result<ProtectionResponse> = withContext(Dispatchers.IO) {
         val requestId = request.requestId
-
-        // 1. 취소 여부 확인
-        if (cancelledRequestIds.contains(requestId)) {
-            return@withContext Result.failure(CancellationException("요청이 취소되었습니다: $requestId"))
+        if (cancelledRequestIds.remove(requestId)) {
+            return@withContext Result.failure(CancellationException("요청이 취소되었습니다."))
         }
-
-        // 2. 용량 검사 (15MB 초과 시 서버 전송 전 차단)
         if (imageBytes.size > maxImageSizeBytes) {
             return@withContext Result.failure(
-                IllegalArgumentException("이미지 용량이 너무 큽니다 (${imageBytes.size / (1024 * 1024)}MB). 최대 15MB 이하만 전송 가능합니다.")
+                IllegalArgumentException("이미지 용량이 너무 큽니다. 최대 ${maxImageSizeBytes / 1024}KB까지 전송할 수 있습니다.")
             )
         }
-
-        // 3. Multipart 요청 바디 생성
-        val multipartBuilder = MultipartBody.Builder()
-            .setType(MultipartBody.FORM)
-            .addFormDataPart("request_id", requestId)
-            .addFormDataPart("method", request.method.apiValue)
-            .addFormDataPart("strength", request.strength.toString())
-            .addFormDataPart(
-                "image",
-                "upload.png",
-                imageBytes.toRequestBody("image/png".toMediaType())
-            )
-
-        request.regions?.let { regions ->
-            val regionsJson = json.encodeToString(
-                kotlinx.serialization.builtins.ListSerializer(NormalizedRegion.serializer()),
-                regions
-            )
-            multipartBuilder.addFormDataPart("regions", regionsJson)
+        if (imageBytes.isEmpty() || !request.strength.isFinite() || request.strength !in 0f..1f) {
+            return@withContext Result.failure(IllegalArgumentException("사진과 보호 강도를 확인해 주세요."))
         }
-
-        val httpRequest = Request.Builder()
-            .url("$baseUrl/v1/protect")
-            .post(multipartBuilder.build())
-            .build()
-
-        val call = client.newCall(httpRequest)
-        activeCalls[requestId] = call
 
         try {
-            val response = call.execute()
-            activeCalls.remove(requestId)
-
-            // 늦은 응답 검사 (호출 완료 시점에 이미 취소된 경우)
-            if (cancelledRequestIds.contains(requestId)) {
-                return@withContext Result.failure(CancellationException("요청 취소 후 도착한 응답을 폐기했습니다: $requestId"))
+            val multipart = MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("request_id", requestId)
+                .addFormDataPart("method", request.method.apiValue)
+                .addFormDataPart("strength", request.strength.toString())
+                .addFormDataPart("image", "upload.png", imageBytes.toRequestBody("image/png".toMediaType()))
+            request.regions?.let {
+                multipart.addFormDataPart("regions", json.encodeToString(ListSerializer(NormalizedRegion.serializer()), it))
             }
-
-            if (!response.isSuccessful) {
-                val errorBody = response.body?.string() ?: ""
-                val errorMessage = when (response.code) {
-                    400 -> "잘못된 요청 파라미터 또는 영역 좌표입니다: $errorBody"
-                    413 -> "서버 허용 파일 용량을 초과했습니다."
-                    500 -> "서버 내부 처리 오류가 발생했습니다: $errorBody"
-                    503 -> "보호 처리 서비스를 일시적으로 사용할 수 없습니다."
-                    else -> "서버 오류 (HTTP ${response.code}): $errorBody"
-                }
-                return@withContext Result.failure(IOException(errorMessage))
+            val httpRequest = Request.Builder()
+                .url("${baseUrl.trimEnd('/')}/v1/protect")
+                .post(multipart.build())
+                .build()
+            val call = client.newCall(httpRequest)
+            if (activeCalls.putIfAbsent(requestId, call) != null) {
+                return@withContext Result.failure(IllegalArgumentException("같은 요청이 이미 진행 중입니다."))
             }
-
-            val bodyString = response.body?.string()
-                ?: return@withContext Result.failure(IOException("서버 응답 바디가 비어 있습니다."))
-
-            val protectionResponse = json.decodeFromString<ProtectionResponse>(bodyString)
-            Result.success(protectionResponse)
-        } catch (e: IOException) {
-            activeCalls.remove(requestId)
-            if (call.isCanceled() || cancelledRequestIds.contains(requestId)) {
-                Result.failure(CancellationException("요청이 취소되었습니다: $requestId"))
-            } else {
-                Result.failure(IOException("서버 연결 실패 또는 타임아웃 ($baseUrl): ${e.localizedMessage}", e))
+            try {
+                if (cancelledRequestIds.contains(requestId)) call.cancel()
+                awaitResult(call, requestId)
+            } finally {
+                activeCalls.remove(requestId, call)
+                cancelledRequestIds.remove(requestId)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            activeCalls.remove(requestId)
             Result.failure(e)
         }
     }
 
+    private suspend fun awaitResult(call: Call, requestId: String): Result<ProtectionResponse> =
+        suspendCancellableCoroutine { continuation ->
+            continuation.invokeOnCancellation { call.cancel() }
+            call.enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    val error = if (cancelledRequestIds.contains(requestId)) {
+                        CancellationException("요청이 취소되었습니다.")
+                    } else {
+                        IOException("서버에 연결하지 못했거나 응답 시간이 초과되었습니다. 주소와 서버 상태를 확인해 주세요.", e)
+                    }
+                    if (continuation.isActive) continuation.resume(Result.failure(error))
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    // 취소·파싱 실패를 포함해 모든 경로에서 본문과 소켓을 정리한다.
+                    val result = runCatching {
+                        response.use {
+                            if (call.isCanceled() || cancelledRequestIds.contains(requestId)) {
+                                throw CancellationException("취소된 응답을 적용하지 않았습니다.")
+                            }
+                            if (!it.isSuccessful) throw IOException(httpError(it.code))
+                            val source = it.body?.source() ?: throw IOException("서버 응답이 비어 있습니다.")
+                            source.request(MAX_RESPONSE_BYTES + 1)
+                            if (source.buffer.size > MAX_RESPONSE_BYTES) throw IOException("서버 응답의 크기 제한을 초과했습니다.")
+                            val bytes = source.buffer.readByteArray()
+                            val parsed = json.decodeFromString<ProtectionResponse>(bytes.toString(Charsets.UTF_8))
+                            ProtectionResponseValidator.validate(parsed, requestId)
+                            parsed
+                        }
+                    }
+                    val finalResult = when {
+                        cancelledRequestIds.contains(requestId) ->
+                            Result.failure(CancellationException("취소된 응답을 적용하지 않았습니다."))
+                        call.isCanceled() ->
+                            Result.failure(IOException("서버 응답 시간이 초과되었습니다. 다시 시도해 주세요."))
+                        else -> result
+                    }
+                    if (continuation.isActive) continuation.resume(finalResult)
+                }
+            })
+        }
+
     override fun cancelRequest(requestId: String) {
         cancelledRequestIds.add(requestId)
-        activeCalls.remove(requestId)?.cancel()
+        activeCalls[requestId]?.cancel()
+    }
+
+    private fun httpError(code: Int): String = when (code) {
+        400, 422 -> "사진, 보호 설정 또는 영역 좌표를 확인해 주세요."
+        404 -> "서버에 보호 API가 아직 준비되지 않았습니다. 백엔드 담당자에게 확인해 주세요."
+        413 -> "서버 허용 파일 용량을 초과했습니다."
+        500 -> "서버 내부 처리 오류가 발생했습니다."
+        503 -> "보호 처리 서비스를 일시적으로 사용할 수 없습니다."
+        in 300..399 -> "서버 주소가 변경되었습니다. 사용할 서버 주소를 직접 확인해 주세요."
+        else -> "서버 오류가 발생했습니다 (HTTP $code)."
+    }
+
+    companion object {
+        private const val MAX_RESPONSE_BYTES = 24 * 1024 * 1024L
     }
 }

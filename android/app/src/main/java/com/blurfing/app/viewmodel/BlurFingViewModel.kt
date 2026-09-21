@@ -6,15 +6,19 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.blurfing.app.BuildConfig
 import com.blurfing.app.model.NormalizedRegion
 import com.blurfing.app.model.ProtectionMethod
 import com.blurfing.app.model.ProtectionRequest
 import com.blurfing.app.model.ProtectionResponse
 import com.blurfing.app.repository.MockProtectionRepository
+import com.blurfing.app.repository.ApiProtectionRepository
+import com.blurfing.app.repository.BackendAddress
+import com.blurfing.app.repository.ProtectionResponseValidator
 import com.blurfing.app.repository.ProtectionRepository
 import com.blurfing.app.utils.ExifNormalizer
 import com.blurfing.app.utils.ImageSaver
-import com.blurfing.app.utils.LocalBlurProcessor
+import com.blurfing.app.utils.ProtectedImageDecoder
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -51,7 +55,8 @@ sealed interface UiState {
         val isProcessing: Boolean = false,
         val protectedBitmap: Bitmap? = null,
         val protectionResponse: ProtectionResponse? = null,
-        val saveMessage: String? = null
+        val saveMessage: String? = null,
+        val processingError: String? = null
     ) : UiState
     data class Error(
         val message: String,
@@ -61,7 +66,8 @@ sealed interface UiState {
 }
 
 open class BlurFingViewModel(
-    private val protectionRepository: ProtectionRepository = MockProtectionRepository()
+    private val protectionRepository: ProtectionRepository = MockProtectionRepository(),
+    private val apiRepositoryFactory: (String) -> ProtectionRepository = { ApiProtectionRepository(it) }
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Idle)
@@ -69,16 +75,20 @@ open class BlurFingViewModel(
 
     private var activeProcessingJob: Job? = null
     private var activeRequestId: String? = null
+    private var activeRepository: ProtectionRepository? = null
+    private var imageLoadingJob: Job? = null
 
     /**
      * 사진 선택 및 EXIF 정규화 (BF-01, BF-02).
      */
     fun onImageSelected(uri: Uri?, context: Context) {
         if (uri == null) return
+        cancelProtection()
+        imageLoadingJob?.cancel()
 
         _uiState.value = UiState.Loading("사진을 불러오고 방향을 확인하는 중...")
 
-        viewModelScope.launch {
+        imageLoadingJob = viewModelScope.launch {
             try {
                 val normalizedBitmap = withContext(Dispatchers.IO) {
                     val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
@@ -102,6 +112,8 @@ open class BlurFingViewModel(
                     originalBitmap = normalizedBitmap,
                     regions = initialRegions
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value = UiState.Error(
                     message = "사진을 불러오지 못했습니다: ${e.localizedMessage ?: "알 수 없는 오류"}",
@@ -114,8 +126,8 @@ open class BlurFingViewModel(
 
     fun navigateToStep(step: ScreenStep) {
         val current = _uiState.value
-        if (current is UiState.Ready) {
-            _uiState.value = current.copy(step = step)
+        if (current is UiState.Ready && !current.isProcessing) {
+            _uiState.value = current.copy(step = step, processingError = null)
         }
     }
 
@@ -149,79 +161,72 @@ open class BlurFingViewModel(
      */
     fun startProtection(
         method: ProtectionMethod = ProtectionMethod.GAUSSIAN_BLUR,
-        strength: Float = 0.5f
+        strength: Float = 0.5f,
+        serverUrl: String? = null
     ) {
         val current = _uiState.value as? UiState.Ready ?: return
-        if (current.isProcessing) return // 중복 실행 방지
+        if (current.isProcessing) return
+        val repository = try {
+            require(strength.isFinite() && strength in 0f..1f) { "보호 강도를 확인해 주세요." }
+            require(current.regions.isNotEmpty()) { "손끝 영역을 한 개 이상 지정해 주세요." }
+            if (serverUrl == null) protectionRepository else {
+                apiRepositoryFactory(BackendAddress.normalize(serverUrl, BuildConfig.DEBUG))
+            }
+        } catch (e: IllegalArgumentException) {
+            _uiState.value = current.copy(processingError = e.message)
+            return
+        }
 
         val requestId = UUID.randomUUID().toString()
         activeRequestId = requestId
-
-        _uiState.value = current.copy(isProcessing = true)
+        activeRepository = repository
+        // 이전 결과가 새 요청의 결과처럼 저장되지 않도록 지운다.
+        val pending = current.copy(
+            step = ScreenStep.PROCESSING, isProcessing = true, processingError = null,
+            protectedBitmap = null, protectionResponse = null, saveMessage = null
+        )
+        _uiState.value = pending
 
         activeProcessingJob = viewModelScope.launch {
             try {
-                // 이미지 바이트 변환
                 val imageBytes = withContext(Dispatchers.IO) {
-                    val stream = ByteArrayOutputStream()
-                    current.originalBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
-                    stream.toByteArray()
-                }
-
-                val request = ProtectionRequest(
-                    requestId = requestId,
-                    method = method,
-                    strength = strength,
-                    regions = current.regions
-                )
-
-                val result = protectionRepository.protectImage(request, imageBytes)
-
-                // 취소되거나 다른 요청으로 교체된 경우 늦은 응답 무시
-                if (activeRequestId != requestId) {
-                    return@launch
-                }
-
-                result.fold(
-                    onSuccess = { response ->
-                        // 로컬 프리뷰 블러 적용 (실제 서버 응답 시에는 서버 이미지 사용)
-                        val protectedBitmap = LocalBlurProcessor.applyBlur(
-                            sourceBitmap = current.originalBitmap,
-                            regions = response.appliedRegions.ifEmpty { current.regions },
-                            strength = strength
-                        )
-
-                        _uiState.value = current.copy(
-                            step = ScreenStep.COMPARISON,
-                            isProcessing = false,
-                            protectedBitmap = protectedBitmap,
-                            protectionResponse = response
-                        )
-                    },
-                    onFailure = { error ->
-                        if (error is CancellationException) {
-                            _uiState.value = current.copy(isProcessing = false)
-                        } else {
-                            _uiState.value = UiState.Error(
-                                message = "보호 처리에 실패했습니다: ${error.localizedMessage}",
-                                cause = error,
-                                retryable = true
-                            )
+                    ByteArrayOutputStream().use { stream ->
+                        check(current.originalBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)) {
+                            "사진을 전송 형식으로 변환하지 못했습니다."
                         }
+                        stream.toByteArray()
                     }
+                }
+                val request = ProtectionRequest(requestId, method, strength, current.regions)
+                val response = repository.protectImage(request, imageBytes).getOrThrow()
+                if (activeRequestId != requestId) return@launch
+                ProtectionResponseValidator.validate(response, requestId)
+                val protectedBitmap = withContext(Dispatchers.Default) {
+                    ProtectedImageDecoder.decode(response, current.originalBitmap, strength)
+                }
+                if (activeRequestId != requestId) return@launch
+                _uiState.value = pending.copy(
+                    step = ScreenStep.COMPARISON, isProcessing = false,
+                    protectedBitmap = protectedBitmap, protectionResponse = response
                 )
             } catch (e: CancellationException) {
-                _uiState.value = current.copy(isProcessing = false)
+                if (activeRequestId == requestId) {
+                    _uiState.value = pending.copy(isProcessing = false)
+                }
+                throw e
             } catch (e: Exception) {
-                _uiState.value = UiState.Error(
-                    message = "처리 중 오류 발생: ${e.localizedMessage}",
-                    cause = e,
-                    retryable = true
-                )
+                if (activeRequestId == requestId) {
+                    // 사진·수정 영역을 유지해 설정 화면에서 바로 재시도할 수 있다.
+                    _uiState.value = pending.copy(
+                        isProcessing = false,
+                        processingError = e.localizedMessage ?: "처리하지 못했습니다. 다시 시도해 주세요."
+                    )
+                }
             } finally {
                 if (activeRequestId == requestId) {
                     activeRequestId = null
                     activeProcessingJob = null
+                    activeRepository = null
                 }
             }
         }
@@ -231,10 +236,10 @@ open class BlurFingViewModel(
      * 진행 중인 요청 취소 (BF-07).
      */
     fun cancelProtection() {
-        activeRequestId?.let { id ->
-            protectionRepository.cancelRequest(id)
-            activeRequestId = null
-        }
+        val id = activeRequestId
+        activeRequestId = null
+        id?.let { activeRepository?.cancelRequest(it) }
+        activeRepository = null
         activeProcessingJob?.cancel()
         activeProcessingJob = null
 
@@ -271,6 +276,8 @@ open class BlurFingViewModel(
     }
 
     fun resetToIdle() {
+        imageLoadingJob?.cancel()
+        imageLoadingJob = null
         cancelProtection()
         _uiState.value = UiState.Idle
     }

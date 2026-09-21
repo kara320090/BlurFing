@@ -63,9 +63,10 @@ object LocalBlurProcessor {
             // 4. 대상 비트맵에 합성
             canvas.drawBitmap(blurred, null, Rect(left, top, right, bottom), paint)
 
-            cropped.recycle()
-            downscaled.recycle()
-            blurred.recycle()
+            // createBitmap/createScaledBitmap은 크기가 같으면 입력 객체를 돌려줄 수 있다.
+            listOf(cropped, downscaled, blurred).distinct().forEach {
+                if (it !== sourceBitmap && it !== outputBitmap && !it.isRecycled) it.recycle()
+            }
         }
 
         return outputBitmap

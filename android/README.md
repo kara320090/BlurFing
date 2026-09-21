@@ -15,6 +15,7 @@ SNS 사진 속 손가락 지문 노출을 줄이는 Android 보호 앱 프로젝
 - **이미지 및 EXIF**: Coil, AndroidX ExifInterface
 - **저장소 패턴**:
   - `ProtectionRepository` 인터페이스를 통해 `MockProtectionRepository`(기본값, 독립 실행 및 UI 개발용)와 `ApiProtectionRepository`(`contracts/protection-api.md` 연동용) 교체 가능
+  - 보호 설정 화면에서 서버 처리와 서버 주소를 선택할 수 있습니다. `real` 응답은 서버 이미지를 사용하며 Mock만 로컬 프리뷰를 만듭니다.
 
 ### 패키지 구조 (`android/app/src/main/java/com/blurfing/app/`)
 ```
@@ -67,22 +68,35 @@ SNS 사진 속 손가락 지문 노출을 줄이는 Android 보호 앱 프로젝
 ### 터미널에서 빌드 및 테스트
 ```powershell
 # 디버그 APK 빌드
-./gradlew assembleDebug
+./gradlew assembleDebug --max-workers=4
 
 # 단위 테스트 실행
-./gradlew testDebugUnitTest
+./gradlew testDebugUnitTest --max-workers=4
 ```
 
 ---
 
 ## 4. 검증 결과 및 구분
 
+2026-09-21: JDK 21, Gradle 8.9, SDK 35에서 `testDebugUnitTest assembleDebug --max-workers=4` 통과. 테스트 **36개**, 실패·오류·건너뜀 0개. 디버그 APK는 `app/build/outputs/apk/debug/app-debug.apk`에 생성됩니다.
+
+Gradle Wrapper JAR를 저장소에 포함했고 Gradle 배포 ZIP의 SHA-256을 고정했습니다. 최초 실행은 빌드 도구와 테스트용 Android 런타임 다운로드로 시간이 걸릴 수 있습니다. 로컬 JDK 21을 `JAVA_HOME`에 설정하고 Android SDK 경로를 비공개 `local.properties`에 지정하세요.
+
 ### 실행 및 완료한 검증
 - [x] **상대 좌표 변환 및 경계 검증 (`NormalizedRegionTest`)**: 0.0 ~ 1.0 범위 초과 및 `x+w > 1`, `y+h > 1`에 대한 안전한 예외 발생 및 `safeCreate` 클램핑 확인
 - [x] **종횡비 보정 및 좌표계 역변환 (`CoordinateTransformerTest`)**: Letterbox / Pillarbox 여백 계산 및 화면 터치 ↔ 원본 상대 좌표 간 정밀 변환 확인
 - [x] **Mock 및 통신 실패 복구 (`ProtectionRepositoryTest`)**: Mock 결과 반환, 15MB 초과 파일 사전 차단, 사전/진행 중 요청 취소(`CancellationException`) 동작 확인
 - [x] **평가 점수 무결성 (`EvaluationMetricsTest`)**: 미측정 수치가 null로 유지되어 가짜 일치율(0~100%)을 생성하지 않음을 확인
+- [x] **HTTP 계약 (`ApiProtectionIntegrationTest`, 8개)**: multipart 요청, ID·응답 검증, 보호 API 404 후 재시도, 서버 오류·시간 초과·취소, 잘못된 강도 전송 차단
+- [x] **서버 주소 (`BackendAddressTest`, 3개)**: 주소 정규화, 개발용 로컬 HTTP, HTTPS, 잘못된 주소 차단
+- [x] **처리 이미지 (`ProtectedImageDecoderTest`, 4개)**: 서버 픽셀 사용, 원본 보존, 손상·누락·규격 불일치 거부, Mock 원본 recycle 회귀 검증
+- [x] **앱 통합 상태 (`BlurFingViewModelIntegrationTest`, 4개)**: 합성 HTTP 응답 → 비교 상태, 사진·영역 유지 후 재시도, 초기화 후 늦은 응답 폐기, 중복 요청 차단
+
+이미지 테스트는 Robolectric의 Native Graphics 모드로 이미지 디코딩을 실행했습니다. 손상된 합성 이미지 테스트에서 출력되는 decoder 메시지는 의도한 실패 입력에 대한 로그입니다.
 
 ### 미실행 검증 (기기 및 서버 준비 후 진행 필요)
-- [ ] **실제 기기/에뮬레이터 런타임 UI 동작**: AVD 부팅 및 화면 터치 제스처 실기 검증 (에뮬레이터 오프라인 상태)
-- [ ] **실제 백엔드 서버 HTTP 연동**: `POST /v1/protect` 실제 서버 배포 후 엔드투엔드 통신 검증 (백엔드 서버 미기동 상태)
+- [ ] **실제 기기/에뮬레이터 UI**: 사진 선택, 터치 편집, 비교 화면, MediaStore 저장은 이번 작업에서 실행하지 않았습니다.
+- [ ] **팀 백엔드와의 보호 API 연동**: 현재 서버 코드는 `GET /`만 제공하며 `POST /v1/protect`는 미구현입니다. 자동 테스트에서는 MockWebServer의 합성 응답을 사용했습니다.
+- [ ] **실제 AI·센서 평가**: 지문 보호 성능 및 센서 매칭 실측은 이번 앱 검증에 포함되지 않습니다.
+
+[서버 주소 설정 및 연동 가이드](../docs/android-server-integration.md) · [이번 작업·검증 기록](../docs/worklogs/2026-09-21-이봉헌.md)
