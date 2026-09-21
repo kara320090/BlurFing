@@ -24,6 +24,7 @@ import com.blurfing.app.model.NormalizedRegion
 import com.blurfing.app.ui.components.FingertipOverlayCanvas
 import com.blurfing.app.utils.CoordinateTransformer
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegionEditorScreen(
     bitmap: Bitmap,
