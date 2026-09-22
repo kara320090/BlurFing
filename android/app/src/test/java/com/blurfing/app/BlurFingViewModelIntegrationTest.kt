@@ -156,6 +156,49 @@ class BlurFingViewModelIntegrationTest {
         assertEquals(UiState.Idle, vm.uiState.value)
     }
 
+    @Test fun unavailableBackendPreservesPhotoAndAllowsLocalPreview() = runBlocking {
+        MockWebServer().use { server ->
+            server.start()
+            val vm = BlurFingViewModel()
+            val loaded = load(vm)
+            vm.deleteRegion(1)
+            val editedRegions = (vm.uiState.value as UiState.Ready).regions
+            val cases = listOf(
+                Triple(501, "PROCESSING_NOT_IMPLEMENTED", "이미지 보호 기능이 아직 준비되지"),
+                Triple(415, "UNSUPPORTED_IMAGE_TYPE", "PNG 또는 JPEG")
+            )
+            for ((status, code, expectedMessage) in cases) {
+                server.enqueue(MockResponse().setResponseCode(status).setBody(
+                    """{"request_id":"synthetic","code":"$code","message":"internal detail","retryable":false}"""
+                ))
+                vm.startProtection(serverUrl = server.url("/").toString())
+                val failed = withTimeout(5000) {
+                    vm.uiState.first { it is UiState.Ready && !it.isProcessing } as UiState.Ready
+                }
+                assertEquals(ScreenStep.PROCESSING, failed.step)
+                assertSame(loaded.originalBitmap, failed.originalBitmap)
+                assertEquals(editedRegions, failed.regions)
+                assertNull(failed.protectedBitmap)
+                assertNull(failed.protectionResponse)
+                assertTrue("HTTP $status: " + failed.processingError,
+                    failed.processingError.orEmpty().contains(expectedMessage))
+                assertFalse(failed.processingError.orEmpty().contains("internal detail"))
+            }
+
+            // 사용자가 로컬 Mock으로 전환하면 같은 사진·영역으로 계속 진행한다.
+            vm.startProtection()
+            val preview = withTimeout(5000) {
+                vm.uiState.first { it is UiState.Ready && !it.isProcessing } as UiState.Ready
+            }
+            assertEquals(ScreenStep.COMPARISON, preview.step)
+            assertEquals("mock", preview.protectionResponse!!.resultKind)
+            assertNull(preview.processingError)
+            assertSame(loaded.originalBitmap, preview.originalBitmap)
+            assertEquals(editedRegions, preview.regions)
+            assertEquals(2, server.requestCount)
+        }
+    }
+
     @Test fun duplicateStartDoesNotIssueSecondRequest() = runBlocking {
         val entered = CompletableDeferred<Unit>()
         val release = CompletableDeferred<Unit>()
