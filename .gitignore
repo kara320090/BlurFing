@@ -32,3 +32,10 @@ artifacts/
 *.pdf
 *.jks
 *.keystore
+# Windows sensor tool build output and proprietary SDK packages
+**/bin/
+**/obj/
+sensor/vendor/
+sensor/sdk/
+sensor/**/UFScanner.dll
+sensor/**/UFMatcher.dll

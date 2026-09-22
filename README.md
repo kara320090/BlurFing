@@ -8,6 +8,8 @@ SNS 사진 속 손가락 지문 노출을 줄이는 Android 보호 앱 프로젝
 
 백엔드는 `GET /`와 `POST /v1/protect`의 요청 검증까지 구현되어 있습니다. 유효한 보호 요청에도 아직 HTTP 501을 반환하며, 실제 이미지 처리·반환은 후속 개발 대상입니다. 자동 영역 추출·AI 보호 성능·센서 연동도 남아 있습니다. 기본 후보 영역은 개발용 예시이며 실제 탐지 결과가 아닙니다.
 
+[Windows 센서 수집 도구](sensor/README.md)는 BioMini Slim 2의 SDK 연결·단일 영상 취득·BMP/PNG 저장을 준비한 별도 프로그램입니다. 합성 영상 저장과 오류 처리를 검증했으며, 실제 SDK·센서 취득은 수령 후 검증해야 합니다.
+
 ## 시작하기
 1. [안티그래비티 실행 프롬프트](docs/antigravity-prompt.md)를 읽고 개발 에이전트에 전달합니다.
 2. [요구사항](docs/requirements.md)과 [구조 및 경계](docs/architecture.md)를 확인합니다.
