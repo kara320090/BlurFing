@@ -7,9 +7,10 @@ from typing import Any
 
 from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.responses import JSONResponse
-from PIL import Image, ImageFilter, UnidentifiedImageError
+from PIL import Image, UnidentifiedImageError
 
 app = FastAPI(title="BlurFing Backend")
+app.state.protection_processor = None
 
 MAX_IMAGE_SIZE_BYTES = 15 * 1024 * 1024
 MAX_IMAGE_PIXELS = 20_000_000
@@ -93,19 +94,6 @@ def parse_regions(value: str | None) -> list[dict[str, float]] | None:
     return validated_regions
 
 
-def blur_regions(image: Image.Image, regions: list[dict[str, float]], strength: float) -> Image.Image:
-    width, height = image.size
-    radius = 1 + 19 * strength
-    for region in regions:
-        left = max(0, min(width - 1, math.floor(region["x"] * width)))
-        top = max(0, min(height - 1, math.floor(region["y"] * height)))
-        right = max(left + 1, min(width, math.ceil((region["x"] + region["width"]) * width)))
-        bottom = max(top + 1, min(height, math.ceil((region["y"] + region["height"]) * height)))
-        box = (left, top, right, bottom)
-        image.paste(image.crop(box).filter(ImageFilter.GaussianBlur(radius)), box)
-    return image
-
-
 @app.post("/v1/protect")
 async def protect_image(
     image: UploadFile = File(...),
@@ -162,8 +150,7 @@ async def protect_image(
             if width * height > MAX_IMAGE_PIXELS:
                 return error_response(request_id, 413, "IMAGE_TOO_LARGE", "이미지 해상도가 너무 큽니다.")
             source.load()
-            decoded = source.convert("RGB")
-    except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError) as exc:
+    except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):
         return error_response(request_id, 400, "INVALID_IMAGE", "이미지 파일을 읽을 수 없습니다.")
 
     if not validated_regions:
@@ -178,14 +165,25 @@ async def protect_image(
             "warnings": ["NO_REGIONS"],
         }
 
-    result = blur_regions(decoded, validated_regions, validated_strength)
-    output = io.BytesIO()
-    result.save(output, format="PNG")
+    processor = app.state.protection_processor
+    if processor is None:
+        return error_response(request_id, 503, "PROCESSOR_UNAVAILABLE", "보호 처리 모듈을 사용할 수 없습니다.", True)
+
+    try:
+        # AI 담당 모듈은 입력 바이트와 설정을 받아 완성된 PNG 바이트를 반환한다.
+        result_bytes = processor(image_bytes, method, validated_strength, validated_regions)
+        with Image.open(io.BytesIO(result_bytes)) as result:
+            if result.format != "PNG" or result.size != (width, height):
+                raise ValueError("처리 결과의 형식 또는 크기가 올바르지 않습니다.")
+            result.load()
+    except Exception:
+        return error_response(request_id, 500, "PROCESSING_FAILED", "보호 처리 결과를 확인할 수 없습니다.", True)
+
     return {
         "request_id": request_id,
         "status": "succeeded",
         "result_kind": "real",
-        "image_base64": base64.b64encode(output.getvalue()).decode("ascii"),
+        "image_base64": base64.b64encode(result_bytes).decode("ascii"),
         "mime_type": "image/png",
         "applied_regions": validated_regions,
         "processing_ms": round((time.monotonic() - started) * 1000),

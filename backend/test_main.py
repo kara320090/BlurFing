@@ -38,9 +38,22 @@ def protect_request(image_bytes=None, **overrides):
     )
 
 
-def test_blur_changes_only_selected_region_and_preserves_size():
+def test_forwards_request_to_processor_and_returns_result():
     original_bytes = synthetic_image()
-    response = protect_request(image_bytes=original_bytes, strength="1")
+    calls = []
+
+    def processor(image_bytes, method, strength, regions):
+        calls.append((image_bytes, method, strength, regions))
+        image = Image.new("RGB", (40, 40), "black")
+        output = io.BytesIO()
+        image.save(output, format="PNG")
+        return output.getvalue()
+
+    app.state.protection_processor = processor
+    try:
+        response = protect_request(image_bytes=original_bytes, strength="1")
+    finally:
+        app.state.protection_processor = None
 
     assert response.status_code == 200
     body = response.json()
@@ -49,10 +62,43 @@ def test_blur_changes_only_selected_region_and_preserves_size():
     assert body["result_kind"] == "real"
     assert body["mime_type"] == "image/png"
     assert body["applied_regions"] == [{"x": 0.2, "y": 0.1, "width": 0.1, "height": 0.2}]
+    assert calls == [(original_bytes, "gaussian_blur", 1.0, body["applied_regions"])]
     with Image.open(io.BytesIO(original_bytes)) as original, Image.open(io.BytesIO(base64.b64decode(body["image_base64"]))) as result:
         assert result.size == original.size
-        assert result.getpixel((0, 0)) == original.getpixel((0, 0))
-        assert result.getpixel((10, 10)) != original.getpixel((10, 10))
+        assert result.getpixel((0, 0)) == (0, 0, 0)
+
+
+def test_unconnected_processor_is_unavailable():
+    response = protect_request()
+
+    assert response.status_code == 503
+    assert response.json()["code"] == "PROCESSOR_UNAVAILABLE"
+
+
+def test_rejects_invalid_processor_output():
+    app.state.protection_processor = lambda *_: b"not an image"
+    try:
+        response = protect_request()
+    finally:
+        app.state.protection_processor = None
+
+    assert response.status_code == 500
+    assert response.json()["code"] == "PROCESSING_FAILED"
+
+
+def test_processor_failure_returns_server_error():
+    def processor(*_):
+        raise RuntimeError("internal processor detail")
+
+    app.state.protection_processor = processor
+    try:
+        response = protect_request()
+    finally:
+        app.state.protection_processor = None
+
+    assert response.status_code == 500
+    assert response.json()["code"] == "PROCESSING_FAILED"
+    assert "internal processor detail" not in response.text
 
 
 def test_empty_regions_do_not_claim_success():
