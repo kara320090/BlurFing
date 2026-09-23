@@ -1,13 +1,18 @@
+import base64
+import io
 import json
 import math
+import time
 from typing import Any
 
 from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.responses import JSONResponse
+from PIL import Image, ImageFilter, UnidentifiedImageError
 
 app = FastAPI(title="BlurFing Backend")
 
 MAX_IMAGE_SIZE_BYTES = 15 * 1024 * 1024
+MAX_IMAGE_PIXELS = 20_000_000
 SUPPORTED_IMAGE_TYPES = {"image/jpeg", "image/png"}
 SUPPORTED_METHODS = {"gaussian_blur"}
 
@@ -88,6 +93,19 @@ def parse_regions(value: str | None) -> list[dict[str, float]] | None:
     return validated_regions
 
 
+def blur_regions(image: Image.Image, regions: list[dict[str, float]], strength: float) -> Image.Image:
+    width, height = image.size
+    radius = 1 + 19 * strength
+    for region in regions:
+        left = max(0, min(width - 1, math.floor(region["x"] * width)))
+        top = max(0, min(height - 1, math.floor(region["y"] * height)))
+        right = max(left + 1, min(width, math.ceil((region["x"] + region["width"]) * width)))
+        bottom = max(top + 1, min(height, math.ceil((region["y"] + region["height"]) * height)))
+        box = (left, top, right, bottom)
+        image.paste(image.crop(box).filter(ImageFilter.GaussianBlur(radius)), box)
+    return image
+
+
 @app.post("/v1/protect")
 async def protect_image(
     image: UploadFile = File(...),
@@ -96,6 +114,7 @@ async def protect_image(
     strength: str = Form(...),
     regions: str | None = Form(None),
 ):
+    started = time.monotonic()
     request_id = request_id.strip()
     if not request_id:
         return error_response("", 400, "INVALID_REQUEST_ID", "request_id를 입력해야 합니다.")
@@ -109,8 +128,8 @@ async def protect_image(
         )
 
     try:
-        parse_strength(strength)
-        parse_regions(regions)
+        validated_strength = parse_strength(strength)
+        validated_regions = parse_regions(regions)
     except ValueError as exc:
         return error_response(request_id, 400, "INVALID_REQUEST", str(exc))
 
@@ -135,9 +154,40 @@ async def protect_image(
             "이미지는 최대 15MB까지 전송할 수 있습니다.",
         )
 
-    return error_response(
-        request_id,
-        501,
-        "PROCESSING_NOT_IMPLEMENTED",
-        "요청 검증은 완료되었지만 이미지 보호 처리는 아직 구현되지 않았습니다.",
-    )
+    try:
+        with Image.open(io.BytesIO(image_bytes)) as source:
+            if source.format not in {"PNG", "JPEG"}:
+                raise ValueError("PNG 또는 JPEG 이미지가 아닙니다.")
+            width, height = source.size
+            if width * height > MAX_IMAGE_PIXELS:
+                return error_response(request_id, 413, "IMAGE_TOO_LARGE", "이미지 해상도가 너무 큽니다.")
+            source.load()
+            decoded = source.convert("RGB")
+    except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError) as exc:
+        return error_response(request_id, 400, "INVALID_IMAGE", "이미지 파일을 읽을 수 없습니다.")
+
+    if not validated_regions:
+        return {
+            "request_id": request_id,
+            "status": "no_regions",
+            "result_kind": "real",
+            "image_base64": None,
+            "mime_type": "image/png",
+            "applied_regions": [],
+            "processing_ms": round((time.monotonic() - started) * 1000),
+            "warnings": ["NO_REGIONS"],
+        }
+
+    result = blur_regions(decoded, validated_regions, validated_strength)
+    output = io.BytesIO()
+    result.save(output, format="PNG")
+    return {
+        "request_id": request_id,
+        "status": "succeeded",
+        "result_kind": "real",
+        "image_base64": base64.b64encode(output.getvalue()).decode("ascii"),
+        "mime_type": "image/png",
+        "applied_regions": validated_regions,
+        "processing_ms": round((time.monotonic() - started) * 1000),
+        "warnings": [],
+    }
