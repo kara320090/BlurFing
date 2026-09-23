@@ -55,6 +55,8 @@ sealed interface UiState {
         val isProcessing: Boolean = false,
         val protectedBitmap: Bitmap? = null,
         val protectionResponse: ProtectionResponse? = null,
+        val isSaving: Boolean = false,
+        val saveError: String? = null,
         val saveMessage: String? = null,
         val processingError: String? = null
     ) : UiState
@@ -67,7 +69,10 @@ sealed interface UiState {
 
 open class BlurFingViewModel(
     private val protectionRepository: ProtectionRepository = MockProtectionRepository(),
-    private val apiRepositoryFactory: (String) -> ProtectionRepository = { ApiProtectionRepository(it) }
+    private val apiRepositoryFactory: (String) -> ProtectionRepository = { ApiProtectionRepository(it) },
+    private val saveImage: suspend (Context, Bitmap) -> Result<Uri> = { context, bitmap ->
+        ImageSaver.saveProtectedCopy(context, bitmap)
+    }
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Idle)
@@ -77,12 +82,15 @@ open class BlurFingViewModel(
     private var activeRequestId: String? = null
     private var activeRepository: ProtectionRepository? = null
     private var imageLoadingJob: Job? = null
+    private var activeSavingJob: Job? = null
+    private var activeSaveId: String? = null
 
     /**
      * 사진 선택 및 EXIF 정규화 (BF-01, BF-02).
      */
     fun onImageSelected(uri: Uri?, context: Context) {
         if (uri == null) return
+        cancelSaving()
         cancelProtection()
         imageLoadingJob?.cancel()
 
@@ -127,7 +135,9 @@ open class BlurFingViewModel(
     fun navigateToStep(step: ScreenStep) {
         val current = _uiState.value
         if (current is UiState.Ready && !current.isProcessing) {
-            _uiState.value = current.copy(step = step, processingError = null)
+            if (step != current.step) cancelSaving()
+            val latest = _uiState.value as? UiState.Ready ?: return
+            _uiState.value = latest.copy(step = step, processingError = null)
         }
     }
 
@@ -177,13 +187,15 @@ open class BlurFingViewModel(
             return
         }
 
+        cancelSaving()
         val requestId = UUID.randomUUID().toString()
         activeRequestId = requestId
         activeRepository = repository
         // 이전 결과가 새 요청의 결과처럼 저장되지 않도록 지운다.
         val pending = current.copy(
             step = ScreenStep.PROCESSING, isProcessing = true, processingError = null,
-            protectedBitmap = null, protectionResponse = null, saveMessage = null
+            protectedBitmap = null, protectionResponse = null, saveMessage = null,
+            isSaving = false, saveError = null
         )
         _uiState.value = pending
 
@@ -254,28 +266,53 @@ open class BlurFingViewModel(
      */
     fun saveProtectedImage(context: Context) {
         val current = _uiState.value as? UiState.Ready ?: return
+        if (current.step != ScreenStep.COMPARISON || current.isProcessing || current.isSaving) return
         val protectedBitmap = current.protectedBitmap ?: return
+        val saveId = UUID.randomUUID().toString()
+        activeSaveId = saveId
+        _uiState.value = current.copy(isSaving = true, saveMessage = null, saveError = null)
 
-        viewModelScope.launch {
-            val result = ImageSaver.saveProtectedCopy(context, protectedBitmap)
-            result.fold(
-                onSuccess = { uri ->
-                    _uiState.value = current.copy(
-                        saveMessage = "보호된 사본이 저장되었습니다 (원본 보존): $uri"
-                    )
-                },
-                onFailure = { error ->
-                    _uiState.value = UiState.Error(
-                        message = "사본 저장에 실패했습니다: ${error.localizedMessage}",
-                        cause = error,
-                        retryable = true
+        activeSavingJob = viewModelScope.launch {
+            try {
+                saveImage(context.applicationContext, protectedBitmap).getOrThrow()
+                if (activeSaveId != saveId) return@launch
+                val latest = _uiState.value as? UiState.Ready ?: return@launch
+                _uiState.value = latest.copy(
+                    saveMessage = "보호 사본을 갤러리에 저장했습니다. 원본은 유지됩니다.",
+                    saveError = null
+                )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (activeSaveId == saveId) {
+                    val latest = _uiState.value as? UiState.Ready ?: return@launch
+                    _uiState.value = latest.copy(
+                        saveError = "사본을 저장하지 못했습니다. 저장 공간과 사진 접근 권한을 확인한 뒤 다시 시도해 주세요.",
+                        saveMessage = null
                     )
                 }
-            )
+            } finally {
+                if (activeSaveId == saveId) {
+                    activeSaveId = null
+                    activeSavingJob = null
+                    val latest = _uiState.value as? UiState.Ready
+                    if (latest != null) _uiState.value = latest.copy(isSaving = false)
+                }
+            }
         }
     }
 
+    private fun cancelSaving() {
+        // 먼저 식별자를 무효화해 취소가 늦게 반영되는 저장도 이전 화면을 되살리지 못하게 한다.
+        activeSaveId = null
+        activeSavingJob?.cancel()
+        activeSavingJob = null
+        val current = _uiState.value as? UiState.Ready ?: return
+        _uiState.value = current.copy(isSaving = false, saveMessage = null, saveError = null)
+    }
+
     fun resetToIdle() {
+        cancelSaving()
         imageLoadingJob?.cancel()
         imageLoadingJob = null
         cancelProtection()

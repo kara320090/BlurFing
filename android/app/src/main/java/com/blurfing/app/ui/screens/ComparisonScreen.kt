@@ -28,6 +28,8 @@ fun ComparisonScreen(
     response: ProtectionResponse?,
     onSaveProtectedImage: () -> Unit,
     onBack: () -> Unit,
+    isSaving: Boolean = false,
+    saveError: String? = null,
     modifier: Modifier = Modifier
 ) {
     var showProtectedOnly by remember { mutableStateOf(true) }
@@ -123,15 +125,31 @@ fun ComparisonScreen(
             }
 
             // 하단 저장 버튼
+            if (saveError != null) {
+                Text(
+                    text = saveError,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
             Button(
                 onClick = onSaveProtectedImage,
+                enabled = !isSaving,
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(vertical = 14.dp)
             ) {
-                Icon(Icons.Default.Save, contentDescription = null)
+                if (isSaving) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                } else {
+                    Icon(Icons.Default.Save, contentDescription = null)
+                }
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("보호 사본 저장 (원본 보존) [BF-06]")
+                Text(when {
+                    isSaving -> "저장 중…"
+                    saveError != null -> "사본 저장 다시 시도"
+                    else -> "보호 사본 저장 (원본 보존)"
+                })
             }
         }
     }

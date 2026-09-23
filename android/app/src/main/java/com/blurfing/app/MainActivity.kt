@@ -81,6 +81,8 @@ class MainActivity : ComponentActivity() {
                                         originalBitmap = state.originalBitmap,
                                         protectedBitmap = state.protectedBitmap ?: state.originalBitmap,
                                         response = state.protectionResponse,
+                                        isSaving = state.isSaving,
+                                        saveError = state.saveError,
                                         onSaveProtectedImage = { viewModel.saveProtectedImage(context) },
                                         onBack = { viewModel.navigateToStep(ScreenStep.REGION_EDITOR) }
                                     )
