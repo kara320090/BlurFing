@@ -164,6 +164,7 @@ class BlurFingViewModelIntegrationTest {
             vm.deleteRegion(1)
             val editedRegions = (vm.uiState.value as UiState.Ready).regions
             val cases = listOf(
+                Triple(503, "PROCESSOR_UNAVAILABLE", "보호 처리 서비스를 일시적으로"),
                 Triple(501, "PROCESSING_NOT_IMPLEMENTED", "이미지 보호 기능이 아직 준비되지"),
                 Triple(415, "UNSUPPORTED_IMAGE_TYPE", "PNG 또는 JPEG")
             )
@@ -195,7 +196,7 @@ class BlurFingViewModelIntegrationTest {
             assertNull(preview.processingError)
             assertSame(loaded.originalBitmap, preview.originalBitmap)
             assertEquals(editedRegions, preview.regions)
-            assertEquals(2, server.requestCount)
+            assertEquals(cases.size, server.requestCount)
         }
     }
 
