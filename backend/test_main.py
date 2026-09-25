@@ -2,10 +2,11 @@ import base64
 import io
 import json
 
+import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
-from main import app
+from main import MAX_IMAGE_SIZE_BYTES, app
 
 
 client = TestClient(app)
@@ -86,6 +87,27 @@ def test_rejects_invalid_processor_output():
     assert response.json()["code"] == "PROCESSING_FAILED"
 
 
+def test_rejects_processor_output_with_different_dimensions():
+    def processor(*_):
+        output = io.BytesIO()
+        Image.new("RGB", (20, 20), "black").save(output, format="PNG")
+        return output.getvalue()
+
+    app.state.protection_processor = processor
+    try:
+        response = protect_request()
+    finally:
+        app.state.protection_processor = None
+
+    assert response.status_code == 500
+    assert response.json() == {
+        "request_id": "synthetic-request-001",
+        "code": "PROCESSING_FAILED",
+        "message": "보호 처리 결과를 확인할 수 없습니다.",
+        "retryable": True,
+    }
+
+
 def test_processor_failure_returns_server_error():
     def processor(*_):
         raise RuntimeError("internal processor detail")
@@ -132,6 +154,39 @@ def test_rejects_region_outside_image_bounds():
 
     assert response.status_code == 400
     assert response.json()["code"] == "INVALID_REQUEST"
+
+
+@pytest.mark.parametrize(
+    "regions",
+    [
+        "not-json",
+        json.dumps([{"x": -0.1, "y": 0.1, "width": 0.2, "height": 0.2}]),
+        json.dumps([{"x": 0.1, "y": 0.1, "width": 0, "height": 0.2}]),
+        json.dumps([{"x": 0.1, "y": 0.1, "width": 0.2, "height": float("nan")}]),
+    ],
+)
+def test_rejects_invalid_region_values(regions):
+    response = protect_request(regions=regions)
+
+    assert response.status_code == 400
+    assert response.json()["request_id"] == "synthetic-request-001"
+    assert response.json()["code"] == "INVALID_REQUEST"
+    assert response.json()["retryable"] is False
+
+
+def test_rejects_image_over_15mb_before_processing():
+    processor_calls = []
+    app.state.protection_processor = lambda *_: processor_calls.append(True)
+    try:
+        response = protect_request(image_bytes=b"x" * (MAX_IMAGE_SIZE_BYTES + 1))
+    finally:
+        app.state.protection_processor = None
+
+    assert response.status_code == 413
+    assert response.json()["request_id"] == "synthetic-request-001"
+    assert response.json()["code"] == "IMAGE_TOO_LARGE"
+    assert response.json()["retryable"] is False
+    assert processor_calls == []
 
 
 def test_rejects_unsupported_method():
