@@ -78,7 +78,7 @@ SNS 사진 속 손가락 지문 노출을 줄이는 Android 보호 앱 프로젝
 
 ## 4. 검증 결과 및 구분
 
-2026-09-22: JDK 21, Gradle 8.9, SDK 35에서 `testDebugUnitTest assembleDebug --max-workers=4` 통과. 테스트 **37개**, 실패·오류·건너뜀 0개. 디버그 APK는 `app/build/outputs/apk/debug/app-debug.apk`에 생성됩니다.
+2026-09-27: JDK 21, Gradle 8.9, SDK 35에서 `testDebugUnitTest assembleDebug --max-workers=4` 통과. 테스트 **44개**, 실패·오류·건너뜀 0개. 디버그 APK는 `app/build/outputs/apk/debug/app-debug.apk`에 생성됩니다.
 
 Gradle Wrapper JAR를 저장소에 포함했고 Gradle 배포 ZIP의 SHA-256을 고정했습니다. 최초 실행은 빌드 도구와 테스트용 Android 런타임 다운로드로 시간이 걸릴 수 있습니다. 로컬 JDK 21을 `JAVA_HOME`에 설정하고 Android SDK 경로를 비공개 `local.properties`에 지정하세요.
 
@@ -90,15 +90,20 @@ Gradle Wrapper JAR를 저장소에 포함했고 Gradle 배포 ZIP의 SHA-256을 
 - [x] **HTTP 계약 (`ApiProtectionIntegrationTest`, 8개)**: multipart 요청, ID·응답 검증, 보호 API 404 후 재시도, 서버 오류·시간 초과·취소, 잘못된 강도 전송 차단
 - [x] **서버 주소 (`BackendAddressTest`, 3개)**: 주소 정규화, 개발용 로컬 HTTP, HTTPS, 잘못된 주소 차단
 - [x] **처리 이미지 (`ProtectedImageDecoderTest`, 4개)**: 서버 픽셀 사용, 원본 보존, 손상·누락·규격 불일치 거부, Mock 원본 recycle 회귀 검증
-- [x] **앱 통합 상태 (`BlurFingViewModelIntegrationTest`, 5개)**: 합성 HTTP 응답 → 비교 상태, 사진·영역 유지 후 재시도, 초기화 후 늦은 응답 폐기, 중복 요청 차단, 서버 501·415 안내 후 로컬 Mock 전환
+- [x] **앱 통합 상태 (`BlurFingViewModelIntegrationTest`, 5개)**: 합성 HTTP 응답 → 비교 상태, 사진·영역 유지 후 재시도, 초기화 후 늦은 응답 폐기, 중복 요청 차단, 서버 503·501·415 안내 후 로컬 Mock 전환
+- [x] **저장 상태 (`ProtectedCopySaveTest`, 7개)**: 저장 실패 후 원본·처리본·영역 보존과 재시도, 중복 저장 차단, 저장 함수 예외 처리, 편집 화면의 이전 결과 저장 차단, 초기화·사진 교체·편집 복귀 뒤 늦은 완료 무시
+
+저장 중에는 버튼에 진행 상태를 표시하고 다시 누를 수 없게 한다. 실패하면 비교 화면의 사진·영역을 유지하고 `사본 저장 다시 시도`를 제공한다. 화면 이동·사진 교체는 저장 작업의 화면 반영을 취소한다. 운영체제에서 이미 끝난 파일 쓰기를 되돌리거나 갤러리의 완성 파일을 삭제한다는 뜻은 아니다. 저장 상태 테스트는 주입한 저장 함수로 실패·지연을 재현하며 실제 MediaStore 저장 시험은 별도로 남아 있다.
 
 이미지 테스트는 Robolectric의 Native Graphics 모드로 이미지 디코딩을 실행했습니다. 손상된 합성 이미지 테스트에서 출력되는 decoder 메시지는 의도한 실패 입력에 대한 로그입니다.
 
 ### 미실행 검증 (기기 및 서버 준비 후 진행 필요)
 - [ ] **실제 기기/에뮬레이터 UI**: 사진 선택, 터치 편집, 비교 화면, MediaStore 저장은 이번 작업에서 실행하지 않았습니다.
-- [ ] **팀 백엔드와의 이미지 처리 연동**: 서버의 `POST /v1/protect` 요청 검증은 구현되었지만 유효 요청에도 HTTP 501을 반환합니다. 실제 보호 이미지 처리·반환은 미구현입니다. 앱 테스트에서는 MockWebServer로 해당 응답을 재현했습니다.
+- [ ] **팀 백엔드와의 이미지 처리 연동**: 서버는 이미지 검증·AI 모듈 연결 지점·결과 PNG 반환을 구현했습니다. AI 모듈은 미연결 상태여서 영역이 있는 요청에는 HTTP 503을 반환합니다. 앱 테스트는 MockWebServer로 오류를 재현했으며 백엔드 테스트 16개는 별도로 통과했습니다. 앱과 팀 서버를 직접 연결한 성공 처리는 미검증입니다.
 - [ ] **실제 AI·센서 평가**: 지문 보호 성능 및 센서 매칭 실측은 이번 앱 검증에 포함되지 않습니다.
 
 [서버 주소 설정 및 연동 가이드](../docs/android-server-integration.md) · [2026-09-21 구현·검증 기록](../docs/worklogs/2026-09-21-이봉헌.md)
 
 [2026-09-22 서버 오류 안내·Mock 전환 검증](../docs/worklogs/2026-09-22-이봉헌.md)
+
+[2026-09-27 저장 오류 수정·팀원 변경 검토](../docs/worklogs/2026-09-27-이봉헌.md)
