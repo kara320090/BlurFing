@@ -41,6 +41,13 @@ def error_response(
     )
 
 
+@app.get("/ready")
+def readiness_check():
+    if not callable(app.state.protection_processor):
+        return error_response("", 503, "PROCESSOR_UNAVAILABLE", "보호 처리 모듈을 사용할 수 없습니다.", True)
+    return {"status": "ready"}
+
+
 def parse_strength(value: str) -> float:
     try:
         strength = float(value)

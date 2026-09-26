@@ -12,6 +12,40 @@ from main import MAX_IMAGE_SIZE_BYTES, app
 client = TestClient(app)
 
 
+def test_root_reports_server_running_without_processor():
+    app.state.protection_processor = None
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert response.json() == {"message": "BlurFing backend is running"}
+
+
+def test_ready_reports_unavailable_without_processor():
+    app.state.protection_processor = None
+
+    response = client.get("/ready")
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "request_id": "",
+        "code": "PROCESSOR_UNAVAILABLE",
+        "message": "보호 처리 모듈을 사용할 수 없습니다.",
+        "retryable": True,
+    }
+
+
+def test_ready_reports_connected_processor():
+    app.state.protection_processor = lambda *_: b"synthetic-result"
+    try:
+        response = client.get("/ready")
+    finally:
+        app.state.protection_processor = None
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ready"}
+
+
 def synthetic_image():
     image = Image.new("RGB", (40, 40), "white")
     for x in range(10, 30):
