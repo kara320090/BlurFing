@@ -46,6 +46,33 @@ def test_ready_reports_connected_processor():
     assert response.json() == {"status": "ready"}
 
 
+def test_ready_changes_to_available_after_processor_connection():
+    app.state.protection_processor = None
+    assert client.get("/ready").status_code == 503
+
+    app.state.protection_processor = lambda *_: b"synthetic-result"
+    try:
+        response = client.get("/ready")
+    finally:
+        app.state.protection_processor = None
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ready"}
+
+
+def test_ready_changes_to_unavailable_after_processor_disconnection():
+    app.state.protection_processor = lambda *_: b"synthetic-result"
+    try:
+        assert client.get("/ready").status_code == 200
+    finally:
+        app.state.protection_processor = None
+
+    response = client.get("/ready")
+
+    assert response.status_code == 503
+    assert response.json()["code"] == "PROCESSOR_UNAVAILABLE"
+
+
 def synthetic_image():
     image = Image.new("RGB", (40, 40), "white")
     for x in range(10, 30):
