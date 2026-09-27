@@ -2,7 +2,6 @@ package com.blurfing.app.viewmodel
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -16,9 +15,10 @@ import com.blurfing.app.repository.ApiProtectionRepository
 import com.blurfing.app.repository.BackendAddress
 import com.blurfing.app.repository.ProtectionResponseValidator
 import com.blurfing.app.repository.ProtectionRepository
-import com.blurfing.app.utils.ExifNormalizer
 import com.blurfing.app.utils.ImageSaver
+import com.blurfing.app.utils.PhotoImportException
 import com.blurfing.app.utils.ProtectedImageDecoder
+import com.blurfing.app.utils.SelectedImageLoader
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -28,7 +28,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
-import java.io.InputStream
 import java.util.UUID
 
 /**
@@ -98,15 +97,7 @@ open class BlurFingViewModel(
 
         imageLoadingJob = viewModelScope.launch {
             try {
-                val normalizedBitmap = withContext(Dispatchers.IO) {
-                    val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
-                    requireNotNull(inputStream) { "이미지 파일을 열 수 없습니다: $uri" }
-                    val rawBitmap = inputStream.use { stream ->
-                        BitmapFactory.decodeStream(stream)
-                    } ?: throw IllegalStateException("유효한 이미지 형식이 아닙니다.")
-
-                    ExifNormalizer.getNormalizedBitmap(context, uri, rawBitmap)
-                }
+                val normalizedBitmap = SelectedImageLoader.load(context.applicationContext, uri)
 
                 // 초기 후보 영역 (기본 합성 영역)
                 val initialRegions = listOf(
@@ -124,7 +115,8 @@ open class BlurFingViewModel(
                 throw e
             } catch (e: Exception) {
                 _uiState.value = UiState.Error(
-                    message = "사진을 불러오지 못했습니다: ${e.localizedMessage ?: "알 수 없는 오류"}",
+                    message = if (e is PhotoImportException) e.message.orEmpty()
+                        else "사진을 불러오지 못했습니다. 다른 사진을 선택해 주세요.",
                     cause = e,
                     retryable = true
                 )

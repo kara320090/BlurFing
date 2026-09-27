@@ -39,6 +39,7 @@ SNS 사진 속 손가락 지문 노출을 줄이는 Android 보호 앱 프로젝
 ├── utils/
 │   ├── CoordinateTransformer.kt  # 뷰 픽셀 ↔ 정규화 좌표 양방향 변환
 │   ├── ExifNormalizer.kt         # EXIF 회전각 픽셀 반영 및 정규화
+│   ├── SelectedImageLoader.kt    # 파일 용량·해상도 검사 후 동일 바이트에서 픽셀·EXIF 읽기
 │   ├── ImageSaver.kt             # MediaStore Scoped Storage 사본 저장 (BF-06)
 │   └── LocalBlurProcessor.kt     # 개발 프리뷰용 로컬 블러 (AI 성능 미주장)
 └── viewmodel/
@@ -78,7 +79,7 @@ SNS 사진 속 손가락 지문 노출을 줄이는 Android 보호 앱 프로젝
 
 ## 4. 검증 결과 및 구분
 
-2026-09-27: JDK 21, Gradle 8.9, SDK 35에서 `testDebugUnitTest assembleDebug --max-workers=4` 통과. 테스트 **44개**, 실패·오류·건너뜀 0개. 디버그 APK는 `app/build/outputs/apk/debug/app-debug.apk`에 생성됩니다.
+2026-09-27 추가 검증: JDK 21, Gradle 8.9, SDK 35에서 `testDebugUnitTest assembleDebug --max-workers=4` 통과. 테스트 **64개**, 실패·오류·건너뜀 0개. 디버그 APK는 `app/build/outputs/apk/debug/app-debug.apk`에 생성됩니다.
 
 Gradle Wrapper JAR를 저장소에 포함했고 Gradle 배포 ZIP의 SHA-256을 고정했습니다. 최초 실행은 빌드 도구와 테스트용 Android 런타임 다운로드로 시간이 걸릴 수 있습니다. 로컬 JDK 21을 `JAVA_HOME`에 설정하고 Android SDK 경로를 비공개 `local.properties`에 지정하세요.
 
@@ -92,8 +93,14 @@ Gradle Wrapper JAR를 저장소에 포함했고 Gradle 배포 ZIP의 SHA-256을 
 - [x] **처리 이미지 (`ProtectedImageDecoderTest`, 4개)**: 서버 픽셀 사용, 원본 보존, 손상·누락·규격 불일치 거부, Mock 원본 recycle 회귀 검증
 - [x] **앱 통합 상태 (`BlurFingViewModelIntegrationTest`, 5개)**: 합성 HTTP 응답 → 비교 상태, 사진·영역 유지 후 재시도, 초기화 후 늦은 응답 폐기, 중복 요청 차단, 서버 503·501·415 안내 후 로컬 Mock 전환
 - [x] **저장 상태 (`ProtectedCopySaveTest`, 7개)**: 저장 실패 후 원본·처리본·영역 보존과 재시도, 중복 저장 차단, 저장 함수 예외 처리, 편집 화면의 이전 결과 저장 차단, 초기화·사진 교체·편집 복귀 뒤 늦은 완료 무시
+- [x] **저장 I/O (`ImageSaverTest`, 10개)**: 제어 가능한 ContentProvider에서 PNG/JPEG 출력과 갤러리 등록, 등록 실패·생성 실패·정리 실패·취소 처리, SDK 28/29 저장 열 차이 확인
+- [x] **사진 입력 (`SelectedImageLoaderTest`, 10개)**: 정상 PNG, JPEG EXIF 회전, 용량·해상도 제한과 경계값, 손상 이미지, 내부 경로를 숨긴 오류 안내, 오류 후 재선택, 사진 선택 취소
+
+사진 파일은 최대 15MiB(15 × 1024 × 1024바이트), 20,000,000픽셀까지 읽습니다. 픽셀을 할당하기 전에 해상도를 확인하며 임의로 축소하지 않습니다. 파일을 한 번 열어 제한된 양의 바이트만 읽고, 그 데이터에서 픽셀과 EXIF를 모두 해석합니다. 업로드할 때 다시 인코딩한 PNG의 15MiB 제한은 API 계층에서 별도로 검사합니다. 입력 제한이 모든 기기에서 메모리 부족을 방지한다는 뜻은 아니며 기기별 메모리 검증은 남아 있습니다.
 
 저장 중에는 버튼에 진행 상태를 표시하고 다시 누를 수 없게 한다. 실패하면 비교 화면의 사진·영역을 유지하고 `사본 저장 다시 시도`를 제공한다. 화면 이동·사진 교체는 저장 작업의 화면 반영을 취소한다. 운영체제에서 이미 끝난 파일 쓰기를 되돌리거나 갤러리의 완성 파일을 삭제한다는 뜻은 아니다. 저장 상태 테스트는 주입한 저장 함수로 실패·지연을 재현하며 실제 MediaStore 저장 시험은 별도로 남아 있다.
+
+저장 I/O는 MediaStore 등록 결과가 1개일 때 성공으로 처리합니다. 실패·취소 시 이번 호출에서 생성한 미완성 항목만 삭제하고, 삭제 실패는 최초 오류와 함께 보존합니다. 입력·저장 테스트에는 합성 파일만 사용했고 실제 기기 권한 및 갤러리 동작을 검증한 것으로 간주하지 않습니다.
 
 이미지 테스트는 Robolectric의 Native Graphics 모드로 이미지 디코딩을 실행했습니다. 손상된 합성 이미지 테스트에서 출력되는 decoder 메시지는 의도한 실패 입력에 대한 로그입니다.
 
@@ -107,3 +114,5 @@ Gradle Wrapper JAR를 저장소에 포함했고 Gradle 배포 ZIP의 SHA-256을 
 [2026-09-22 서버 오류 안내·Mock 전환 검증](../docs/worklogs/2026-09-22-이봉헌.md)
 
 [2026-09-27 저장 오류 수정·팀원 변경 검토](../docs/worklogs/2026-09-27-이봉헌.md)
+
+[2026-09-27 사진 입력·MediaStore 저장 보완 및 검증](../docs/worklogs/2026-09-27-이봉헌-입출력보완.md)

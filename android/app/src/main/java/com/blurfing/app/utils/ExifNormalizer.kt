@@ -18,7 +18,11 @@ object ExifNormalizer {
      * URI로부터 EXIF 회전 정보를 읽어 픽셀 자체를 정규화한 비트맵을 반환합니다.
      */
     fun getNormalizedBitmap(context: Context, uri: Uri, sourceBitmap: Bitmap): Bitmap {
-        val orientation = getExifOrientation(context, uri)
+        return normalize(sourceBitmap, getExifOrientation(context, uri))
+    }
+
+    /** Apply orientation already read from the same bytes as the decoded pixels. */
+    fun normalize(sourceBitmap: Bitmap, orientation: Int): Bitmap {
         if (orientation == ExifInterface.ORIENTATION_NORMAL || orientation == ExifInterface.ORIENTATION_UNDEFINED) {
             return sourceBitmap
         }

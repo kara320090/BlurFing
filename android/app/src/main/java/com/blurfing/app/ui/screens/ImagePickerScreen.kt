@@ -75,7 +75,7 @@ fun ImagePickerScreen(
                             textAlign = TextAlign.Center
                         )
                         Text(
-                            text = "손가락이 포함된 사진을 선택하고\n직접 손끝 영역을 확인한 뒤 처리하세요.",
+                            text = "손가락이 포함된 사진을 선택하고\n직접 손끝 영역을 확인한 뒤 처리하세요.\n15MB · 2,000만 화소 이하 사진을 지원합니다.",
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -90,7 +90,7 @@ fun ImagePickerScreen(
                             shape = RoundedCornerShape(12.dp),
                             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp)
                         ) {
-                            Text("갤러리에서 사진 선택 (BF-01)")
+                            Text("갤러리에서 사진 선택")
                         }
                     }
                 }
