@@ -1,18 +1,28 @@
 package com.blurfing.app
 
+import android.Manifest
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.app.ActivityCompat
 import com.blurfing.app.ui.screens.ComparisonScreen
 import com.blurfing.app.ui.screens.ImagePickerScreen
 import com.blurfing.app.ui.screens.ProcessingScreen
@@ -36,6 +46,36 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val uiState by viewModel.uiState.collectAsState()
                     val context = LocalContext.current
+                    // Keep the launched request ID across Activity recreation; never apply an old grant to a new photo.
+                    var savePermissionRequestId by rememberSaveable { mutableStateOf<String?>(null) }
+                    var showPermissionRationale by rememberSaveable { mutableStateOf(false) }
+                    val completeSavePermission: (Boolean) -> Unit = { granted ->
+                        val requestId = savePermissionRequestId
+                        savePermissionRequestId = null
+                        showPermissionRationale = false
+                        requestId?.let { viewModel.onSavePermissionResult(context, it, granted) }
+                    }
+                    val savePermissionLauncher = rememberLauncherForActivityResult(
+                        ActivityResultContracts.RequestPermission()
+                    ) { granted -> completeSavePermission(granted) }
+                    val launchSavePermission = {
+                        showPermissionRationale = false
+                        try {
+                            savePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        } catch (_: IllegalStateException) {
+                            completeSavePermission(false)
+                        }
+                    }
+
+                    if (showPermissionRationale) {
+                        AlertDialog(
+                            onDismissRequest = { completeSavePermission(false) },
+                            title = { Text("보호 사본 저장 권한") },
+                            text = { Text("보호 사본을 갤러리에 저장하려면 저장 공간 접근 권한이 필요합니다. 허용하지 않아도 사진 편집과 비교는 계속 이용할 수 있습니다.") },
+                            confirmButton = { TextButton(onClick = launchSavePermission) { Text("계속") } },
+                            dismissButton = { TextButton(onClick = { completeSavePermission(false) }) { Text("취소") } }
+                        )
+                    }
 
                     when (val state = uiState) {
                         is UiState.Ready -> {
@@ -82,8 +122,21 @@ class MainActivity : ComponentActivity() {
                                         protectedBitmap = state.protectedBitmap ?: state.originalBitmap,
                                         response = state.protectionResponse,
                                         isSaving = state.isSaving,
+                                        isAwaitingSavePermission = state.savePermissionRequestId != null,
                                         saveError = state.saveError,
-                                        onSaveProtectedImage = { viewModel.saveProtectedImage(context) },
+                                        onSaveProtectedImage = {
+                                            if (savePermissionRequestId == null) {
+                                                viewModel.saveProtectedImage(context)?.let { requestId ->
+                                                    savePermissionRequestId = requestId
+                                                    if (ActivityCompat.shouldShowRequestPermissionRationale(
+                                                            this@MainActivity, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                                                        showPermissionRationale = true
+                                                    } else {
+                                                        launchSavePermission()
+                                                    }
+                                                }
+                                            }
+                                        },
                                         onBack = { viewModel.navigateToStep(ScreenStep.REGION_EDITOR) }
                                     )
                                 }

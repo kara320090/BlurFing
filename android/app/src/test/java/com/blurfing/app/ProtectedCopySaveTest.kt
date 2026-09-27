@@ -1,5 +1,6 @@
 package com.blurfing.app
 
+import android.Manifest
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Color
@@ -23,6 +24,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.File
@@ -39,7 +41,10 @@ class ProtectedCopySaveTest {
     private val context: Context get() = RuntimeEnvironment.getApplication()
     private val savedUri = Uri.parse("content://media/external/images/media/101")
 
-    @Before fun setUp() { Dispatchers.setMain(Dispatchers.Unconfined) }
+    @Before fun setUp() {
+        Dispatchers.setMain(Dispatchers.Unconfined)
+        shadowOf(RuntimeEnvironment.getApplication()).grantPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+    }
     @After fun tearDown() {
         store.clear()
         Dispatchers.resetMain()

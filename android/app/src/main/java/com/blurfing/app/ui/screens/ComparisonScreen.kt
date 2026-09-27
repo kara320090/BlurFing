@@ -29,6 +29,7 @@ fun ComparisonScreen(
     onSaveProtectedImage: () -> Unit,
     onBack: () -> Unit,
     isSaving: Boolean = false,
+    isAwaitingSavePermission: Boolean = false,
     saveError: String? = null,
     modifier: Modifier = Modifier
 ) {
@@ -134,7 +135,7 @@ fun ComparisonScreen(
             }
             Button(
                 onClick = onSaveProtectedImage,
-                enabled = !isSaving,
+                enabled = !isSaving && !isAwaitingSavePermission,
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(vertical = 14.dp)
@@ -146,6 +147,7 @@ fun ComparisonScreen(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(when {
+                    isAwaitingSavePermission -> "저장 권한 확인 중…"
                     isSaving -> "저장 중…"
                     saveError != null -> "사본 저장 다시 시도"
                     else -> "보호 사본 저장 (원본 보존)"

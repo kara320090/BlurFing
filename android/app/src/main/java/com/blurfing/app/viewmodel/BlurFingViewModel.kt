@@ -1,8 +1,12 @@
 package com.blurfing.app.viewmodel
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Build
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.blurfing.app.BuildConfig
@@ -55,6 +59,7 @@ sealed interface UiState {
         val protectedBitmap: Bitmap? = null,
         val protectionResponse: ProtectionResponse? = null,
         val isSaving: Boolean = false,
+        val savePermissionRequestId: String? = null,
         val saveError: String? = null,
         val saveMessage: String? = null,
         val processingError: String? = null
@@ -187,7 +192,7 @@ open class BlurFingViewModel(
         val pending = current.copy(
             step = ScreenStep.PROCESSING, isProcessing = true, processingError = null,
             protectedBitmap = null, protectionResponse = null, saveMessage = null,
-            isSaving = false, saveError = null
+            isSaving = false, savePermissionRequestId = null, saveError = null
         )
         _uiState.value = pending
 
@@ -254,11 +259,41 @@ open class BlurFingViewModel(
     }
 
     /**
-     * 보호된 사본 저장 (BF-06). 원본을 덮어쓰지 않습니다.
+     * 보호된 사본 저장 (BF-06). 권한이 필요한 경우 UI가 요청할 식별자를 반환한다.
      */
-    fun saveProtectedImage(context: Context) {
+    fun saveProtectedImage(context: Context): String? {
+        val current = _uiState.value as? UiState.Ready ?: return null
+        if (current.step != ScreenStep.COMPARISON || current.isProcessing || current.isSaving ||
+            current.savePermissionRequestId != null || current.protectedBitmap == null) return null
+        if (!hasStoragePermission(context)) {
+            val requestId = UUID.randomUUID().toString()
+            _uiState.value = current.copy(savePermissionRequestId = requestId, saveError = null, saveMessage = null)
+            return requestId
+        }
+        writeProtectedImage(context, current)
+        return null
+    }
+
+    fun onSavePermissionResult(context: Context, requestId: String, granted: Boolean) {
         val current = _uiState.value as? UiState.Ready ?: return
-        if (current.step != ScreenStep.COMPARISON || current.isProcessing || current.isSaving) return
+        if (current.savePermissionRequestId != requestId || current.step != ScreenStep.COMPARISON) return
+        val ready = current.copy(savePermissionRequestId = null)
+        _uiState.value = ready
+        if (granted && hasStoragePermission(context)) {
+            writeProtectedImage(context, ready)
+        } else {
+            _uiState.value = ready.copy(
+                saveError = "사본을 저장하려면 저장 공간 접근 권한이 필요합니다. 다시 시도하거나 앱 설정에서 권한을 허용해 주세요.",
+                saveMessage = null
+            )
+        }
+    }
+
+    private fun hasStoragePermission(context: Context): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+
+    private fun writeProtectedImage(context: Context, current: UiState.Ready) {
         val protectedBitmap = current.protectedBitmap ?: return
         val saveId = UUID.randomUUID().toString()
         activeSaveId = saveId
@@ -300,7 +335,7 @@ open class BlurFingViewModel(
         activeSavingJob?.cancel()
         activeSavingJob = null
         val current = _uiState.value as? UiState.Ready ?: return
-        _uiState.value = current.copy(isSaving = false, saveMessage = null, saveError = null)
+        _uiState.value = current.copy(isSaving = false, savePermissionRequestId = null, saveMessage = null, saveError = null)
     }
 
     fun resetToIdle() {
