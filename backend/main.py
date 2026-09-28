@@ -96,16 +96,33 @@ def parse_regions(value: str | None) -> list[dict[str, float]] | None:
 
 @app.post("/v1/protect")
 async def protect_image(
-    image: UploadFile = File(...),
-    request_id: str = Form(...),
-    method: str = Form(...),
-    strength: str = Form(...),
+    image: UploadFile | None = File(None),
+    request_id: str | None = Form(None),
+    method: str | None = Form(None),
+    strength: str | None = Form(None),
     regions: str | None = Form(None),
 ):
     started = time.monotonic()
-    request_id = request_id.strip()
+    request_id = (request_id or "").strip()
     if not request_id:
         return error_response("", 400, "INVALID_REQUEST_ID", "request_id를 입력해야 합니다.")
+
+    missing_fields = [
+        field_name
+        for field_name, field_value in (
+            ("image", image),
+            ("method", method),
+            ("strength", strength),
+        )
+        if field_value is None
+    ]
+    if missing_fields:
+        return error_response(
+            request_id,
+            400,
+            "INVALID_REQUEST",
+            f"필수 입력값이 누락되었습니다: {', '.join(missing_fields)}",
+        )
 
     if method not in SUPPORTED_METHODS:
         return error_response(

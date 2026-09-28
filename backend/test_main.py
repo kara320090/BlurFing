@@ -209,3 +209,43 @@ def test_rejects_unsupported_image_type():
 
     assert response.status_code == 415
     assert response.json()["code"] == "UNSUPPORTED_IMAGE_TYPE"
+
+
+@pytest.mark.parametrize("missing_field", ["image", "method", "strength"])
+def test_missing_required_input_uses_common_error_response(missing_field):
+    data = {
+        "request_id": "synthetic-request-003",
+        "method": "gaussian_blur",
+        "strength": "0.5",
+    }
+    files = {"image": ("synthetic.png", synthetic_image(), "image/png")}
+    if missing_field == "image":
+        files = None
+    else:
+        data.pop(missing_field)
+
+    response = client.post("/v1/protect", data=data, files=files)
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "request_id": "synthetic-request-003",
+        "code": "INVALID_REQUEST",
+        "message": f"필수 입력값이 누락되었습니다: {missing_field}",
+        "retryable": False,
+    }
+
+
+def test_missing_request_id_uses_common_error_response():
+    response = client.post(
+        "/v1/protect",
+        data={"method": "gaussian_blur", "strength": "0.5"},
+        files={"image": ("synthetic.png", synthetic_image(), "image/png")},
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "request_id": "",
+        "code": "INVALID_REQUEST_ID",
+        "message": "request_id를 입력해야 합니다.",
+        "retryable": False,
+    }
