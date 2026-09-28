@@ -14,6 +14,8 @@ Android 8·9의 저장 권한 요청·허용 후 저장·거부 후 재시도를
 
 [Windows 센서 수집 도구](sensor/README.md)는 BioMini Slim 2의 SDK 연결·단일 영상 취득·BMP/PNG 저장을 준비한 별도 프로그램입니다. 합성 영상 저장과 오류 처리를 검증했으며, 실제 SDK·센서 취득은 수령 후 검증해야 합니다.
 
+2026-09-28 센서 인수인계: [조사·설치·담당 작업 정리](docs/sensor-handoff.md)와 [무료 FFV SDK용 저장 확장 소스](sensor/ffv-extension/README.md)를 공유합니다. FFV 공식 지원 목록에 BioMini Slim 2가 있어 드라이버·SDK·프로그램 구성이 맞으면 취득 동작을 기대할 근거가 있습니다. 실물 연결·취득·저장은 아직 확인하지 않았으며, 사진 파일의 보호 전후 비교는 별도 평가 엔진으로 연결합니다.
+
 ## 시작하기
 1. [안티그래비티 실행 프롬프트](docs/antigravity-prompt.md)를 읽고 개발 에이전트에 전달합니다.
 2. [요구사항](docs/requirements.md)과 [구조 및 경계](docs/architecture.md)를 확인합니다.

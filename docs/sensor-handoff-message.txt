@@ -1,0 +1,24 @@
+승빈아, 센서 파트 관련해서 지금까지 조사하고 준비한 걸 GitHub에 정리했어.
+
+GitHub: https://github.com/kara320090/BlurFing
+인수인계: https://github.com/kara320090/BlurFing/blob/main/docs/sensor-handoff.md
+main의 sensor/에 Windows 지문 수집 프로그램이 있어. 합성 영상 저장·오류 처리까지 확인했고, 실제 센서는 아직 구매하지 않아서 연결·취득 검증은 못 했어.
+
+제조사 Xperix에서는 BioMini SDK가 150만원(부가세 별도)이고, 이미지 저장 전용/교육용 모듈은 따로 없다고 답했어. 그래서 별도로 무료 Neurotechnology FFV SDK를 찾았고, 공식 지원 목록에 BioMini Slim 2가 있는 것까지 확인했어. 우리가 살 11번가 제품에서 실제로 되는지는 아직 확인해야 해.
+
+먼저 받을 것:
+1. Xperix 공식 드라이버
+https://tech.xperix.com/en/support/solutions/articles/69000857511--device-driver-biomini-windows
+2. 공식 FFV SDK 전체 ZIP
+https://download.neurotechnology.com/FreeFingerprintVerification_3_1_SDK_2026-03-30.zip
+3. GitHub의 sensor/ffv-extension 폴더
+https://github.com/kara320090/BlurFing/tree/main/sensor/ffv-extension
+공식 FFV 샘플에 BMP/PNG 저장 버튼을 붙인 소스와 빌드 스크립트야. README에 폴더 배치와 실행 순서를 적어뒀어. .NET Framework 4.8이 필요하고, GitHub 쪽 별도 UFS 센서 앱을 빌드할 때는 .NET 10 SDK가 필요해. SDK를 저장소 밖에 두면 -SdkRoot로 경로를 지정해서 빌드할 수 있어.
+
+공식 지원 모델이니까 드라이버·SDK·프로그램을 제대로 갖추면 동작을 기대할 근거가 있어. 아직 실물로 확인하지 않았다는 뜻이고, 11번가 제품이 잠겨 있다거나 안 된다는 증거를 확인한 것은 아니야.
+
+내 PC에 있는 기존 FFV ZIP은 다운로드가 중단된 파일이라 재사용하면 안 돼. 공식 전체 ZIP을 새로 받아야 해. 해외에서 찾은 Setup_BioMini_SDK_3.11.0.466.exe는 안전성이 확정되지 않아 실행 보류 상태이고 첨부하지 않았어.
+
+부탁할 작업은 판매 제품·SDK 호환 확인 → 드라이버와 실제 장치 연결 → 취득한 BMP/PNG 저장 → 실패/재연결/반복 측정 기록이야. 이후 재윤이와 비교 엔진을 정해서 보호 전후 평가를 연결하면 돼. FFV는 사진 파일을 넣어 전후 비교하는 용도로 쓸 수 없어서, 그 부분은 별도 엔진이 필요해.
+
+내가 Android와 통합을 맡고, 네가 센서 실장비 검증과 측정 도구를 이어받는 구성으로 진행하자. 자세한 조사·연락 현황·파일 위치·검사 결과는 위 GitHub 인수인계 문서에 모아뒀어.

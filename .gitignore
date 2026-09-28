@@ -39,3 +39,11 @@ sensor/vendor/
 sensor/sdk/
 sensor/**/UFScanner.dll
 sensor/**/UFMatcher.dll
+# FFV SDK downloads, generated executables and local registration data
+sensor/ffv-extension/FreeFingerprintVerification*/
+sensor/ffv-extension/*.zip
+sensor/ffv-extension/*.exe
+sensor/ffv-extension/*.exe.config
+sensor/ffv-extension/*.dll
+sensor/ffv-extension/*.dat
+sensor/ffv-extension/*.log
