@@ -4,6 +4,16 @@
 
 BioMini Slim 2용 Windows 준비 프로그램이다. **프로그램 실행·합성 영상 저장은 검증했으며, 실제 SDK·센서 취득은 아직 검증하지 않았다.** SDK와 하드웨어가 없을 때 실제 영상이나 일치 점수를 생성하지 않는다.
 
+## 2026-09-28 추가 조사와 인수인계
+
+[센서 파트 인수인계](../docs/sensor-handoff.md)에 다운로드 링크, 제조사 답변, 파일 검사 결과와 최승빈이 이어받을 실장비 확인 항목을 모았다. [FFV 저장 확장](ffv-extension/README.md)은 무료 Neurotechnology SDK의 공식 샘플을 이용하는 별도 준비 프로그램이다. 아래 UFS 앱과 SDK 사용 경로를 구분한다.
+
+**BioMini Slim 2는 FFV의 공식 지원 목록에 있다.** 정상 지원 장치에 맞는 드라이버·SDK·프로그램을 구성하면 취득 동작을 기대하는 것이 타당하다. 현재의 미검증 표기는 아직 우리 실물로 시험하지 않았다는 뜻이며, 11번가 제품이 잠겨 있거나 FFV와 비호환이라는 증거를 확인한 것은 아니다. [FFV 지원 목록](https://www.neurotechnology.com/cgi-bin/fingerprint-scanners-ffv.cgi)
+
+첫 검증은 공식 FFV 전체 패키지 준비 → 드라이버 설치 → 센서 USB 연결 → 공식 샘플에서 취득 → 확장에서 BMP/PNG 저장 순서다. 이 경로가 필요한 취득 기능을 충족하면 해당 목적의 제조사 유료 SDK 별도 구매는 필요하지 않을 수 있다. FFV는 사진 파일을 입력하는 평가 엔진으로는 사용할 수 없다. [FFV 기능 범위](https://www.neurotechnology.com/free-fingerprint-verification-sdk.html)
+
+FFV의 실제 취득·저장, 이미지 품질, 실패·재연결 복구는 실장비 확인 대상이다. 준비 소스에는 SDK 바이너리와 실제 생체 자료를 포함하지 않는다.
+
 ## 공식 다운로드와 설치
 
 2026-09-22 제조사 자료 확인:
@@ -17,7 +27,7 @@ BioMini Slim 2용 Windows 준비 프로그램이다. **프로그램 실행·합�
 | API 근거 | [제조사 DLL 호출 예제](https://tech.xperix.com/en/support/solutions/articles/69000867655-sample-python-code-for-biomini) | 초기화, 장치 수·핸들 조회, 한 장 취득, BMP 저장, 종료의 6개 UFS 함수 |
 | 아키텍처 | [SDK 비트 수 안내](https://tech.xperix.com/en/support/solutions/articles/69000457451--guide-tip-biomini-sdk-net-wrapper-and-windows-architecture) | 앱과 SDK DLL의 x64/x86를 맞춰야 함 |
 
-SDK는 공개 다운로드 파일을 찾지 못했으며 현재 설치되어 있지 않다. 임의 사이트의 DLL로 대체하지 않는다. 제조사 공식 샘플에 나온 함수로 어댑터를 작성했으나, 수령한 SDK의 헤더·라이선스·지원 버전 확인과 실제 센서 시험을 거쳐야 한다. SDK 라이선스를 우회하거나 유료 SDK 구매를 대신 진행하지 않았다.
+9월 22일에는 제조사 SDK의 공개 설치 파일을 찾지 못했다. 이후 해외 배포 파일을 발견했으나, 출처·안전성·사용 권한이 확정되지 않아 실행·설치는 보류했다. 제조사 공식 BioMini SDK는 구매 대상으로 안내되어 있으며, 무료 FFV는 별도 제품이다. 이 UFS 앱은 제조사 공식 샘플의 함수로 어댑터를 작성했으므로, 정식으로 확보한 SDK의 헤더·라이선스·지원 버전 확인과 실제 센서 시험을 거쳐야 한다. 자세한 조사와 설치파일 검사 결과는 [인수인계 문서](../docs/sensor-handoff.md)를 확인한다.
 
 이 작업 PC에는 공식 `Fingerprint_Driver.exe` 설치를 완료했다. 설치 파일 버전은 **2.2.1.2**, 실제 등록된 드라이버는 **3.0.3.0 (2022-10-26)**이다. 설치 완료 화면과 `pnputil /enum-drivers`의 Xperix `sfr.inf` 등록을 확인했다. 센서가 연결되어 정상 인식되었다는 뜻은 아니다.
 
