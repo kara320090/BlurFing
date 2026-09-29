@@ -3,11 +3,12 @@ import io
 import json
 import math
 import time
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.responses import JSONResponse
 from PIL import Image, UnidentifiedImageError
+from pydantic import BaseModel
 
 app = FastAPI(title="BlurFing Backend")
 app.state.protection_processor = None
@@ -16,6 +17,40 @@ MAX_IMAGE_SIZE_BYTES = 15 * 1024 * 1024
 MAX_IMAGE_PIXELS = 20_000_000
 SUPPORTED_IMAGE_TYPES = {"image/jpeg", "image/png"}
 SUPPORTED_METHODS = {"gaussian_blur"}
+
+
+class RegionResponse(BaseModel):
+    x: float
+    y: float
+    width: float
+    height: float
+
+
+class ProtectionResponse(BaseModel):
+    request_id: str
+    status: Literal["succeeded", "no_regions"]
+    result_kind: Literal["real"]
+    image_base64: str | None
+    mime_type: Literal["image/png"]
+    applied_regions: list[RegionResponse]
+    processing_ms: int
+    warnings: list[str]
+
+
+class ErrorResponse(BaseModel):
+    request_id: str
+    code: str
+    message: str
+    retryable: bool
+
+
+PROTECT_ERROR_RESPONSES = {
+    400: {"model": ErrorResponse, "description": "요청 값 또는 이미지가 올바르지 않음"},
+    413: {"model": ErrorResponse, "description": "이미지 용량 또는 해상도 제한 초과"},
+    415: {"model": ErrorResponse, "description": "지원하지 않는 이미지 형식"},
+    500: {"model": ErrorResponse, "description": "AI 처리 결과 검증 실패"},
+    503: {"model": ErrorResponse, "description": "AI 처리 모듈을 사용할 수 없음"},
+}
 
 
 @app.get("/")
@@ -101,7 +136,11 @@ def parse_regions(value: str | None) -> list[dict[str, float]] | None:
     return validated_regions
 
 
-@app.post("/v1/protect")
+@app.post(
+    "/v1/protect",
+    response_model=ProtectionResponse,
+    responses=PROTECT_ERROR_RESPONSES,
+)
 async def protect_image(
     image: UploadFile | None = File(None),
     request_id: str | None = Form(None),

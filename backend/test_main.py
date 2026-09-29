@@ -310,3 +310,17 @@ def test_missing_request_id_uses_common_error_response():
         "message": "request_id를 입력해야 합니다.",
         "retryable": False,
     }
+
+
+def test_openapi_defines_protection_success_and_error_responses():
+    operation = client.get("/openapi.json").json()["paths"]["/v1/protect"]["post"]
+    responses = operation["responses"]
+
+    assert {"200", "400", "413", "415", "500", "503"} <= set(responses)
+    assert responses["200"]["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/ProtectionResponse"
+    }
+    for status_code in ("400", "413", "415", "500", "503"):
+        assert responses[status_code]["content"]["application/json"]["schema"] == {
+            "$ref": "#/components/schemas/ErrorResponse"
+        }
