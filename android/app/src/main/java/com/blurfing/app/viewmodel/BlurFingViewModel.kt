@@ -20,6 +20,7 @@ import com.blurfing.app.repository.BackendAddress
 import com.blurfing.app.repository.ProtectionResponseValidator
 import com.blurfing.app.repository.ProtectionRepository
 import com.blurfing.app.utils.ImageSaver
+import com.blurfing.app.utils.CameraCaptureFiles
 import com.blurfing.app.utils.PhotoImportException
 import com.blurfing.app.utils.ProtectedImageDecoder
 import com.blurfing.app.utils.SelectedImageLoader
@@ -94,13 +95,24 @@ open class BlurFingViewModel(
      */
     fun onImageSelected(uri: Uri?, context: Context) {
         if (uri == null) return
+        importImage(uri, context)
+    }
+
+    fun onCameraImageCaptured(uri: Uri, context: Context): Job? {
+        if (!CameraCaptureFiles.isOwned(context, uri)) return null
+        return importImage(uri, context) {
+            CameraCaptureFiles.discard(context.applicationContext, uri)
+        }
+    }
+
+    private fun importImage(uri: Uri, context: Context, onFinished: (() -> Unit)? = null): Job {
         cancelSaving()
         cancelProtection()
         imageLoadingJob?.cancel()
 
         _uiState.value = UiState.Loading("사진을 불러오고 방향을 확인하는 중...")
 
-        imageLoadingJob = viewModelScope.launch {
+        val job = viewModelScope.launch {
             try {
                 val normalizedBitmap = SelectedImageLoader.load(context.applicationContext, uri)
 
@@ -127,6 +139,10 @@ open class BlurFingViewModel(
                 )
             }
         }
+        imageLoadingJob = job
+        // Completion handlers also run if cancellation happens before the coroutine starts.
+        if (onFinished != null) job.invokeOnCompletion { onFinished() }
+        return job
     }
 
     fun navigateToStep(step: ScreenStep) {

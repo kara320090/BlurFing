@@ -29,12 +29,15 @@ import com.blurfing.app.ui.screens.ProcessingScreen
 import com.blurfing.app.ui.screens.RegionEditorScreen
 import com.blurfing.app.ui.theme.BlurFingTheme
 import com.blurfing.app.viewmodel.BlurFingViewModel
+import com.blurfing.app.viewmodel.CameraCaptureViewModel
+import com.blurfing.app.utils.CameraCaptureContract
 import com.blurfing.app.viewmodel.ScreenStep
 import com.blurfing.app.viewmodel.UiState
 
 class MainActivity : ComponentActivity() {
 
     private val viewModel: BlurFingViewModel by viewModels()
+    private val cameraViewModel: CameraCaptureViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,6 +49,24 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val uiState by viewModel.uiState.collectAsState()
                     val context = LocalContext.current
+                    val pendingCameraUri by cameraViewModel.pendingUri.collectAsState()
+                    val cameraError by cameraViewModel.error.collectAsState()
+                    // Register independently of the current screen so a restored camera result is delivered.
+                    val cameraLauncher = rememberLauncherForActivityResult(CameraCaptureContract()) { success ->
+                        cameraViewModel.completeCapture(success)?.let { uri ->
+                            viewModel.onCameraImageCaptured(uri, context)
+                        }
+                    }
+                    val takePhoto: () -> Unit = {
+                        cameraViewModel.beginCapture()?.let { uri ->
+                            viewModel.clearError()
+                            try {
+                                cameraLauncher.launch(uri)
+                            } catch (error: Exception) {
+                                cameraViewModel.launchFailed(error)
+                            }
+                        }
+                    }
                     // Keep the launched request ID across Activity recreation; never apply an old grant to a new photo.
                     var savePermissionRequestId by rememberSaveable { mutableStateOf<String?>(null) }
                     var showPermissionRationale by rememberSaveable { mutableStateOf(false) }
@@ -89,7 +110,13 @@ class MainActivity : ComponentActivity() {
                                 ScreenStep.IMAGE_PICKER -> {
                                     ImagePickerScreen(
                                         uiState = state,
-                                        onImageSelected = { uri -> viewModel.onImageSelected(uri, context) },
+                                        onImageSelected = { uri ->
+                                            cameraViewModel.clearError()
+                                            viewModel.onImageSelected(uri, context)
+                                        },
+                                        onTakePhoto = takePhoto,
+                                        isCameraPending = pendingCameraUri != null,
+                                        cameraError = cameraError,
                                         onProceedToRegionEdit = { viewModel.navigateToStep(ScreenStep.REGION_EDITOR) },
                                         onReset = { viewModel.resetToIdle() }
                                     )
@@ -145,7 +172,13 @@ class MainActivity : ComponentActivity() {
                         else -> {
                             ImagePickerScreen(
                                 uiState = state,
-                                onImageSelected = { uri -> viewModel.onImageSelected(uri, context) },
+                                onImageSelected = { uri ->
+                                    cameraViewModel.clearError()
+                                    viewModel.onImageSelected(uri, context)
+                                },
+                                onTakePhoto = takePhoto,
+                                isCameraPending = pendingCameraUri != null,
+                                cameraError = cameraError,
                                 onProceedToRegionEdit = { viewModel.navigateToStep(ScreenStep.REGION_EDITOR) },
                                 onReset = { viewModel.resetToIdle() }
                             )

@@ -15,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -28,6 +27,9 @@ fun ImagePickerScreen(
     onImageSelected: (Uri?) -> Unit,
     onProceedToRegionEdit: () -> Unit,
     onReset: () -> Unit,
+    onTakePhoto: () -> Unit,
+    isCameraPending: Boolean = false,
+    cameraError: String? = null,
     modifier: Modifier = Modifier
 ) {
     val photoPickerLauncher = rememberLauncherForActivityResult(
@@ -75,18 +77,31 @@ fun ImagePickerScreen(
                             textAlign = TextAlign.Center
                         )
                         Text(
-                            text = "손가락이 포함된 사진을 선택하고\n직접 손끝 영역을 확인한 뒤 처리하세요.\n15MB · 2,000만 화소 이하 사진을 지원합니다.",
+                            text = "사진을 촬영하거나 갤러리에서 선택하고\n직접 손끝 영역을 확인한 뒤 처리하세요.\n15MB · 2,000만 화소 이하 사진을 지원합니다.",
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Button(
+                            onClick = onTakePhoto,
+                            enabled = !isCameraPending,
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp)
+                        ) {
+                            Text(if (isCameraPending) "촬영 결과를 기다리는 중…" else "카메라로 사진 촬영")
+                        }
+                        if (cameraError != null) {
+                            Text(cameraError, color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
+                        }
+                        Button(
                             onClick = {
                                 photoPickerLauncher.launch(
                                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                                 )
                             },
+                            enabled = !isCameraPending,
                             shape = RoundedCornerShape(12.dp),
                             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 14.dp)
                         ) {
@@ -190,9 +205,17 @@ fun ImagePickerScreen(
                                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                                 )
                             },
+                            enabled = !isCameraPending,
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                         ) {
-                            Text("다시 시도")
+                            Text("갤러리에서 다시 선택")
+                        }
+                        OutlinedButton(onClick = onTakePhoto, enabled = !isCameraPending) {
+                            Text("카메라로 다시 촬영")
+                        }
+                        if (cameraError != null) {
+                            Text(cameraError, color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
                         }
                     }
                 }

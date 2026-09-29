@@ -31,7 +31,7 @@ SNS 사진 속 손가락 지문 노출을 줄이는 Android 보호 앱 프로젝
 │   ├── components/
 │   │   └── FingertipOverlayCanvas.kt # 손끝 지문 패드 인터랙티브 오버레이 (BF-03)
 │   ├── screens/
-│   │   ├── ImagePickerScreen.kt      # 사진 선택 및 오류 안내 (BF-01)
+│   │   ├── ImagePickerScreen.kt      # 사진 선택·촬영 진입 및 오류 안내 (BF-01, BF-02)
 │   │   ├── RegionEditorScreen.kt     # 손끝 영역 확인/수정 (BF-03)
 │   │   ├── ProcessingScreen.kt       # 강도 설정 및 처리 진행/취소 (BF-04)
 │   │   └── ComparisonScreen.kt       # 전후 비교 및 사본 저장 (BF-05, BF-06)
@@ -40,10 +40,12 @@ SNS 사진 속 손가락 지문 노출을 줄이는 Android 보호 앱 프로젝
 │   ├── CoordinateTransformer.kt  # 뷰 픽셀 ↔ 정규화 좌표 양방향 변환
 │   ├── ExifNormalizer.kt         # EXIF 회전각 픽셀 반영 및 정규화
 │   ├── SelectedImageLoader.kt    # 파일 용량·해상도 검사 후 동일 바이트에서 픽셀·EXIF 읽기
+│   ├── CameraCapture.kt          # 촬영 전용 FileProvider·계약·임시 파일 관리
 │   ├── ImageSaver.kt             # MediaStore Scoped Storage 사본 저장 (BF-06)
 │   └── LocalBlurProcessor.kt     # 개발 프리뷰용 로컬 블러 (AI 성능 미주장)
 └── viewmodel/
-    └── BlurFingViewModel.kt      # 전체 화면 상태 및 취소/재시도 제어
+    ├── BlurFingViewModel.kt      # 전체 화면 상태 및 취소/재시도 제어
+    └── CameraCaptureViewModel.kt # 촬영 대기 URI 저장·복원, 취소·실패 처리
 ```
 
 ---
@@ -79,11 +81,24 @@ SNS 사진 속 손가락 지문 노출을 줄이는 Android 보호 앱 프로젝
 
 ## 4. 검증 결과 및 구분
 
-2026-09-28 추가 검증: JDK 21, Gradle 8.9, SDK 35에서 `testDebugUnitTest assembleDebug --max-workers=4` 통과. 테스트 **76개**, 실패·오류·건너뜀 0개. 디버그 APK는 `app/build/outputs/apk/debug/app-debug.apk`에 생성됩니다.
+### 기본 카메라 앱을 이용한 촬영 (BF-02)
+
+첫 화면의 `카메라로 사진 촬영`을 누르면 휴대폰의 카메라 앱이 열립니다. 촬영 결과는 앱 전용 캐시의 전체 이미지 파일로 받고, 기존 입력 제한과 EXIF 방향 보정을 적용한 뒤 영역 편집으로 이동합니다. 촬영을 취소하면 기존 화면을 유지하고, 카메라 앱 없음·실행 실패·빈 결과·읽기 실패에는 갤러리 선택 또는 재촬영을 안내합니다.
+
+직접 카메라 하드웨어를 제어하는 기능은 아니므로 이번 변경에는 `CAMERA` 권한을 추가하지 않았습니다. `FileProvider`는 `cache/camera-captures/`만 노출하며 이번 출력 URI에만 임시 읽기·쓰기 권한을 전달합니다. 요청 URI는 `SavedStateHandle`에 보관하고 이미지 픽셀은 저장 상태 Bundle에 넣지 않습니다. 이는 촬영 결과 대기를 복원하는 범위이며 편집 작업 전체의 프로세스 종료 후 복원은 아닙니다.
+
+촬영 취소·실행 실패 시 임시 파일을 제거하고, 성공 시에는 이미지 읽기가 완료되거나 실패·취소된 뒤 제거합니다. 정상적인 앱 처리에서는 촬영 원본을 갤러리에 자동 등록하지 않습니다. 앱 비정상 종료로 남은 파일은 다음 카메라 ViewModel 초기화에서 24시간이 지난 앱 생성 파일만 정리하며 복원된 진행 중 요청은 보존합니다. 외부 카메라 앱 자체의 별도 저장 동작은 기기별 확인 대상입니다.
+
+기기 확인 순서: 촬영 → 영역 편집 → Mock 처리 → 비교 → 보호 사본 저장. 촬영 취소, 카메라 앱 실행 실패, 촬영 중 화면 회전·앱 프로세스 재생성, 15MiB·2,000만 화소 제한 초과도 함께 확인합니다. 실제 스마트폰의 카메라 앱 호환성·시스템 결과 전달은 아직 검증하지 않았습니다.
+
+2026-09-28 카메라 입력 추가 후 검증: JDK 21, Gradle 8.9, SDK 35에서 `testDebugUnitTest assembleDebug --max-workers=4` 통과. 테스트 **91개**(기존 76개 + 카메라 15개), 실패·오류·건너뜀 0개. 디버그 APK는 `app/build/outputs/apk/debug/app-debug.apk`에 생성됩니다. [카메라 작업·검증 기록](../docs/worklogs/2026-09-28-이봉헌-camera.md)
+
+Windows 자동 테스트에서는 AndroidX FileProvider의 경로 구분자 차이 때문에 촬영 URI 발급·파일 I/O를 제어 가능한 테스트 구현으로 대체합니다. 앱의 실제 FileProvider 공유 범위는 Manifest·경로 XML로 검사하지만, 실제 카메라 앱에 대한 권한 전달·촬영은 기기 검증이 남아 있습니다.
 
 Gradle Wrapper JAR를 저장소에 포함했고 Gradle 배포 ZIP의 SHA-256을 고정했습니다. 최초 실행은 빌드 도구와 테스트용 Android 런타임 다운로드로 시간이 걸릴 수 있습니다. 로컬 JDK 21을 `JAVA_HOME`에 설정하고 Android SDK 경로를 비공개 `local.properties`에 지정하세요.
 
 ### 실행 및 완료한 검증
+- [x] **촬영 입력 (`CameraCaptureTest`, 15개)**: 촬영 전용 URI·Manifest·Intent, EXIF 보정 후 영역 편집, 중복 요청·취소·실행 실패·빈/손상 결과·상태 복원·임시 파일 정리·다른 파일 보호·기본 ViewModel 생성 검증
 - [x] **상대 좌표 변환 및 경계 검증 (`NormalizedRegionTest`)**: 0.0 ~ 1.0 범위 초과 및 `x+w > 1`, `y+h > 1`에 대한 안전한 예외 발생 및 `safeCreate` 클램핑 확인
 - [x] **종횡비 보정 및 좌표계 역변환 (`CoordinateTransformerTest`)**: Letterbox / Pillarbox 여백 계산 및 화면 터치 ↔ 원본 상대 좌표 간 정밀 변환 확인
 - [x] **Mock 및 통신 실패 복구 (`ProtectionRepositoryTest`)**: Mock 결과 반환, 15MB 초과 파일 사전 차단, 사전/진행 중 요청 취소(`CancellationException`) 동작 확인
