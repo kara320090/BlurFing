@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import io
 import json
@@ -15,6 +16,7 @@ app.state.protection_processor = None
 
 MAX_IMAGE_SIZE_BYTES = 15 * 1024 * 1024
 MAX_IMAGE_PIXELS = 20_000_000
+PROCESSOR_TIMEOUT_SECONDS = 30.0
 SUPPORTED_IMAGE_TYPES = {"image/jpeg", "image/png"}
 SUPPORTED_METHODS = {"gaussian_blur"}
 
@@ -50,6 +52,7 @@ PROTECT_ERROR_RESPONSES = {
     415: {"model": ErrorResponse, "description": "지원하지 않는 이미지 형식"},
     500: {"model": ErrorResponse, "description": "AI 처리 결과 검증 실패"},
     503: {"model": ErrorResponse, "description": "AI 처리 모듈을 사용할 수 없음"},
+    504: {"model": ErrorResponse, "description": "AI 처리 제한 시간 초과"},
 }
 
 
@@ -234,11 +237,28 @@ async def protect_image(
 
     try:
         # AI 담당 모듈은 입력 바이트와 설정을 받아 완성된 PNG 바이트를 반환한다.
-        result_bytes = processor(image_bytes, method, validated_strength, validated_regions)
+        result_bytes = await asyncio.wait_for(
+            asyncio.to_thread(
+                processor,
+                image_bytes,
+                method,
+                validated_strength,
+                validated_regions,
+            ),
+            timeout=PROCESSOR_TIMEOUT_SECONDS,
+        )
         with Image.open(io.BytesIO(result_bytes)) as result:
             if result.format != "PNG" or result.size != (width, height):
                 raise ValueError("처리 결과의 형식 또는 크기가 올바르지 않습니다.")
             result.load()
+    except TimeoutError:
+        return error_response(
+            request_id,
+            504,
+            "PROCESSING_TIMEOUT",
+            "보호 처리 시간이 제한을 초과했습니다.",
+            True,
+        )
     except Exception:
         return error_response(request_id, 500, "PROCESSING_FAILED", "보호 처리 결과를 확인할 수 없습니다.", True)
 

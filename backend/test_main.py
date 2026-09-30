@@ -1,11 +1,13 @@
 import base64
 import io
 import json
+import time
 
 import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
+import main as backend_main
 from main import MAX_IMAGE_SIZE_BYTES, app
 
 
@@ -184,6 +186,27 @@ def test_processor_failure_returns_server_error():
     assert "internal processor detail" not in response.text
 
 
+def test_processor_timeout_returns_retryable_gateway_timeout(monkeypatch):
+    def processor(*_):
+        time.sleep(0.05)
+        return synthetic_image()
+
+    monkeypatch.setattr(backend_main, "PROCESSOR_TIMEOUT_SECONDS", 0.01)
+    app.state.protection_processor = processor
+    try:
+        response = protect_request()
+    finally:
+        app.state.protection_processor = None
+
+    assert response.status_code == 504
+    assert response.json() == {
+        "request_id": "synthetic-request-001",
+        "code": "PROCESSING_TIMEOUT",
+        "message": "보호 처리 시간이 제한을 초과했습니다.",
+        "retryable": True,
+    }
+
+
 def test_empty_regions_do_not_claim_success():
     response = protect_request(regions="[]")
 
@@ -316,11 +339,11 @@ def test_openapi_defines_protection_success_and_error_responses():
     operation = client.get("/openapi.json").json()["paths"]["/v1/protect"]["post"]
     responses = operation["responses"]
 
-    assert {"200", "400", "413", "415", "500", "503"} <= set(responses)
+    assert {"200", "400", "413", "415", "500", "503", "504"} <= set(responses)
     assert responses["200"]["content"]["application/json"]["schema"] == {
         "$ref": "#/components/schemas/ProtectionResponse"
     }
-    for status_code in ("400", "413", "415", "500", "503"):
+    for status_code in ("400", "413", "415", "500", "503", "504"):
         assert responses[status_code]["content"]["application/json"]["schema"] == {
             "$ref": "#/components/schemas/ErrorResponse"
         }
