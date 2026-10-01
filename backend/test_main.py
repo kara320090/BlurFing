@@ -2,6 +2,8 @@ import base64
 import io
 import json
 import time
+from concurrent.futures import ThreadPoolExecutor
+from threading import Event
 
 import pytest
 from fastapi.testclient import TestClient
@@ -207,6 +209,70 @@ def test_processor_timeout_returns_retryable_gateway_timeout(monkeypatch):
     }
 
 
+def test_duplicate_request_id_is_rejected_while_first_request_is_processing():
+    processor_started = Event()
+    allow_processor_to_finish = Event()
+
+    def processor(*_):
+        processor_started.set()
+        if not allow_processor_to_finish.wait(timeout=2):
+            raise RuntimeError("test processor did not resume")
+        return synthetic_image()
+
+    app.state.protection_processor = processor
+    try:
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            first_request = executor.submit(protect_request)
+            assert processor_started.wait(timeout=2)
+            duplicate_response = protect_request()
+            allow_processor_to_finish.set()
+            first_response = first_request.result(timeout=2)
+    finally:
+        allow_processor_to_finish.set()
+        app.state.protection_processor = None
+
+    assert first_response.status_code == 200
+    assert duplicate_response.status_code == 409
+    assert duplicate_response.json() == {
+        "request_id": "synthetic-request-001",
+        "code": "REQUEST_IN_PROGRESS",
+        "message": "같은 request_id의 요청이 이미 처리 중입니다.",
+        "retryable": True,
+    }
+
+
+@pytest.mark.parametrize("first_outcome", ["success", "failure", "timeout"])
+def test_request_id_is_reusable_after_processing_finishes(first_outcome, monkeypatch):
+    if first_outcome == "success":
+        first_processor = lambda *_: synthetic_image()
+        expected_status = 200
+    elif first_outcome == "failure":
+        def first_processor(*_):
+            raise RuntimeError("synthetic failure")
+
+        expected_status = 500
+    else:
+        def first_processor(*_):
+            time.sleep(0.05)
+            return synthetic_image()
+
+        monkeypatch.setattr(backend_main, "PROCESSOR_TIMEOUT_SECONDS", 0.01)
+        expected_status = 504
+
+    app.state.protection_processor = first_processor
+    try:
+        first_response = protect_request()
+        if first_outcome == "timeout":
+            monkeypatch.setattr(backend_main, "PROCESSOR_TIMEOUT_SECONDS", 1.0)
+        app.state.protection_processor = lambda *_: synthetic_image()
+        retry_response = protect_request()
+    finally:
+        app.state.protection_processor = None
+
+    assert first_response.status_code == expected_status
+    assert retry_response.status_code == 200
+
+
 def test_empty_regions_do_not_claim_success():
     response = protect_request(regions="[]")
 
@@ -339,11 +405,11 @@ def test_openapi_defines_protection_success_and_error_responses():
     operation = client.get("/openapi.json").json()["paths"]["/v1/protect"]["post"]
     responses = operation["responses"]
 
-    assert {"200", "400", "413", "415", "500", "503", "504"} <= set(responses)
+    assert {"200", "400", "409", "413", "415", "500", "503", "504"} <= set(responses)
     assert responses["200"]["content"]["application/json"]["schema"] == {
         "$ref": "#/components/schemas/ProtectionResponse"
     }
-    for status_code in ("400", "413", "415", "500", "503", "504"):
+    for status_code in ("400", "409", "413", "415", "500", "503", "504"):
         assert responses[status_code]["content"]["application/json"]["schema"] == {
             "$ref": "#/components/schemas/ErrorResponse"
         }

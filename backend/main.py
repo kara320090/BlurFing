@@ -3,6 +3,7 @@ import base64
 import io
 import json
 import math
+import threading
 import time
 from typing import Any, Literal
 
@@ -19,6 +20,8 @@ MAX_IMAGE_PIXELS = 20_000_000
 PROCESSOR_TIMEOUT_SECONDS = 30.0
 SUPPORTED_IMAGE_TYPES = {"image/jpeg", "image/png"}
 SUPPORTED_METHODS = {"gaussian_blur"}
+IN_FLIGHT_REQUEST_IDS: set[str] = set()
+IN_FLIGHT_REQUEST_IDS_LOCK = threading.Lock()
 
 
 class RegionResponse(BaseModel):
@@ -48,6 +51,7 @@ class ErrorResponse(BaseModel):
 
 PROTECT_ERROR_RESPONSES = {
     400: {"model": ErrorResponse, "description": "요청 값 또는 이미지가 올바르지 않음"},
+    409: {"model": ErrorResponse, "description": "같은 요청 ID가 이미 처리 중임"},
     413: {"model": ErrorResponse, "description": "이미지 용량 또는 해상도 제한 초과"},
     415: {"model": ErrorResponse, "description": "지원하지 않는 이미지 형식"},
     500: {"model": ErrorResponse, "description": "AI 처리 결과 검증 실패"},
@@ -95,6 +99,19 @@ def parse_strength(value: str) -> float:
     if not math.isfinite(strength) or not 0 <= strength <= 1:
         raise ValueError("strength는 0에서 1 사이의 숫자여야 합니다.")
     return strength
+
+
+def claim_request_id(request_id: str) -> bool:
+    with IN_FLIGHT_REQUEST_IDS_LOCK:
+        if request_id in IN_FLIGHT_REQUEST_IDS:
+            return False
+        IN_FLIGHT_REQUEST_IDS.add(request_id)
+        return True
+
+
+def release_request_id(request_id: str) -> None:
+    with IN_FLIGHT_REQUEST_IDS_LOCK:
+        IN_FLIGHT_REQUEST_IDS.discard(request_id)
 
 
 def parse_regions(value: str | None) -> list[dict[str, float]] | None:
@@ -232,43 +249,55 @@ async def protect_image(
         }
 
     processor = app.state.protection_processor
-    if processor is None:
+    if not callable(processor):
         return error_response(request_id, 503, "PROCESSOR_UNAVAILABLE", "보호 처리 모듈을 사용할 수 없습니다.", True)
 
-    try:
-        # AI 담당 모듈은 입력 바이트와 설정을 받아 완성된 PNG 바이트를 반환한다.
-        result_bytes = await asyncio.wait_for(
-            asyncio.to_thread(
-                processor,
-                image_bytes,
-                method,
-                validated_strength,
-                validated_regions,
-            ),
-            timeout=PROCESSOR_TIMEOUT_SECONDS,
-        )
-        with Image.open(io.BytesIO(result_bytes)) as result:
-            if result.format != "PNG" or result.size != (width, height):
-                raise ValueError("처리 결과의 형식 또는 크기가 올바르지 않습니다.")
-            result.load()
-    except TimeoutError:
+    if not claim_request_id(request_id):
         return error_response(
             request_id,
-            504,
-            "PROCESSING_TIMEOUT",
-            "보호 처리 시간이 제한을 초과했습니다.",
+            409,
+            "REQUEST_IN_PROGRESS",
+            "같은 request_id의 요청이 이미 처리 중입니다.",
             True,
         )
-    except Exception:
-        return error_response(request_id, 500, "PROCESSING_FAILED", "보호 처리 결과를 확인할 수 없습니다.", True)
 
-    return {
-        "request_id": request_id,
-        "status": "succeeded",
-        "result_kind": "real",
-        "image_base64": base64.b64encode(result_bytes).decode("ascii"),
-        "mime_type": "image/png",
-        "applied_regions": validated_regions,
-        "processing_ms": round((time.monotonic() - started) * 1000),
-        "warnings": [],
-    }
+    try:
+        try:
+            # AI 담당 모듈은 입력 바이트와 설정을 받아 완성된 PNG 바이트를 반환한다.
+            result_bytes = await asyncio.wait_for(
+                asyncio.to_thread(
+                    processor,
+                    image_bytes,
+                    method,
+                    validated_strength,
+                    validated_regions,
+                ),
+                timeout=PROCESSOR_TIMEOUT_SECONDS,
+            )
+            with Image.open(io.BytesIO(result_bytes)) as result:
+                if result.format != "PNG" or result.size != (width, height):
+                    raise ValueError("처리 결과의 형식 또는 크기가 올바르지 않습니다.")
+                result.load()
+        except TimeoutError:
+            return error_response(
+                request_id,
+                504,
+                "PROCESSING_TIMEOUT",
+                "보호 처리 시간이 제한을 초과했습니다.",
+                True,
+            )
+        except Exception:
+            return error_response(request_id, 500, "PROCESSING_FAILED", "보호 처리 결과를 확인할 수 없습니다.", True)
+
+        return {
+            "request_id": request_id,
+            "status": "succeeded",
+            "result_kind": "real",
+            "image_base64": base64.b64encode(result_bytes).decode("ascii"),
+            "mime_type": "image/png",
+            "applied_regions": validated_regions,
+            "processing_ms": round((time.monotonic() - started) * 1000),
+            "warnings": [],
+        }
+    finally:
+        release_request_id(request_id)
