@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.blurfing.app.model.ProtectionMethod
+import com.blurfing.app.model.ProcessingSettings
 import com.blurfing.app.repository.BackendAddress
 import kotlin.math.roundToInt
 
@@ -23,16 +24,18 @@ import kotlin.math.roundToInt
 @Composable
 fun ProcessingScreen(
     isProcessing: Boolean,
+    settings: ProcessingSettings,
+    onSettingsChanged: (ProcessingSettings) -> Unit,
     onStartProcessing: (ProtectionMethod, Float, String?) -> Unit,
     onCancelProcessing: () -> Unit,
     onBack: () -> Unit,
     processingError: String? = null,
     modifier: Modifier = Modifier
 ) {
-    var selectedMethod by remember { mutableStateOf(ProtectionMethod.GAUSSIAN_BLUR) }
-    var strength by rememberSaveable { mutableFloatStateOf(0.5f) }
-    var useServer by rememberSaveable { mutableStateOf(false) }
-    var serverAddress by rememberSaveable { mutableStateOf(BackendAddress.EMULATOR_DEFAULT) }
+    val selectedMethod = settings.method
+    val strength = settings.strength
+    val useServer = settings.useServer
+    val serverAddress = settings.serverAddress
 
     Scaffold(
         topBar = {
@@ -118,13 +121,13 @@ fun ProcessingScreen(
                         )
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(checked = useServer, onCheckedChange = { useServer = it })
+                            Checkbox(checked = useServer, onCheckedChange = { onSettingsChanged(settings.copy(useServer = it)) })
                             Text("백엔드 서버에서 처리")
                         }
                         if (useServer) {
                             OutlinedTextField(
                                 value = serverAddress,
-                                onValueChange = { serverAddress = it },
+                                onValueChange = { onSettingsChanged(settings.copy(serverAddress = it)) },
                                 label = { Text("서버 주소") },
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth()
@@ -160,7 +163,7 @@ fun ProcessingScreen(
                             }
                             Slider(
                                 value = strength,
-                                onValueChange = { strength = it },
+                                onValueChange = { onSettingsChanged(settings.copy(strength = it)) },
                                 valueRange = 0.1f..1.0f,
                                 steps = 9
                             )
