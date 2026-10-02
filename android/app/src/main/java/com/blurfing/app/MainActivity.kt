@@ -164,6 +164,7 @@ class MainActivity : ComponentActivity() {
                                         originalBitmap = state.originalBitmap,
                                         protectedBitmap = state.protectedBitmap ?: state.originalBitmap,
                                         response = state.protectionResponse,
+                                        regions = state.protectionResponse?.appliedRegions ?: state.regions,
                                         isSaving = state.isSaving,
                                         isAwaitingSavePermission = state.savePermissionRequestId != null,
                                         saveError = state.saveError,
