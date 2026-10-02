@@ -1,24 +1,31 @@
 package com.blurfing.app.ui.screens
 
 import android.graphics.Bitmap
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Compare
-import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import com.blurfing.app.model.EvaluationPresentation
+import com.blurfing.app.model.NormalizedRegion
 import com.blurfing.app.model.ProtectionResponse
+import com.blurfing.app.utils.ComparisonCrop
+import java.util.Locale
+import kotlin.math.min
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,121 +38,85 @@ fun ComparisonScreen(
     isSaving: Boolean = false,
     isAwaitingSavePermission: Boolean = false,
     saveError: String? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    regions: List<NormalizedRegion> = response?.appliedRegions.orEmpty()
 ) {
-    var showProtectedOnly by remember { mutableStateOf(true) }
+    var showProtectedOnly by rememberSaveable(response?.requestId) { mutableStateOf(true) }
+    var sideBySide by rememberSaveable(response?.requestId) { mutableStateOf(false) }
+    var selectedRegion by rememberSaveable(response?.requestId) { mutableIntStateOf(-1) }
+    var zoom by rememberSaveable(response?.requestId) { mutableFloatStateOf(1f) }
+    val crop = remember(originalBitmap, regions, selectedRegion, zoom) {
+        ComparisonCrop.calculate(originalBitmap.width, originalBitmap.height, regions.getOrNull(selectedRegion), zoom)
+    }
+    val evaluation = remember(response) { EvaluationPresentation.from(response) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("전후 비교 및 저장 (BF-05, BF-06)") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "뒤로가기")
+    Scaffold(topBar = {
+        TopAppBar(title = { Text("전후 비교 및 저장") }, navigationIcon = {
+            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로가기") }
+        })
+    }, modifier = modifier.fillMaxSize()) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected = !sideBySide, onClick = { sideBySide = false }, label = { Text("한 장씩") })
+                FilterChip(selected = sideBySide, onClick = { sideBySide = true }, label = { Text("나란히 비교") })
+            }
+            if (!sideBySide) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(if (showProtectedOnly) "처리본 표시 중" else "원본 표시 중")
+                    TextButton(onClick = { showProtectedOnly = !showProtectedOnly }) {
+                        Text(if (showProtectedOnly) "원본 보기" else "보호본 보기")
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            )
-        },
-        modifier = modifier.fillMaxSize()
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // 비교 상태 안내 태그
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    color = if (showProtectedOnly) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        text = if (showProtectedOnly) "✓ 처리본 표시 중" else "● 원본 표시 중",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = if (showProtectedOnly) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                    )
-                }
-
-                FilledTonalButton(
-                    onClick = { showProtectedOnly = !showProtectedOnly },
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Icon(Icons.Default.Compare, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(if (showProtectedOnly) "원본 보기" else "보호본 보기")
                 }
             }
-
-            // 이미지 표시 영역
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .background(Color.Black.copy(alpha = 0.05f), RoundedCornerShape(12.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                val currentBitmap = if (showProtectedOnly) protectedBitmap else originalBitmap
-                Image(
-                    bitmap = currentBitmap.asImageBitmap(),
-                    contentDescription = if (showProtectedOnly) "보호본 이미지" else "원본 이미지",
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-
-            // Mock 경고 및 결과 안내
-            if (response != null && response.resultKind == "mock") {
-                Surface(
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = "[Mock 결과] 본 결과는 UI 및 통신 개발용이며 실제 AI 모델 및 센서 평가는 진행되지 않았습니다.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(10.dp),
-                        textAlign = TextAlign.Center
-                    )
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected = selectedRegion == -1, onClick = { selectedRegion = -1; zoom = 1f }, label = { Text("전체") })
+                regions.forEachIndexed { index, _ ->
+                    FilterChip(selected = selectedRegion == index, onClick = { selectedRegion = index; zoom = 1f },
+                        label = { Text("영역 ${index + 1}") })
                 }
             }
-            if (response?.resultKind == "real") {
-                Text("서버 처리 이미지 · 지문 보호 성능은 별도 평가가 필요합니다.",
+            if (sideBySide) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(Modifier.weight(1f)) {
+                        Text("원본")
+                        CroppedPhoto(originalBitmap, crop, "원본 이미지", Modifier.fillMaxWidth().height(300.dp))
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text("처리본")
+                        CroppedPhoto(protectedBitmap, crop, "보호본 이미지", Modifier.fillMaxWidth().height(300.dp))
+                    }
+                }
+            } else {
+                CroppedPhoto(if (showProtectedOnly) protectedBitmap else originalBitmap, crop,
+                    if (showProtectedOnly) "보호본 이미지" else "원본 이미지", Modifier.fillMaxWidth().height(300.dp))
+            }
+            Text("${if (selectedRegion < 0) "전체 사진" else "영역 ${selectedRegion + 1}"} · 추가 확대 ${String.format(Locale.ROOT, "%.1f", zoom)}배")
+            Slider(value = zoom, onValueChange = { zoom = it }, valueRange = 1f..4f,
+                modifier = Modifier.semantics { contentDescription = "비교 확대 배율" })
+            Text("양쪽 사진에 같은 영역과 배율을 적용합니다. 저장되는 사본의 크기는 바뀌지 않습니다.",
+                style = MaterialTheme.typography.bodySmall)
+            if (response?.resultKind == "mock") {
+                Text("[Mock 결과] UI 확인용 프리뷰이며 실제 AI 보호 성능을 나타내지 않습니다.",
+                    style = MaterialTheme.typography.bodySmall)
+            } else if (response?.resultKind == "real") {
+                Text("서버 처리 이미지 · 보호 성능은 아래 측정 자료와 별도로 확인하세요.", style = MaterialTheme.typography.bodySmall)
+            }
+            response?.processingMs?.takeIf { it >= 0 }?.let {
+                Text("서버 보고 처리 시간: ${it}ms", style = MaterialTheme.typography.bodySmall)
+            }
+            HorizontalDivider()
+            Text("지문 평가", style = MaterialTheme.typography.titleMedium)
+            Text(evaluation.message, style = MaterialTheme.typography.bodySmall)
+            evaluation.verifiedReport?.let {
+                Text("원본 점수: ${it.originalScore}  /  처리본 점수: ${it.protectedScore}")
+                Text("단위: ${it.scoreUnit}\n엔진: ${it.engine} ${it.engineVersion}\n측정 시각: ${it.measuredAt}\n조건: ${it.conditions}\n자료: ${it.sampleId} / 참조: ${it.referenceId}",
                     style = MaterialTheme.typography.bodySmall)
             }
-
-            // 하단 저장 버튼
-            if (saveError != null) {
-                Text(
-                    text = saveError,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-            Button(
-                onClick = onSaveProtectedImage,
-                enabled = !isSaving && !isAwaitingSavePermission,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(vertical = 14.dp)
-            ) {
-                if (isSaving) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                } else {
-                    Icon(Icons.Default.Save, contentDescription = null)
-                }
-                Spacer(modifier = Modifier.width(8.dp))
+            saveError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+            Button(onClick = onSaveProtectedImage, enabled = !isSaving && !isAwaitingSavePermission,
+                modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 14.dp)) {
                 Text(when {
                     isAwaitingSavePermission -> "저장 권한 확인 중…"
                     isSaving -> "저장 중…"
@@ -154,5 +125,19 @@ fun ComparisonScreen(
                 })
             }
         }
+    }
+}
+
+@Composable
+private fun CroppedPhoto(bitmap: Bitmap, crop: ComparisonCrop, description: String, modifier: Modifier) {
+    val image = remember(bitmap) { bitmap.asImageBitmap() }
+    val background = MaterialTheme.colorScheme.surfaceVariant
+    Canvas(modifier.background(background).semantics { contentDescription = description }) {
+        val scale = min(size.width / crop.width, size.height / crop.height)
+        val width = (crop.width * scale).roundToInt().coerceAtLeast(1)
+        val height = (crop.height * scale).roundToInt().coerceAtLeast(1)
+        drawImage(image, srcOffset = IntOffset(crop.left, crop.top), srcSize = IntSize(crop.width, crop.height),
+            dstOffset = IntOffset(((size.width - width) / 2).roundToInt(), ((size.height - height) / 2).roundToInt()),
+            dstSize = IntSize(width, height))
     }
 }
