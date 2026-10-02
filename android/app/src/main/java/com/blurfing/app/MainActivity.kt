@@ -23,6 +23,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
+import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.blurfing.app.model.ProcessingSettingsStore
+import com.blurfing.app.utils.DraftSession
 import com.blurfing.app.ui.screens.ComparisonScreen
 import com.blurfing.app.ui.screens.ImagePickerScreen
 import com.blurfing.app.ui.screens.ProcessingScreen
@@ -36,7 +41,14 @@ import com.blurfing.app.viewmodel.UiState
 
 class MainActivity : ComponentActivity() {
 
-    private val viewModel: BlurFingViewModel by viewModels()
+    private val viewModel: BlurFingViewModel by viewModels {
+        viewModelFactory {
+            initializer {
+                BlurFingViewModel(draftSession = DraftSession(application, createSavedStateHandle()),
+                    settingsStore = ProcessingSettingsStore(application))
+            }
+        }
+    }
     private val cameraViewModel: CameraCaptureViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,6 +60,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val uiState by viewModel.uiState.collectAsState()
+                    val processingSettings by viewModel.settings.collectAsState()
                     val context = LocalContext.current
                     val pendingCameraUri by cameraViewModel.pendingUri.collectAsState()
                     val cameraError by cameraViewModel.error.collectAsState()
@@ -125,6 +138,7 @@ class MainActivity : ComponentActivity() {
                                     RegionEditorScreen(
                                         bitmap = state.originalBitmap,
                                         regions = state.regions,
+                                        sessionNotice = state.sessionNotice,
                                         onAddRegion = { viewModel.addRegion() },
                                         onDeleteRegion = { index -> viewModel.deleteRegion(index) },
                                         onUpdateRegion = { index, region -> viewModel.updateRegion(index, region) },
@@ -135,6 +149,8 @@ class MainActivity : ComponentActivity() {
                                 ScreenStep.PROCESSING -> {
                                     ProcessingScreen(
                                         isProcessing = state.isProcessing,
+                                        settings = processingSettings,
+                                        onSettingsChanged = viewModel::updateSettings,
                                         onStartProcessing = { method, strength, serverUrl ->
                                             viewModel.startProtection(method, strength, serverUrl)
                                         },
@@ -148,6 +164,7 @@ class MainActivity : ComponentActivity() {
                                         originalBitmap = state.originalBitmap,
                                         protectedBitmap = state.protectedBitmap ?: state.originalBitmap,
                                         response = state.protectionResponse,
+                                        regions = state.protectionResponse?.appliedRegions ?: state.regions,
                                         isSaving = state.isSaving,
                                         isAwaitingSavePermission = state.savePermissionRequestId != null,
                                         saveError = state.saveError,

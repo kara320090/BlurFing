@@ -24,6 +24,9 @@ import com.blurfing.app.utils.CameraCaptureFiles
 import com.blurfing.app.utils.PhotoImportException
 import com.blurfing.app.utils.ProtectedImageDecoder
 import com.blurfing.app.utils.SelectedImageLoader
+import com.blurfing.app.utils.DraftSession
+import com.blurfing.app.model.ProcessingSettings
+import com.blurfing.app.model.ProcessingSettingsStore
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -63,7 +66,8 @@ sealed interface UiState {
         val savePermissionRequestId: String? = null,
         val saveError: String? = null,
         val saveMessage: String? = null,
-        val processingError: String? = null
+        val processingError: String? = null,
+        val sessionNotice: String? = null
     ) : UiState
     data class Error(
         val message: String,
@@ -77,11 +81,23 @@ open class BlurFingViewModel(
     private val apiRepositoryFactory: (String) -> ProtectionRepository = { ApiProtectionRepository(it) },
     private val saveImage: suspend (Context, Bitmap) -> Result<Uri> = { context, bitmap ->
         ImageSaver.saveProtectedCopy(context, bitmap)
-    }
+    },
+    private val draftSession: DraftSession? = null,
+    private val settingsStore: ProcessingSettingsStore? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Idle)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
+    private val _settings = MutableStateFlow(settingsStore?.load() ?: ProcessingSettings())
+    val settings: StateFlow<ProcessingSettings> = _settings.asStateFlow()
+
+    fun updateSettings(settings: ProcessingSettings) {
+        if ((_uiState.value as? UiState.Ready)?.isProcessing == true) return
+        if (!settings.strength.isFinite() || settings.strength !in 0.1f..1f) return
+        val normalized = settings.copy(serverAddress = settings.serverAddress.take(2048))
+        _settings.value = normalized
+        settingsStore?.save(normalized)
+    }
 
     private var activeProcessingJob: Job? = null
     private var activeRequestId: String? = null
@@ -89,6 +105,26 @@ open class BlurFingViewModel(
     private var imageLoadingJob: Job? = null
     private var activeSavingJob: Job? = null
     private var activeSaveId: String? = null
+
+    init {
+        if (draftSession?.hasDraft == true) {
+            _uiState.value = UiState.Loading("이전 사진과 수정 영역을 복원하는 중...")
+            imageLoadingJob = viewModelScope.launch {
+                try {
+                    val restored = draftSession.restore()
+                    _uiState.value = UiState.Ready(ScreenStep.REGION_EDITOR, Uri.EMPTY,
+                        restored.bitmap, restored.regions,
+                        sessionNotice = "이전 사진과 영역을 복원했습니다. 보호 결과는 다시 처리해 주세요.")
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (_: Exception) {
+                    draftSession.clear()
+                    _uiState.value = UiState.Error("이전 사진을 복원할 수 없습니다. 사진을 다시 선택해 주세요.")
+                }
+            }
+        }
+        viewModelScope.launch { draftSession?.removeExpired() }
+    }
 
     /**
      * 사진 선택 및 EXIF 정규화 (BF-01, BF-02).
@@ -109,6 +145,7 @@ open class BlurFingViewModel(
         cancelSaving()
         cancelProtection()
         imageLoadingJob?.cancel()
+        draftSession?.clear()
 
         _uiState.value = UiState.Loading("사진을 불러오고 방향을 확인하는 중...")
 
@@ -122,11 +159,25 @@ open class BlurFingViewModel(
                     NormalizedRegion(x = 0.52f, y = 0.28f, width = 0.12f, height = 0.16f)
                 )
 
+                var sessionNotice: String? = null
+                if (draftSession != null) {
+                    try {
+                        val token = draftSession.create(normalizedBitmap)
+                        draftSession.attach(token, initialRegions)
+                    } catch (error: CancellationException) {
+                        normalizedBitmap.recycle()
+                        throw error
+                    } catch (_: Exception) {
+                        sessionNotice = "임시 복원 파일을 만들지 못했습니다. 앱이 종료되면 사진을 다시 선택해야 합니다."
+                    }
+                }
+
                 _uiState.value = UiState.Ready(
                     step = ScreenStep.REGION_EDITOR,
                     originalUri = uri,
                     originalBitmap = normalizedBitmap,
-                    regions = initialRegions
+                    regions = initialRegions,
+                    sessionNotice = sessionNotice
                 )
             } catch (e: CancellationException) {
                 throw e
@@ -160,6 +211,7 @@ open class BlurFingViewModel(
         if (current is UiState.Ready && index in current.regions.indices) {
             val updated = current.regions.toMutableList().apply { set(index, region) }
             _uiState.value = current.copy(regions = updated)
+            draftSession?.updateRegions(updated)
         }
     }
 
@@ -168,6 +220,7 @@ open class BlurFingViewModel(
         if (current is UiState.Ready) {
             val newRegion = NormalizedRegion(x = 0.4f, y = 0.4f, width = 0.15f, height = 0.15f)
             _uiState.value = current.copy(regions = current.regions + newRegion)
+            draftSession?.updateRegions(current.regions + newRegion)
         }
     }
 
@@ -176,6 +229,7 @@ open class BlurFingViewModel(
         if (current is UiState.Ready && index in current.regions.indices) {
             val updated = current.regions.toMutableList().apply { removeAt(index) }
             _uiState.value = current.copy(regions = updated)
+            draftSession?.updateRegions(updated)
         }
     }
 
@@ -355,6 +409,7 @@ open class BlurFingViewModel(
     }
 
     fun resetToIdle() {
+        draftSession?.clear()
         cancelSaving()
         imageLoadingJob?.cancel()
         imageLoadingJob = null
