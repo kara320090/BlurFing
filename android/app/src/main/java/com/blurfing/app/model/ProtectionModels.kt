@@ -45,7 +45,9 @@ data class ProtectionResponse(
     @SerialName("processing_ms")
     val processingMs: Long? = null,
     @SerialName("warnings")
-    val warnings: List<String> = emptyList()
+    val warnings: List<String> = emptyList(),
+    @SerialName("evaluation")
+    val evaluation: EvaluationMetrics? = null
 )
 
 /**
@@ -53,16 +55,31 @@ data class ProtectionResponse(
  * 지문 매칭 점수를 본인 일치 확률(0~100%)로 임의 변환하지 않으며,
  * 미측정 상태는 null로 명확히 유지합니다.
  */
+@Serializable
 data class EvaluationMetrics(
+    @SerialName("sample_id")
     val sampleId: String? = null,
+    @SerialName("reference_id")
     val referenceId: String? = null,
     val engine: String? = null,
+    @SerialName("original_score")
     val originalScore: Double? = null,
+    @SerialName("protected_score")
     val protectedScore: Double? = null,
-    val isValidOriginal: Boolean = true,
+    @SerialName("is_valid_original")
+    val isValidOriginal: Boolean? = null,
+    @SerialName("measured_at")
     val measuredAt: String? = null,
-    val isMock: Boolean = true
+    @SerialName("is_mock")
+    val isMock: Boolean = true,
+    @SerialName("request_id")
+    val requestId: String? = null,
+    @SerialName("engine_version")
+    val engineVersion: String? = null,
+    @SerialName("score_unit")
+    val scoreUnit: String? = null,
+    val conditions: String? = null
 ) {
     val isMeasured: Boolean
-        get() = originalScore != null && protectedScore != null
+        get() = originalScore?.isFinite() == true && protectedScore?.isFinite() == true
 }

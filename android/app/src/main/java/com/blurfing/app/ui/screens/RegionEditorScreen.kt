@@ -34,6 +34,7 @@ fun RegionEditorScreen(
     onUpdateRegion: (Int, NormalizedRegion) -> Unit,
     onProceedToSettings: () -> Unit,
     onBack: () -> Unit,
+    sessionNotice: String? = null,
     modifier: Modifier = Modifier
 ) {
     var selectedIndex by remember { mutableStateOf<Int?>(if (regions.isNotEmpty()) 0 else null) }
@@ -73,6 +74,10 @@ fun RegionEditorScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            sessionNotice?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary)
+            }
             Text(
                 text = "지문이 노출된 손끝 패드 영역만 선택하세요. 손톱이나 손등은 제외할 수 있습니다.",
                 style = MaterialTheme.typography.bodySmall,

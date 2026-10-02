@@ -70,7 +70,7 @@ class WorkflowDeviceTest {
             compose.onNodeWithText("원본 보기").performClick()
             compose.onNodeWithContentDescription("원본 이미지").assertIsDisplayed()
             compose.onNodeWithText("보호본 보기").performClick()
-            compose.onNodeWithText("보호 사본 저장 (원본 보존)").performClick()
+            compose.onNodeWithText("보호 사본 저장 (원본 보존)").performScrollTo().performClick()
             compose.waitUntil(15_000) { (vm.uiState.value as? UiState.Ready)?.saveMessage != null }
             val created = outputIds() - before
             assertEquals(1, created.size)
