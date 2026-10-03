@@ -11,9 +11,56 @@ from PIL import Image
 
 import main as backend_main
 from main import MAX_IMAGE_SIZE_BYTES, app
+from mock_processor import mock_processor
 
 
 client = TestClient(app)
+
+
+@pytest.mark.parametrize("image_format", ["PNG", "JPEG"])
+def test_mock_returns_png_with_original_pixels(image_format, monkeypatch):
+    output = io.BytesIO()
+    Image.new("RGB", (40, 40), (24, 120, 230)).save(output, format=image_format)
+    image_bytes = output.getvalue()
+    monkeypatch.setattr(app.state, "protection_processor", mock_processor)
+    response = client.post(
+        "/v1/protect",
+        data={"request_id": "mock-image", "method": "gaussian_blur", "strength": "1",
+              "regions": json.dumps([{"x": 0, "y": 0, "width": 1, "height": 1}])},
+        files={"image": ("synthetic", image_bytes, "image/png" if image_format == "PNG" else "image/jpeg")},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "succeeded"
+    assert body["result_kind"] == "mock"
+    assert body["warnings"] == ["MOCK_NO_PROTECTION"]
+    assert body["mime_type"] == "image/png"
+    with Image.open(io.BytesIO(image_bytes)) as original, Image.open(
+        io.BytesIO(base64.b64decode(body["image_base64"]))
+    ) as result:
+        assert result.format == "PNG"
+        assert result.size == original.size
+        assert result.tobytes() == original.tobytes()
+
+
+def test_mock_without_regions_is_marked_as_mock(monkeypatch):
+    monkeypatch.setattr(app.state, "protection_processor", mock_processor)
+    body = protect_request(regions="[]").json()
+    assert body["status"] == "no_regions"
+    assert body["result_kind"] == "mock"
+    assert body["image_base64"] is None
+    assert body["warnings"] == ["NO_REGIONS", "MOCK_NO_PROTECTION"]
+
+
+def test_mock_entrypoint_connects_processor(monkeypatch):
+    import importlib
+
+    monkeypatch.setattr(app.state, "protection_processor", None)
+    mock_app = importlib.import_module("mock_main").app
+    assert mock_app is app
+    assert mock_app.state.protection_processor is mock_processor
+    assert client.get("/ready").json() == {"status": "ready"}
+    assert protect_request().json()["result_kind"] == "mock"
 
 
 def test_root_reports_server_running_without_processor():
