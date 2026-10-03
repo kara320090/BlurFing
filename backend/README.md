@@ -16,11 +16,12 @@
 - 처리 중인 `request_id`의 중복 실행 차단
 - 오류 응답과 영역이 없을 때의 `no_regions` 응답
 - 필수 입력값 누락을 포함한 오류 응답 형식 통일
-- 합성 이미지 기반 백엔드 테스트 31개 (중복 요청, 용량 초과, 처리 시간 초과, 잘못된 영역, AI 결과 크기 오류 포함)
+- 이미지 크기·픽셀을 유지해 PNG로 반환하는 개발용 Mock과 별도 실행 진입점
+- 합성 이미지 기반 백엔드 테스트 35개 (Mock PNG·JPEG 반환, 중복 요청, 용량 초과, 처리 시간 초과, 잘못된 영역, AI 결과 크기 오류 포함)
 
 ## 현재 상태
 
-서버 시작 시 AI 모듈은 연결되지 않습니다. 영역이 있는 보호 요청은 연결 전 `503 PROCESSOR_UNAVAILABLE`을 반환합니다. 영역이 없으면 AI 연결 여부와 관계없이 `200 no_regions`를 반환합니다. 자동 영역 추출과 실제 기기 연동은 아직 검증하지 않았습니다.
+기본 `main:app` 실행 시 AI 모듈은 연결되지 않습니다. 영역이 있는 보호 요청은 연결 전 `503 PROCESSOR_UNAVAILABLE`을 반환합니다. 개발용 `mock_main:app` 실행 시에는 Mock이 연결됩니다. 영역이 없으면 연결 여부와 관계없이 `200 no_regions`를 반환합니다. 자동 영역 추출과 실제 AI 보호 성능은 아직 검증하지 않았습니다.
 
 ## 다음 할 일
 
@@ -117,12 +118,12 @@ AI 함수에 전달하는 값은 `(원본 이미지 바이트, 방식 문자열,
 |---|---|
 | `request_id` | 앞뒤 공백을 제거한 요청 ID |
 | `status` | `succeeded` 또는 `no_regions` |
-| `result_kind` | 항상 `real`; 이 값 자체는 AI 보호 성능의 검증 결과가 아님 |
+| `result_kind` | Mock 연결 시 `mock`, 그 외 `real`; 이 값 자체는 AI 보호 성능의 검증 결과가 아님 |
 | `image_base64` | 처리된 PNG의 Base64 문자열; 영역 없으면 null |
 | `mime_type` | 항상 `image/png` |
 | `applied_regions` | 검증된 전달 영역 목록; 영역 없으면 빈 목록 |
 | `processing_ms` | 핸들러 시작부터 응답 생성까지의 경과 시간을 반올림한 밀리초 |
-| `warnings` | 정상 처리 시 빈 목록; 영역 없으면 `["NO_REGIONS"]` |
+| `warnings` | 일반 정상 처리 시 빈 목록; 영역 없으면 `NO_REGIONS`; Mock 연결 시 `MOCK_NO_PROTECTION` 추가 |
 
 `ErrorResponse`는 `request_id`, `code`, `message`, `retryable`을 정의합니다. 다음 표는 코드에서 직접 반환하는 공통 오류입니다.
 
@@ -154,10 +155,13 @@ AI 함수에 전달하는 값은 `(원본 이미지 바이트, 방식 문자열,
 
 ### 전체 테스트 목록
 
-테스트 함수 24개이며, 매개변수별 사례를 포함하면 총 31개입니다.
+테스트 함수 27개이며, 매개변수별 사례를 포함하면 총 35개입니다.
 
 | 테스트 함수 | 확인 내용 | 사례 수 |
 |---|---|---|
+| `test_mock_returns_png_with_original_pixels` | PNG·JPEG 입력 각각의 크기와 디코딩된 픽셀 유지, PNG 출력, mock 표시와 경고 | 2 |
+| `test_mock_without_regions_is_marked_as_mock` | 빈 영역 응답에서도 mock 표시와 두 경고 유지 | 1 |
+| `test_mock_entrypoint_connects_processor` | 개발 실행 진입점의 Mock 연결, ready 응답 및 Mock API 호출 | 1 |
 | `test_root_reports_server_running_without_processor` | AI 미연결 상태의 서버 실행 응답 | 1 |
 | `test_ready_reports_unavailable_without_processor` | AI 미연결 시 503과 오류 전체 필드 | 1 |
 | `test_ready_reports_connected_processor` | AI 연결 시 200 ready | 1 |
@@ -187,4 +191,20 @@ AI 함수에 전달하는 값은 `(원본 이미지 바이트, 방식 문자열,
 
 이 테스트는 합성 이미지와 테스트용 AI 함수로 백엔드 동작을 확인합니다. 실제 AI 보호 성능, 자동 영역 추출, Android 기기와 실제 서버 간 통신은 검증하지 않습니다.
 
-코드에 구현됐지만 현재 전용 테스트가 없는 항목에는 공백 ID, 빈 이미지, JPEG 정상 입력, 화소 제한 초과, 영역 생략, 영역 키·타입·y 경계 검사, 비PNG AI 결과, 호출 불가능한 AI 함수, 요청 취소, 서로 다른 ID의 동시 처리 등이 있습니다. 구현된 기능과 테스트로 확인한 범위는 구분해야 합니다.
+코드에 구현됐지만 현재 전용 테스트가 없는 항목에는 공백 ID, 빈 이미지, 화소 제한 초과, 영역 생략, 영역 키·타입·y 경계 검사, 비PNG AI 결과, 호출 불가능한 AI 함수, 요청 취소, 서로 다른 ID의 동시 처리 등이 있습니다. 구현된 기능과 테스트로 확인한 범위는 구분해야 합니다.
+
+## 이미지 반환 Mock 사용 방법
+
+`mock_processor.py`의 `mock_processor(image_bytes, method, strength, regions)`는 AI 함수와 같은 입력을 받습니다. PNG·JPEG 이미지를 읽어 가로·세로 크기와 디코딩된 픽셀을 유지한 PNG 바이트를 반환합니다. 처리 방식·강도·영역은 적용하지 않으며 블러, 영역 추출, 성능 측정은 수행하지 않습니다. 파일은 저장하지 않고 메모리에서 변환합니다.
+
+`mock_main.py`는 공통 API 앱에 이 함수를 연결하는 개발용 진입점입니다. `backend` 폴더에서 다음 명령으로 실행합니다.
+
+```bash
+uvicorn mock_main:app --reload
+```
+
+`http://127.0.0.1:8000/docs`에서 `POST /v1/protect`의 Try it out을 선택하고 합성 PNG 또는 JPEG를 업로드합니다. `request_id`는 `mock-001`, `method`는 `gaussian_blur`, `strength`는 `0.5`, `regions`는 `[{"x":0,"y":0,"width":1,"height":1}]`로 입력하면 이미지 반환 흐름을 확인할 수 있습니다. 영역을 생략하면 기존과 같이 이미지를 반환하지 않는 `no_regions` 응답입니다.
+
+영역이 있는 정상 Mock 응답은 `200`, `status: succeeded`, `result_kind: mock`, `warnings: ["MOCK_NO_PROTECTION"]`이며 `image_base64`에 PNG가 들어갑니다. 여기서 succeeded는 입출력 처리가 완료됐다는 뜻이며 이미지가 보호됐다는 뜻이 아닙니다. `/ready`는 Mock도 호출 가능한 함수이므로 ready를 반환합니다.
+
+실제 모듈 연동을 준비할 때는 개발 서버를 종료하고 기존 `uvicorn main:app --reload`로 실행합니다. Mock은 기본 서버에 자동 연결되지 않습니다. 기존 입력 검증·시간 제한·중복 요청 차단·결과 검증은 Mock 실행에도 동일하게 적용됩니다.

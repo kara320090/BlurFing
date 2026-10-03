@@ -12,6 +12,8 @@ from fastapi.responses import JSONResponse
 from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel
 
+from mock_processor import mock_processor
+
 app = FastAPI(title="BlurFing Backend")
 app.state.protection_processor = None
 
@@ -34,7 +36,7 @@ class RegionResponse(BaseModel):
 class ProtectionResponse(BaseModel):
     request_id: str
     status: Literal["succeeded", "no_regions"]
-    result_kind: Literal["real"]
+    result_kind: Literal["real", "mock"]
     image_base64: str | None
     mime_type: Literal["image/png"]
     applied_regions: list[RegionResponse]
@@ -236,19 +238,20 @@ async def protect_image(
     except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):
         return error_response(request_id, 400, "INVALID_IMAGE", "이미지 파일을 읽을 수 없습니다.")
 
+    processor = app.state.protection_processor
+    is_mock = processor is mock_processor
     if not validated_regions:
         return {
             "request_id": request_id,
             "status": "no_regions",
-            "result_kind": "real",
+            "result_kind": "mock" if is_mock else "real",
             "image_base64": None,
             "mime_type": "image/png",
             "applied_regions": [],
             "processing_ms": round((time.monotonic() - started) * 1000),
-            "warnings": ["NO_REGIONS"],
+            "warnings": ["NO_REGIONS", "MOCK_NO_PROTECTION"] if is_mock else ["NO_REGIONS"],
         }
 
-    processor = app.state.protection_processor
     if not callable(processor):
         return error_response(request_id, 503, "PROCESSOR_UNAVAILABLE", "보호 처리 모듈을 사용할 수 없습니다.", True)
 
@@ -292,12 +295,12 @@ async def protect_image(
         return {
             "request_id": request_id,
             "status": "succeeded",
-            "result_kind": "real",
+            "result_kind": "mock" if is_mock else "real",
             "image_base64": base64.b64encode(result_bytes).decode("ascii"),
             "mime_type": "image/png",
             "applied_regions": validated_regions,
             "processing_ms": round((time.monotonic() - started) * 1000),
-            "warnings": [],
+            "warnings": ["MOCK_NO_PROTECTION"] if is_mock else [],
         }
     finally:
         release_request_id(request_id)
