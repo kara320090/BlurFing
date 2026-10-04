@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import io
 import json
@@ -11,10 +12,23 @@ from PIL import Image
 
 import main as backend_main
 from main import MAX_IMAGE_SIZE_BYTES, app
-from mock_processor import mock_processor
+from mock_processor import MockProcessor, mock_processor
 
 
 client = TestClient(app)
+
+
+@pytest.fixture
+def request_released(monkeypatch):
+    released = Event()
+    original_release = backend_main.release_request_id
+
+    def release(request_id):
+        original_release(request_id)
+        released.set()
+
+    monkeypatch.setattr(backend_main, "release_request_id", release)
+    return released
 
 
 @pytest.mark.parametrize("image_format", ["PNG", "JPEG"])
@@ -52,15 +66,101 @@ def test_mock_without_regions_is_marked_as_mock(monkeypatch):
     assert body["warnings"] == ["NO_REGIONS", "MOCK_NO_PROTECTION"]
 
 
-def test_mock_entrypoint_connects_processor(monkeypatch):
+@pytest.mark.parametrize("delay_seconds", [0, 0.01])
+def test_mock_entrypoint_connects_processor(monkeypatch, delay_seconds):
     import importlib
 
     monkeypatch.setattr(app.state, "protection_processor", None)
-    mock_app = importlib.import_module("mock_main").app
+    monkeypatch.setenv("BLURFING_MOCK_DELAY_SECONDS", str(delay_seconds))
+    mock_app = importlib.reload(importlib.import_module("mock_main")).app
     assert mock_app is app
-    assert mock_app.state.protection_processor is mock_processor
+    assert isinstance(mock_app.state.protection_processor, MockProcessor)
+    assert mock_app.state.protection_processor.delay_seconds == delay_seconds
     assert client.get("/ready").json() == {"status": "ready"}
     assert protect_request().json()["result_kind"] == "mock"
+
+
+def test_delayed_mock_waits_and_returns_image(monkeypatch):
+    monkeypatch.setattr(app.state, "protection_processor", MockProcessor(0.05))
+    started = time.monotonic()
+    response = protect_request()
+    assert time.monotonic() - started >= 0.05
+    assert response.status_code == 200
+    assert response.json()["result_kind"] == "mock"
+    assert response.json()["warnings"] == ["MOCK_NO_PROTECTION"]
+
+
+@pytest.mark.parametrize("delay", [-1, float("nan"), float("inf"), -float("inf")])
+def test_mock_rejects_invalid_delay(delay):
+    with pytest.raises(ValueError):
+        MockProcessor(delay)
+
+
+@pytest.mark.parametrize("fail_after_timeout", [False, True])
+def test_timeout_keeps_id_until_worker_finishes(monkeypatch, request_released, fail_after_timeout):
+    started = Event()
+    finish = Event()
+
+    def processor(*_):
+        started.set()
+        if not finish.wait(timeout=2):
+            raise RuntimeError("test worker did not resume")
+        if fail_after_timeout:
+            raise RuntimeError("late failure")
+        return synthetic_image()
+
+    monkeypatch.setattr(app.state, "protection_processor", processor)
+    monkeypatch.setattr(backend_main, "PROCESSOR_TIMEOUT_SECONDS", 0.05)
+    try:
+        assert protect_request().status_code == 504
+        assert started.is_set()
+        assert not request_released.is_set()
+        assert protect_request().status_code == 409
+    finally:
+        finish.set()
+        assert request_released.wait(timeout=2)
+
+    monkeypatch.setattr(app.state, "protection_processor", mock_processor)
+    monkeypatch.setattr(backend_main, "PROCESSOR_TIMEOUT_SECONDS", 1.0)
+    assert protect_request().status_code == 200
+
+
+def test_cancellation_keeps_id_until_worker_finishes(monkeypatch, request_released):
+    from fastapi import UploadFile
+    from starlette.datastructures import Headers
+
+    started = Event()
+    finish = Event()
+
+    def processor(*_):
+        started.set()
+        if not finish.wait(timeout=2):
+            raise RuntimeError("test worker did not resume")
+        return synthetic_image()
+
+    monkeypatch.setattr(app.state, "protection_processor", processor)
+
+    async def cancel_request():
+        task = asyncio.create_task(backend_main.protect_image(
+            image=UploadFile(io.BytesIO(synthetic_image()), headers=Headers({"content-type": "image/png"})),
+            request_id="synthetic-request-001", method="gaussian_blur", strength="0.5",
+            regions='[{"x":0,"y":0,"width":1,"height":1}]',
+        ))
+        assert await asyncio.to_thread(started.wait, 1)
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+    try:
+        asyncio.run(cancel_request())
+        assert not request_released.is_set()
+        assert protect_request().status_code == 409
+    finally:
+        finish.set()
+        assert request_released.wait(timeout=2)
+
+    monkeypatch.setattr(app.state, "protection_processor", mock_processor)
+    assert protect_request().status_code == 200
 
 
 def test_root_reports_server_running_without_processor():
@@ -235,7 +335,7 @@ def test_processor_failure_returns_server_error():
     assert "internal processor detail" not in response.text
 
 
-def test_processor_timeout_returns_retryable_gateway_timeout(monkeypatch):
+def test_processor_timeout_returns_retryable_gateway_timeout(monkeypatch, request_released):
     def processor(*_):
         time.sleep(0.05)
         return synthetic_image()
@@ -254,6 +354,7 @@ def test_processor_timeout_returns_retryable_gateway_timeout(monkeypatch):
         "message": "보호 처리 시간이 제한을 초과했습니다.",
         "retryable": True,
     }
+    assert request_released.wait(timeout=2)
 
 
 def test_duplicate_request_id_is_rejected_while_first_request_is_processing():
@@ -289,7 +390,7 @@ def test_duplicate_request_id_is_rejected_while_first_request_is_processing():
 
 
 @pytest.mark.parametrize("first_outcome", ["success", "failure", "timeout"])
-def test_request_id_is_reusable_after_processing_finishes(first_outcome, monkeypatch):
+def test_request_id_is_reusable_after_processing_finishes(first_outcome, monkeypatch, request_released):
     if first_outcome == "success":
         first_processor = lambda *_: synthetic_image()
         expected_status = 200
@@ -309,6 +410,7 @@ def test_request_id_is_reusable_after_processing_finishes(first_outcome, monkeyp
     app.state.protection_processor = first_processor
     try:
         first_response = protect_request()
+        assert request_released.wait(timeout=2)
         if first_outcome == "timeout":
             monkeypatch.setattr(backend_main, "PROCESSOR_TIMEOUT_SECONDS", 1.0)
         app.state.protection_processor = lambda *_: synthetic_image()

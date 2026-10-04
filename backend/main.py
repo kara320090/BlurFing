@@ -5,6 +5,7 @@ import json
 import math
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Literal
 
 from fastapi import FastAPI, File, Form, UploadFile
@@ -12,7 +13,7 @@ from fastapi.responses import JSONResponse
 from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel
 
-from mock_processor import mock_processor
+from mock_processor import MockProcessor
 
 app = FastAPI(title="BlurFing Backend")
 app.state.protection_processor = None
@@ -24,6 +25,7 @@ SUPPORTED_IMAGE_TYPES = {"image/jpeg", "image/png"}
 SUPPORTED_METHODS = {"gaussian_blur"}
 IN_FLIGHT_REQUEST_IDS: set[str] = set()
 IN_FLIGHT_REQUEST_IDS_LOCK = threading.Lock()
+PROCESSOR_EXECUTOR = ThreadPoolExecutor(thread_name_prefix="blurfing-processor")
 
 
 class RegionResponse(BaseModel):
@@ -239,7 +241,7 @@ async def protect_image(
         return error_response(request_id, 400, "INVALID_IMAGE", "이미지 파일을 읽을 수 없습니다.")
 
     processor = app.state.protection_processor
-    is_mock = processor is mock_processor
+    is_mock = isinstance(processor, MockProcessor)
     if not validated_regions:
         return {
             "request_id": request_id,
@@ -264,18 +266,21 @@ async def protect_image(
             True,
         )
 
+    worker = None
     try:
         try:
-            # AI 담당 모듈은 입력 바이트와 설정을 받아 완성된 PNG 바이트를 반환한다.
+            # 완료 콜백은 요청 이벤트 루프가 끝나도 실제 작업 종료 시 ID를 해제한다.
+            worker = PROCESSOR_EXECUTOR.submit(
+                processor, image_bytes, method, validated_strength, validated_regions
+            )
+            worker.add_done_callback(lambda _: release_request_id(request_id))
+            pending_result = asyncio.wrap_future(worker)
+            # 시간 초과 후 늦게 발생한 예외도 회수한다.
+            pending_result.add_done_callback(
+                lambda future: future.exception() if not future.cancelled() else None
+            )
             result_bytes = await asyncio.wait_for(
-                asyncio.to_thread(
-                    processor,
-                    image_bytes,
-                    method,
-                    validated_strength,
-                    validated_regions,
-                ),
-                timeout=PROCESSOR_TIMEOUT_SECONDS,
+                asyncio.shield(pending_result), timeout=PROCESSOR_TIMEOUT_SECONDS
             )
             with Image.open(io.BytesIO(result_bytes)) as result:
                 if result.format != "PNG" or result.size != (width, height):
@@ -303,4 +308,6 @@ async def protect_image(
             "warnings": ["MOCK_NO_PROTECTION"] if is_mock else [],
         }
     finally:
-        release_request_id(request_id)
+        # 작업 제출 자체가 실패했을 때만 여기서 해제한다.
+        if worker is None:
+            release_request_id(request_id)
