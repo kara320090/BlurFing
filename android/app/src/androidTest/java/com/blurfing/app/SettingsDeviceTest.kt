@@ -33,6 +33,7 @@ class SettingsDeviceTest {
                 vm.onImageSelected(Uri.fromFile(source), compose.activity)
             }
             compose.waitUntil(10_000) { vm.uiState.value is UiState.Ready }
+            compose.onNodeWithText("영역 추가").performClick()
             compose.onNodeWithText("보호 설정 (BF-04)").performClick()
             compose.onNode(isToggleable()).performClick()
             compose.onNodeWithText("서버 주소").performTextReplacement("https://example.org")
