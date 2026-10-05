@@ -51,6 +51,7 @@ class LiveBackendDeviceTest {
         val file = File(compose.activity.cacheDir, "backend-synthetic.png").apply { writeBytes(image()) }
         compose.runOnUiThread { vm.onImageSelected(Uri.fromFile(file), compose.activity) }
         compose.waitUntil(10_000) { vm.uiState.value is UiState.Ready }
+        compose.runOnUiThread { vm.addRegion(); vm.addRegion() }
         return file
     }
 

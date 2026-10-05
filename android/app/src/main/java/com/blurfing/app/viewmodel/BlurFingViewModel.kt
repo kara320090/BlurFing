@@ -153,11 +153,8 @@ open class BlurFingViewModel(
             try {
                 val normalizedBitmap = SelectedImageLoader.load(context.applicationContext, uri)
 
-                // 초기 후보 영역 (기본 합성 영역)
-                val initialRegions = listOf(
-                    NormalizedRegion(x = 0.35f, y = 0.30f, width = 0.12f, height = 0.16f),
-                    NormalizedRegion(x = 0.52f, y = 0.28f, width = 0.12f, height = 0.16f)
-                )
+                // 자동 탐지 모듈이 연결되기 전에는 임의의 후보를 만들지 않는다.
+                val initialRegions = emptyList<NormalizedRegion>()
 
                 var sessionNotice: String? = null
                 if (draftSession != null) {
