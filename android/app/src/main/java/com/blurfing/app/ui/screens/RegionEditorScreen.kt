@@ -79,7 +79,8 @@ fun RegionEditorScreen(
                     color = MaterialTheme.colorScheme.primary)
             }
             Text(
-                text = "지문이 노출된 손끝 패드 영역만 선택하세요. 손톱이나 손등은 제외할 수 있습니다.",
+                text = if (regions.isEmpty()) "자동 탐지는 아직 연결되지 않았습니다. ‘영역 추가’로 지문이 보이는 손끝을 직접 지정해 주세요."
+                    else "수동 선택 영역 ${regions.size}개 · 지문이 보이는 손끝 패드에 맞추세요. 손톱과 손등은 제외하세요.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,

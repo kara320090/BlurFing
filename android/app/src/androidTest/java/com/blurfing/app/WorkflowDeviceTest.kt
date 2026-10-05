@@ -62,7 +62,8 @@ class WorkflowDeviceTest {
             compose.runOnUiThread { vm.onImageSelected(Uri.fromFile(source), compose.activity) }
             ready(ScreenStep.REGION_EDITOR)
             compose.onNodeWithText("영역 추가").performClick()
-            compose.runOnIdle { assertEquals(3, (vm.uiState.value as UiState.Ready).regions.size) }
+            compose.onNodeWithText("영역 추가").performClick()
+            compose.runOnIdle { assertEquals(2, (vm.uiState.value as UiState.Ready).regions.size) }
             compose.onNodeWithText("선택 삭제").performClick()
             compose.onNodeWithText("보호 설정 (BF-04)").performClick()
             compose.onNodeWithText("Mock 프리뷰 만들기").performScrollTo().performClick()
