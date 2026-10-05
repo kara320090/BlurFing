@@ -230,3 +230,34 @@ uvicorn mock_main:app --reload
 영역이 있는 정상 Mock 응답은 `200`, `status: succeeded`, `result_kind: mock`, `warnings: ["MOCK_NO_PROTECTION"]`이며 `image_base64`에 PNG가 들어갑니다. 여기서 succeeded는 입출력 처리가 완료됐다는 뜻이며 이미지가 보호됐다는 뜻이 아닙니다. `/ready`는 Mock도 호출 가능한 함수이므로 ready를 반환합니다.
 
 실제 모듈 연동을 준비할 때는 개발 서버를 종료하고 기존 `uvicorn main:app --reload`로 실행합니다. Mock은 기본 서버에 자동 연결되지 않습니다. 기존 입력 검증·시간 제한·중복 요청 차단·결과 검증은 Mock 실행에도 동일하게 적용됩니다.
+
+## 실제 HTTP 이미지 입출력 확인
+
+`check_mock_http.py`는 `TestClient` 대신 실제로 실행 중인 서버에 HTTP 요청을 보냅니다. 기존 pytest 44개와 별도로 실행하는 확인 도구이며, 합성 이미지와 반환 PNG는 메모리에서만 처리하고 파일로 저장하지 않습니다.
+
+`backend` 폴더의 첫 번째 터미널에서 개발 의존성을 설치하고 지연 없는 Mock 서버를 실행합니다.
+
+```powershell
+pip install -r requirements-dev.txt
+$env:BLURFING_MOCK_DELAY_SECONDS = "0"
+uvicorn mock_main:app --host 127.0.0.1 --port 8765
+```
+
+두 번째 터미널에서 같은 `backend` 폴더로 이동해 실행합니다.
+
+```powershell
+python check_mock_http.py --base-url http://127.0.0.1:8765
+```
+
+주소를 생략하면 `http://127.0.0.1:8000`을 사용합니다. 요청마다 최대 5초까지 기다리므로 지연 Mock의 시간 초과 검증에는 이 스크립트를 사용하지 않습니다. 완료 후 첫 번째 터미널에서 `Ctrl+C`로 서버를 종료합니다.
+
+스크립트의 확인 항목은 다음 네 가지입니다.
+
+1. `GET /`: HTTP 200과 서버 실행 메시지 확인.
+2. `GET /ready`: HTTP 200과 ready 상태 확인.
+3. 합성 PNG 업로드: HTTP 200, 요청 ID·영역·Mock 표시·경고·출력 MIME 타입을 확인하고 Base64를 디코딩해 PNG 형식·48×32 크기·색상 모드·전체 픽셀 비교.
+4. 합성 JPEG 업로드: 같은 항목을 확인하고 JPEG를 디코딩한 픽셀과 반환 PNG의 픽셀 비교. JPEG 저장 전 픽셀이 아니라 실제 업로드 파일의 디코딩 결과를 기준으로 합니다.
+
+성공 시 `PASS: 4 live HTTP checks completed; no image files saved`와 종료 코드 0을 반환합니다. 연결 실패, HTTP 오류 또는 검증 불일치 시 `FAIL`과 종료 코드 1을 반환합니다. 실제 AI 함수가 연결된 서버의 응답은 `result_kind: mock` 검사를 통과하지 못합니다.
+
+2026-10-05 확인 결과: Windows 로컬 Uvicorn Mock 서버(`127.0.0.1:8765`, 지연 0초)에 실제 HTTP 요청을 보내 네 항목 모두 통과했습니다. PNG·JPEG 모두 반환 PNG의 크기와 디코딩된 픽셀이 일치했고 확인 후 서버를 종료했습니다. 이 결과는 로컬 Mock 통신 확인이며 Android 기기 통신이나 실제 AI 보호 성능 검증은 포함하지 않습니다.
