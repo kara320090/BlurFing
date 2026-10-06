@@ -30,17 +30,20 @@ fun FingertipOverlayCanvas(
 ) {
     var draggingIndex by remember { mutableStateOf<Int?>(null) }
     var dragStartOffset by remember { mutableStateOf<Offset?>(null) }
+    var dragPreview by remember { mutableStateOf<NormalizedRegion?>(null) }
+    val latestRegions by rememberUpdatedState(regions)
+    val updateRegion by rememberUpdatedState(onRegionUpdated)
 
     Canvas(
         modifier = modifier
             .fillMaxSize()
-            .pointerInput(regions, imageBounds) {
+            .pointerInput(imageBounds) {
                 detectDragGestures(
                     onDragStart = { offset ->
                         // 터치 지점이 포함된 영역 찾기
-                        val hitIndex = regions.indices.reversed().firstOrNull { index ->
+                        val hitIndex = latestRegions.indices.reversed().firstOrNull { index ->
                             val screenRect = CoordinateTransformer.normalizedRegionToScreenRect(
-                                regions[index],
+                                latestRegions[index],
                                 imageBounds
                             )
                             screenRect.contains(offset.x, offset.y)
@@ -49,33 +52,29 @@ fun FingertipOverlayCanvas(
                         if (hitIndex != null) {
                             onRegionSelected(hitIndex)
                             dragStartOffset = offset
+                            dragPreview = latestRegions[hitIndex]
                         }
                     },
                     onDrag = { change, dragAmount ->
                         change.consume()
                         val currentIndex = draggingIndex ?: return@detectDragGestures
-                        val currentRegion = regions.getOrNull(currentIndex) ?: return@detectDragGestures
-
-                        val screenRect = CoordinateTransformer.normalizedRegionToScreenRect(
-                            currentRegion,
-                            imageBounds
-                        )
-                        screenRect.offset(dragAmount.x, dragAmount.y)
-
-                        // 뷰 경계 내로 클램핑하여 NormalizedRegion 업데이트
-                        val updatedRegion = CoordinateTransformer.screenRectToNormalizedRegion(
-                            screenRect,
-                            imageBounds
-                        )
-                        onRegionUpdated(currentIndex, updatedRegion)
+                        val currentRegion = dragPreview ?: return@detectDragGestures
+                        if (imageBounds.width() <= 0 || imageBounds.height() <= 0) return@detectDragGestures
+                        dragPreview = currentRegion.copy(
+                            x = (currentRegion.x + dragAmount.x / imageBounds.width()).coerceIn(0f, 1f-currentRegion.width),
+                            y = (currentRegion.y + dragAmount.y / imageBounds.height()).coerceIn(0f, 1f-currentRegion.height))
                     },
                     onDragEnd = {
+                        val index = draggingIndex
+                        if (index != null) dragPreview?.let { updateRegion(index, it) }
                         draggingIndex = null
                         dragStartOffset = null
+                        dragPreview = null
                     },
                     onDragCancel = {
                         draggingIndex = null
                         dragStartOffset = null
+                        dragPreview = null
                     }
                 )
             }
@@ -83,7 +82,8 @@ fun FingertipOverlayCanvas(
         if (imageBounds.width() <= 0f || imageBounds.height() <= 0f) return@Canvas
 
         regions.forEachIndexed { index, region ->
-            val screenRect = CoordinateTransformer.normalizedRegionToScreenRect(region, imageBounds)
+            val shown = if (index == draggingIndex) dragPreview ?: region else region
+            val screenRect = CoordinateTransformer.normalizedRegionToScreenRect(shown, imageBounds)
             val isSelected = index == selectedRegionIndex
 
             val strokeColor = if (isSelected) Color(0xFFFF5722) else Color(0xFF00E676)

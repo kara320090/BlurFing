@@ -152,6 +152,7 @@ class SelectedImageLoaderTest {
         val loaded = withTimeout(5000) { vm.uiState.first { it is UiState.Ready } as UiState.Ready }
         assertEquals(ScreenStep.REGION_EDITOR, loaded.step)
         assertEquals(validUri, loaded.originalUri)
+        assertTrue("Import must not fabricate detected candidates", loaded.regions.isEmpty())
         assertEquals(Color.BLUE, loaded.originalBitmap.getPixel(0, 0))
     }
 
