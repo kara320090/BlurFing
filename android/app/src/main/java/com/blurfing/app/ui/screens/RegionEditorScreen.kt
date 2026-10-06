@@ -35,11 +35,19 @@ fun RegionEditorScreen(
     onProceedToSettings: () -> Unit,
     onBack: () -> Unit,
     sessionNotice: String? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    canUndo: Boolean = false,
+    canRedo: Boolean = false,
+    onUndo: () -> Unit = {},
+    onRedo: () -> Unit = {},
+    onClearRegions: () -> Unit = {}
 ) {
     var selectedIndex by remember { mutableStateOf<Int?>(if (regions.isNotEmpty()) 0 else null) }
     var viewWidth by remember { mutableStateOf(0f) }
     var viewHeight by remember { mutableStateOf(0f) }
+    LaunchedEffect(regions.size) {
+        if (selectedIndex == null || selectedIndex !in regions.indices) selectedIndex = regions.indices.firstOrNull()
+    }
 
     val imageBounds = remember(viewWidth, viewHeight, bitmap) {
         CoordinateTransformer.computeImageBoundsInView(
@@ -115,6 +123,11 @@ fun RegionEditorScreen(
                 )
             }
 
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                TextButton(onClick = onUndo, enabled = canUndo) { Text("실행 취소") }
+                TextButton(onClick = onRedo, enabled = canRedo) { Text("다시 실행") }
+                TextButton(onClick = onClearRegions, enabled = regions.isNotEmpty()) { Text("영역 모두 지우기") }
+            }
             // 하단 조작 바
             Row(
                 modifier = Modifier.fillMaxWidth(),

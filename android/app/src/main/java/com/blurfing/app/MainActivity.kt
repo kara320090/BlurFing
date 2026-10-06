@@ -142,6 +142,11 @@ class MainActivity : ComponentActivity() {
                                         onAddRegion = { viewModel.addRegion() },
                                         onDeleteRegion = { index -> viewModel.deleteRegion(index) },
                                         onUpdateRegion = { index, region -> viewModel.updateRegion(index, region) },
+                                        canUndo = state.canUndoRegions,
+                                        canRedo = state.canRedoRegions,
+                                        onUndo = viewModel::undoRegions,
+                                        onRedo = viewModel::redoRegions,
+                                        onClearRegions = viewModel::clearRegions,
                                         onProceedToSettings = { viewModel.navigateToStep(ScreenStep.PROCESSING) },
                                         onBack = { viewModel.resetToIdle() }
                                     )
