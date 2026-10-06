@@ -35,11 +35,19 @@ fun RegionEditorScreen(
     onProceedToSettings: () -> Unit,
     onBack: () -> Unit,
     sessionNotice: String? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    canUndo: Boolean = false,
+    canRedo: Boolean = false,
+    onUndo: () -> Unit = {},
+    onRedo: () -> Unit = {},
+    onClearRegions: () -> Unit = {}
 ) {
     var selectedIndex by remember { mutableStateOf<Int?>(if (regions.isNotEmpty()) 0 else null) }
     var viewWidth by remember { mutableStateOf(0f) }
     var viewHeight by remember { mutableStateOf(0f) }
+    LaunchedEffect(regions.size) {
+        if (selectedIndex == null || selectedIndex !in regions.indices) selectedIndex = regions.indices.firstOrNull()
+    }
 
     val imageBounds = remember(viewWidth, viewHeight, bitmap) {
         CoordinateTransformer.computeImageBoundsInView(
@@ -79,7 +87,8 @@ fun RegionEditorScreen(
                     color = MaterialTheme.colorScheme.primary)
             }
             Text(
-                text = "지문이 노출된 손끝 패드 영역만 선택하세요. 손톱이나 손등은 제외할 수 있습니다.",
+                text = if (regions.isEmpty()) "자동 탐지는 아직 연결되지 않았습니다. ‘영역 추가’로 지문이 보이는 손끝을 직접 지정해 주세요."
+                    else "수동 선택 영역 ${regions.size}개 · 지문이 보이는 손끝 패드에 맞추세요. 손톱과 손등은 제외하세요.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -114,6 +123,11 @@ fun RegionEditorScreen(
                 )
             }
 
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                TextButton(onClick = onUndo, enabled = canUndo) { Text("실행 취소") }
+                TextButton(onClick = onRedo, enabled = canRedo) { Text("다시 실행") }
+                TextButton(onClick = onClearRegions, enabled = regions.isNotEmpty()) { Text("영역 모두 지우기") }
+            }
             // 하단 조작 바
             Row(
                 modifier = Modifier.fillMaxWidth(),

@@ -63,7 +63,10 @@ class BlurFingViewModelIntegrationTest {
                     .compress(Bitmap.CompressFormat.PNG, 100, it)
             }
             vm.onImageSelected(Uri.fromFile(file), context)
-            return withTimeout(5000) { vm.uiState.first { it is UiState.Ready } as UiState.Ready }
+            withTimeout(5000) { vm.uiState.first { it is UiState.Ready } }
+            vm.addRegion()
+            vm.addRegion()
+            return vm.uiState.value as UiState.Ready
         } finally {
             file.delete()
         }
