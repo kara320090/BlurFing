@@ -27,6 +27,7 @@ import com.blurfing.app.utils.SelectedImageLoader
 import com.blurfing.app.utils.DraftSession
 import com.blurfing.app.model.ProcessingSettings
 import com.blurfing.app.model.ProcessingSettingsStore
+import com.blurfing.app.model.RegionEditHistory
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -67,7 +68,9 @@ sealed interface UiState {
         val saveError: String? = null,
         val saveMessage: String? = null,
         val processingError: String? = null,
-        val sessionNotice: String? = null
+        val sessionNotice: String? = null,
+        val canUndoRegions: Boolean = false,
+        val canRedoRegions: Boolean = false
     ) : UiState
     data class Error(
         val message: String,
@@ -105,6 +108,7 @@ open class BlurFingViewModel(
     private var imageLoadingJob: Job? = null
     private var activeSavingJob: Job? = null
     private var activeSaveId: String? = null
+    private val regionHistory = RegionEditHistory()
 
     init {
         if (draftSession?.hasDraft == true) {
@@ -142,6 +146,7 @@ open class BlurFingViewModel(
     }
 
     private fun importImage(uri: Uri, context: Context, onFinished: (() -> Unit)? = null): Job {
+        regionHistory.clear()
         cancelSaving()
         cancelProtection()
         imageLoadingJob?.cancel()
@@ -207,8 +212,7 @@ open class BlurFingViewModel(
         val current = _uiState.value
         if (current is UiState.Ready && index in current.regions.indices) {
             val updated = current.regions.toMutableList().apply { set(index, region) }
-            _uiState.value = current.copy(regions = updated)
-            draftSession?.updateRegions(updated)
+            applyRegions(updated)
         }
     }
 
@@ -216,8 +220,7 @@ open class BlurFingViewModel(
         val current = _uiState.value
         if (current is UiState.Ready) {
             val newRegion = NormalizedRegion(x = 0.4f, y = 0.4f, width = 0.15f, height = 0.15f)
-            _uiState.value = current.copy(regions = current.regions + newRegion)
-            draftSession?.updateRegions(current.regions + newRegion)
+            applyRegions(current.regions + newRegion)
         }
     }
 
@@ -225,10 +228,35 @@ open class BlurFingViewModel(
         val current = _uiState.value
         if (current is UiState.Ready && index in current.regions.indices) {
             val updated = current.regions.toMutableList().apply { removeAt(index) }
-            _uiState.value = current.copy(regions = updated)
-            draftSession?.updateRegions(updated)
+            applyRegions(updated)
         }
     }
+
+    private fun applyRegions(updated: List<NormalizedRegion>, record: Boolean = true) {
+        val current = _uiState.value as? UiState.Ready ?: return
+        if (current.isProcessing || current.step != ScreenStep.REGION_EDITOR || updated == current.regions) return
+        if (record) regionHistory.record(current.regions)
+        cancelSaving()
+        val latest = _uiState.value as? UiState.Ready ?: return
+        _uiState.value = latest.copy(regions = updated.toList(), protectedBitmap = null,
+            protectionResponse = null, processingError = null,
+            canUndoRegions = regionHistory.canUndo, canRedoRegions = regionHistory.canRedo)
+        draftSession?.updateRegions(updated)
+    }
+
+    fun undoRegions() {
+        val current = _uiState.value as? UiState.Ready ?: return
+        if (current.step != ScreenStep.REGION_EDITOR || current.isProcessing) return
+        regionHistory.undo(current.regions)?.let { applyRegions(it, false) }
+    }
+
+    fun redoRegions() {
+        val current = _uiState.value as? UiState.Ready ?: return
+        if (current.step != ScreenStep.REGION_EDITOR || current.isProcessing) return
+        regionHistory.redo(current.regions)?.let { applyRegions(it, false) }
+    }
+
+    fun clearRegions() { applyRegions(emptyList()) }
 
     /**
      * 보호 처리 실행 (BF-04, BF-05, BF-07).
@@ -406,6 +434,7 @@ open class BlurFingViewModel(
     }
 
     fun resetToIdle() {
+        regionHistory.clear()
         draftSession?.clear()
         cancelSaving()
         imageLoadingJob?.cancel()
