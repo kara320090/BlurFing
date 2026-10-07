@@ -21,6 +21,7 @@ app.state.protection_processor = None
 MAX_IMAGE_SIZE_BYTES = 15 * 1024 * 1024
 MAX_IMAGE_PIXELS = 20_000_000
 PROCESSOR_TIMEOUT_SECONDS = 30.0
+MAX_PENDING_PROCESSOR_REQUESTS = 4
 SUPPORTED_IMAGE_TYPES = {"image/jpeg", "image/png"}
 SUPPORTED_METHODS = {"gaussian_blur"}
 IN_FLIGHT_REQUEST_IDS: set[str] = set()
@@ -59,7 +60,7 @@ PROTECT_ERROR_RESPONSES = {
     413: {"model": ErrorResponse, "description": "이미지 용량 또는 해상도 제한 초과"},
     415: {"model": ErrorResponse, "description": "지원하지 않는 이미지 형식"},
     500: {"model": ErrorResponse, "description": "AI 처리 결과 검증 실패"},
-    503: {"model": ErrorResponse, "description": "AI 처리 모듈을 사용할 수 없음"},
+    503: {"model": ErrorResponse, "description": "AI 처리 모듈 미연결 또는 작업 접수 한도 초과"},
     504: {"model": ErrorResponse, "description": "AI 처리 제한 시간 초과"},
 }
 
@@ -105,12 +106,14 @@ def parse_strength(value: str) -> float:
     return strength
 
 
-def claim_request_id(request_id: str) -> bool:
+def claim_request_id(request_id: str) -> Literal["accepted", "duplicate", "busy"]:
     with IN_FLIGHT_REQUEST_IDS_LOCK:
         if request_id in IN_FLIGHT_REQUEST_IDS:
-            return False
+            return "duplicate"
+        if len(IN_FLIGHT_REQUEST_IDS) >= MAX_PENDING_PROCESSOR_REQUESTS:
+            return "busy"
         IN_FLIGHT_REQUEST_IDS.add(request_id)
-        return True
+        return "accepted"
 
 
 def release_request_id(request_id: str) -> None:
@@ -257,12 +260,21 @@ async def protect_image(
     if not callable(processor):
         return error_response(request_id, 503, "PROCESSOR_UNAVAILABLE", "보호 처리 모듈을 사용할 수 없습니다.", True)
 
-    if not claim_request_id(request_id):
+    admission = claim_request_id(request_id)
+    if admission == "duplicate":
         return error_response(
             request_id,
             409,
             "REQUEST_IN_PROGRESS",
             "같은 request_id의 요청이 이미 처리 중입니다.",
+            True,
+        )
+    if admission == "busy":
+        return error_response(
+            request_id,
+            503,
+            "SERVER_BUSY",
+            "서버가 처리 중인 요청이 많습니다. 잠시 후 다시 시도해 주세요.",
             True,
         )
 
