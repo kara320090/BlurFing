@@ -111,11 +111,13 @@ def test_timeout_keeps_id_until_worker_finishes(monkeypatch, request_released, f
 
     monkeypatch.setattr(app.state, "protection_processor", processor)
     monkeypatch.setattr(backend_main, "PROCESSOR_TIMEOUT_SECONDS", 0.05)
+    monkeypatch.setattr(backend_main, "MAX_PENDING_PROCESSOR_REQUESTS", 1)
     try:
         assert protect_request().status_code == 504
         assert started.is_set()
         assert not request_released.is_set()
         assert protect_request().status_code == 409
+        assert protect_request(request_id="different-after-timeout").json()["code"] == "SERVER_BUSY"
     finally:
         finish.set()
         assert request_released.wait(timeout=2)
@@ -123,6 +125,7 @@ def test_timeout_keeps_id_until_worker_finishes(monkeypatch, request_released, f
     monkeypatch.setattr(app.state, "protection_processor", mock_processor)
     monkeypatch.setattr(backend_main, "PROCESSOR_TIMEOUT_SECONDS", 1.0)
     assert protect_request().status_code == 200
+    assert protect_request(request_id="different-after-timeout").status_code == 200
 
 
 def test_cancellation_keeps_id_until_worker_finishes(monkeypatch, request_released):
@@ -139,6 +142,7 @@ def test_cancellation_keeps_id_until_worker_finishes(monkeypatch, request_releas
         return synthetic_image()
 
     monkeypatch.setattr(app.state, "protection_processor", processor)
+    monkeypatch.setattr(backend_main, "MAX_PENDING_PROCESSOR_REQUESTS", 1)
 
     async def cancel_request():
         task = asyncio.create_task(backend_main.protect_image(
@@ -155,12 +159,97 @@ def test_cancellation_keeps_id_until_worker_finishes(monkeypatch, request_releas
         asyncio.run(cancel_request())
         assert not request_released.is_set()
         assert protect_request().status_code == 409
+        assert protect_request(request_id="different-after-cancellation").json()["code"] == "SERVER_BUSY"
     finally:
         finish.set()
         assert request_released.wait(timeout=2)
 
     monkeypatch.setattr(app.state, "protection_processor", mock_processor)
     assert protect_request().status_code == 200
+    assert protect_request(request_id="different-after-cancellation").status_code == 200
+
+
+def test_capacity_counts_running_and_queued_jobs(monkeypatch):
+    started = Event()
+    queued = Event()
+    finish = Event()
+    calls = []
+    original_claim = backend_main.claim_request_id
+
+    def claim(request_id):
+        outcome = original_claim(request_id)
+        if request_id == "capacity-queued" and outcome == "accepted":
+            queued.set()
+        return outcome
+
+    def processor(*_):
+        calls.append(True)
+        started.set()
+        if not finish.wait(timeout=5):
+            raise RuntimeError("test worker did not resume")
+        return synthetic_image()
+
+    monkeypatch.setattr(backend_main, "claim_request_id", claim)
+    monkeypatch.setattr(backend_main, "MAX_PENDING_PROCESSOR_REQUESTS", 2)
+    monkeypatch.setattr(app.state, "protection_processor", processor)
+    with ThreadPoolExecutor(max_workers=1) as processing_pool, ThreadPoolExecutor(max_workers=2) as requests:
+        monkeypatch.setattr(backend_main, "PROCESSOR_EXECUTOR", processing_pool)
+        first = requests.submit(protect_request, request_id="capacity-running")
+        second = None
+        try:
+            assert started.wait(timeout=2)
+            second = requests.submit(protect_request, request_id="capacity-queued")
+            assert queued.wait(timeout=2)
+            busy_response = protect_request(request_id="capacity-retry")
+            assert busy_response.status_code == 503
+            assert busy_response.json() == {
+                "request_id": "capacity-retry",
+                "code": "SERVER_BUSY",
+                "message": "서버가 처리 중인 요청이 많습니다. 잠시 후 다시 시도해 주세요.",
+                "retryable": True,
+            }
+            assert protect_request(request_id="capacity-queued").status_code == 409
+            assert protect_request(request_id="capacity-invalid", strength="2").status_code == 400
+            assert protect_request(request_id="capacity-empty", regions="[]").status_code == 200
+            assert client.get("/").status_code == 200
+            assert client.get("/ready").status_code == 200
+            assert len(calls) == 1
+        finally:
+            finish.set()
+        assert first.result(timeout=2).status_code == 200
+        assert second.result(timeout=2).status_code == 200
+        assert len(calls) == 2
+        assert protect_request(request_id="capacity-retry").status_code == 200
+        assert len(calls) == 3
+
+
+@pytest.mark.parametrize("bad_result", [False, True])
+def test_processing_failure_releases_capacity(monkeypatch, request_released, bad_result):
+    def processor(*_):
+        if bad_result:
+            return b"not an image"
+        raise RuntimeError("synthetic processor failure")
+
+    monkeypatch.setattr(backend_main, "MAX_PENDING_PROCESSOR_REQUESTS", 1)
+    monkeypatch.setattr(app.state, "protection_processor", processor)
+    assert protect_request(request_id="capacity-failure").status_code == 500
+    assert request_released.wait(timeout=2)
+    monkeypatch.setattr(app.state, "protection_processor", mock_processor)
+    assert protect_request(request_id="capacity-after-failure").status_code == 200
+
+
+def test_submission_failure_releases_capacity(monkeypatch):
+    class FailingExecutor:
+        def submit(self, *_):
+            raise RuntimeError("synthetic submission failure")
+
+    original_executor = backend_main.PROCESSOR_EXECUTOR
+    monkeypatch.setattr(backend_main, "MAX_PENDING_PROCESSOR_REQUESTS", 1)
+    monkeypatch.setattr(backend_main, "PROCESSOR_EXECUTOR", FailingExecutor())
+    monkeypatch.setattr(app.state, "protection_processor", mock_processor)
+    assert protect_request(request_id="capacity-submit-failure").status_code == 500
+    monkeypatch.setattr(backend_main, "PROCESSOR_EXECUTOR", original_executor)
+    assert protect_request(request_id="capacity-after-submit-failure").status_code == 200
 
 
 def test_root_reports_server_running_without_processor():
