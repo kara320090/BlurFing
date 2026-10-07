@@ -3,6 +3,7 @@ package com.blurfing.app.ui.components
 import android.graphics.RectF
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -14,6 +15,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import com.blurfing.app.model.NormalizedRegion
 import com.blurfing.app.utils.CoordinateTransformer
+import com.blurfing.app.utils.RegionTransform
+import com.blurfing.app.utils.RegionCorner
 
 /**
  * 손끝 지문 영역 후보 오버레이 및 인터랙티브 편집 캔버스.
@@ -33,15 +36,32 @@ fun FingertipOverlayCanvas(
     var dragPreview by remember { mutableStateOf<NormalizedRegion?>(null) }
     val latestRegions by rememberUpdatedState(regions)
     val updateRegion by rememberUpdatedState(onRegionUpdated)
+    val latestSelected by rememberUpdatedState(selectedRegionIndex)
+    var resizeCorner by remember { mutableStateOf<RegionCorner?>(null) }
 
     Canvas(
         modifier = modifier
             .fillMaxSize()
             .pointerInput(imageBounds) {
+                detectTapGestures { offset ->
+                    latestRegions.indices.reversed().firstOrNull {
+                        CoordinateTransformer.normalizedRegionToScreenRect(latestRegions[it], imageBounds)
+                            .contains(offset.x, offset.y)
+                    }?.let(onRegionSelected)
+                }
+            }
+            .pointerInput(imageBounds) {
                 detectDragGestures(
                     onDragStart = { offset ->
+                        val selected = latestSelected?.takeIf { it in latestRegions.indices }
+                        val selectedRect = selected?.let { CoordinateTransformer.normalizedRegionToScreenRect(latestRegions[it], imageBounds) }
+                        val handles = selectedRect?.let { listOf(
+                            RegionCorner.TOP_LEFT to Offset(it.left,it.top), RegionCorner.TOP_RIGHT to Offset(it.right,it.top),
+                            RegionCorner.BOTTOM_LEFT to Offset(it.left,it.bottom), RegionCorner.BOTTOM_RIGHT to Offset(it.right,it.bottom)) }
+                        resizeCorner = handles?.minByOrNull { (it.second-offset).getDistance() }
+                            ?.takeIf { (it.second-offset).getDistance() <= 24f }?.first
                         // 터치 지점이 포함된 영역 찾기
-                        val hitIndex = latestRegions.indices.reversed().firstOrNull { index ->
+                        val hitIndex = if (resizeCorner != null) selected else latestRegions.indices.reversed().firstOrNull { index ->
                             val screenRect = CoordinateTransformer.normalizedRegionToScreenRect(
                                 latestRegions[index],
                                 imageBounds
@@ -60,9 +80,10 @@ fun FingertipOverlayCanvas(
                         val currentIndex = draggingIndex ?: return@detectDragGestures
                         val currentRegion = dragPreview ?: return@detectDragGestures
                         if (imageBounds.width() <= 0 || imageBounds.height() <= 0) return@detectDragGestures
-                        dragPreview = currentRegion.copy(
-                            x = (currentRegion.x + dragAmount.x / imageBounds.width()).coerceIn(0f, 1f-currentRegion.width),
-                            y = (currentRegion.y + dragAmount.y / imageBounds.height()).coerceIn(0f, 1f-currentRegion.height))
+                        val dx = dragAmount.x / imageBounds.width()
+                        val dy = dragAmount.y / imageBounds.height()
+                        dragPreview = resizeCorner?.let { RegionTransform.resize(currentRegion,it,dx,dy) }
+                            ?: RegionTransform.move(currentRegion,dx,dy)
                     },
                     onDragEnd = {
                         val index = draggingIndex
@@ -70,11 +91,13 @@ fun FingertipOverlayCanvas(
                         draggingIndex = null
                         dragStartOffset = null
                         dragPreview = null
+                        resizeCorner = null
                     },
                     onDragCancel = {
                         draggingIndex = null
                         dragStartOffset = null
                         dragPreview = null
+                        resizeCorner = null
                     }
                 )
             }
