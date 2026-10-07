@@ -3,6 +3,8 @@ package com.blurfing.app.ui.screens
 import android.graphics.Bitmap
 import android.graphics.RectF
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,6 +22,8 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import com.blurfing.app.model.NormalizedRegion
 import com.blurfing.app.ui.components.FingertipOverlayCanvas
 import com.blurfing.app.utils.CoordinateTransformer
@@ -123,6 +127,16 @@ fun RegionEditorScreen(
                 )
             }
 
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                regions.forEachIndexed { index, _ ->
+                    FilterChip(selected = selectedIndex == index, onClick = { selectedIndex = index }, label = { Text("영역 ${index+1}") })
+                }
+            }
+            selectedIndex?.let { index ->
+                regions.getOrNull(index)?.let { region ->
+                    RegionSizeControls(region, bitmap.width, bitmap.height) { onUpdateRegion(index,it) }
+                }
+            }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 TextButton(onClick = onUndo, enabled = canUndo) { Text("실행 취소") }
                 TextButton(onClick = onRedo, enabled = canRedo) { Text("다시 실행") }
@@ -168,4 +182,21 @@ fun RegionEditorScreen(
             }
         }
     }
+}
+
+@Composable
+private fun RegionSizeControls(region: NormalizedRegion, imageWidth: Int, imageHeight: Int,
+    onChange: (NormalizedRegion) -> Unit) {
+    var width by remember(region) { mutableFloatStateOf(region.width) }
+    var height by remember(region) { mutableFloatStateOf(region.height) }
+    val minimumWidth = minOf(1f/imageWidth,region.width)
+    val minimumHeight = minOf(1f/imageHeight,region.height)
+    Text("선택 영역 크기 · ${ (width*imageWidth).toInt().coerceAtLeast(1) } × ${ (height*imageHeight).toInt().coerceAtLeast(1) }px",
+        style = MaterialTheme.typography.bodySmall)
+    Slider(value = width, onValueChange = { width=it }, valueRange = minimumWidth..maxOf(minimumWidth,1f-region.x),
+        onValueChangeFinished = { onChange(region.copy(width=width)) },
+        modifier = Modifier.height(32.dp).semantics { contentDescription="선택 영역 너비" })
+    Slider(value = height, onValueChange = { height=it }, valueRange = minimumHeight..maxOf(minimumHeight,1f-region.y),
+        onValueChangeFinished = { onChange(region.copy(height=height)) },
+        modifier = Modifier.height(32.dp).semantics { contentDescription="선택 영역 높이" })
 }
