@@ -18,6 +18,8 @@ import androidx.compose.ui.unit.dp
 import com.blurfing.app.model.ProtectionMethod
 import com.blurfing.app.model.ProcessingSettings
 import com.blurfing.app.repository.BackendAddress
+import com.blurfing.app.repository.BackendReadiness
+import com.blurfing.app.repository.ReadinessKind
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,7 +32,9 @@ fun ProcessingScreen(
     onCancelProcessing: () -> Unit,
     onBack: () -> Unit,
     processingError: String? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    readiness: BackendReadiness = BackendReadiness.Idle,
+    onCheckReadiness: () -> Unit = {}
 ) {
     val selectedMethod = settings.method
     val strength = settings.strength
@@ -136,6 +140,11 @@ fun ProcessingScreen(
                                 "처리를 시작하면 선택한 사진을 이 서버로 전송합니다. 서버가 준비되지 않았다면 Mock 프리뷰를 사용하세요.",
                                 style = MaterialTheme.typography.bodySmall
                             )
+                            OutlinedButton(onClick=onCheckReadiness,enabled=readiness.kind!=ReadinessKind.CHECKING) {
+                                Text("서버 준비 상태 확인")
+                            }
+                            Text(readiness.message,style=MaterialTheme.typography.bodySmall)
+                            Text("상태 확인에는 사진을 전송하지 않습니다.",style=MaterialTheme.typography.bodySmall)
                         } else {
                             Text(
                                 "로컬 Mock 프리뷰 · 사진을 전송하지 않습니다. 보호 성능은 미측정 상태입니다.",

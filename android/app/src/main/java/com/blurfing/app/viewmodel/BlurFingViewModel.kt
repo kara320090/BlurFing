@@ -19,6 +19,9 @@ import com.blurfing.app.repository.ApiProtectionRepository
 import com.blurfing.app.repository.BackendAddress
 import com.blurfing.app.repository.ProtectionResponseValidator
 import com.blurfing.app.repository.ProtectionRepository
+import com.blurfing.app.repository.BackendReadiness
+import com.blurfing.app.repository.BackendReadinessClient
+import com.blurfing.app.repository.ReadinessKind
 import com.blurfing.app.utils.ImageSaver
 import com.blurfing.app.utils.CameraCaptureFiles
 import com.blurfing.app.utils.PhotoImportException
@@ -86,20 +89,51 @@ open class BlurFingViewModel(
         ImageSaver.saveProtectedCopy(context, bitmap)
     },
     private val draftSession: DraftSession? = null,
-    private val settingsStore: ProcessingSettingsStore? = null
+    private val settingsStore: ProcessingSettingsStore? = null,
+    private val readinessCheck: suspend (String) -> BackendReadiness = { BackendReadinessClient().check(it) }
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Idle)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
     private val _settings = MutableStateFlow(settingsStore?.load() ?: ProcessingSettings())
     val settings: StateFlow<ProcessingSettings> = _settings.asStateFlow()
+    private val _readiness = MutableStateFlow(BackendReadiness.Idle)
+    val readiness: StateFlow<BackendReadiness> = _readiness.asStateFlow()
+    private var readinessJob: Job? = null
+    private var readinessId: String? = null
 
     fun updateSettings(settings: ProcessingSettings) {
         if ((_uiState.value as? UiState.Ready)?.isProcessing == true) return
         if (!settings.strength.isFinite() || settings.strength !in 0.1f..1f) return
         val normalized = settings.copy(serverAddress = settings.serverAddress.take(2048))
+        if(normalized.serverAddress != _settings.value.serverAddress || normalized.useServer != _settings.value.useServer) clearReadiness()
         _settings.value = normalized
         settingsStore?.save(normalized)
+    }
+
+    fun checkBackendReadiness() {
+        if((_uiState.value as? UiState.Ready)?.isProcessing == true || !_settings.value.useServer) return
+        clearReadiness()
+        val address = try { BackendAddress.normalize(_settings.value.serverAddress,BuildConfig.DEBUG) }
+            catch (_: IllegalArgumentException) {
+                _readiness.value=BackendReadiness(ReadinessKind.ERROR,"서버 주소를 확인해 주세요."); return
+            }
+        val id=UUID.randomUUID().toString()
+        readinessId=id
+        _readiness.value=BackendReadiness.Checking
+        readinessJob=viewModelScope.launch {
+            try {
+                val result=readinessCheck(address)
+                if(readinessId==id) _readiness.value=result
+            } catch(error: CancellationException) { throw error }
+            catch(_: Exception) { if(readinessId==id) _readiness.value=BackendReadiness(ReadinessKind.ERROR,"서버 준비 상태를 확인하지 못했습니다.") }
+            finally { if(readinessId==id) { readinessId=null; readinessJob=null } }
+        }
+    }
+
+    private fun clearReadiness() {
+        readinessId=null; readinessJob?.cancel(); readinessJob=null
+        _readiness.value=BackendReadiness.Idle
     }
 
     private var activeProcessingJob: Job? = null
@@ -434,6 +468,7 @@ open class BlurFingViewModel(
     }
 
     fun resetToIdle() {
+        clearReadiness()
         regionHistory.clear()
         draftSession?.clear()
         cancelSaving()
