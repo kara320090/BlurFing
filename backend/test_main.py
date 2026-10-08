@@ -2,8 +2,12 @@ import asyncio
 import base64
 import io
 import json
+import os
+import subprocess
+import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from threading import Event
 
 import pytest
@@ -16,6 +20,54 @@ from mock_processor import MockProcessor, mock_processor
 
 
 client = TestClient(app)
+
+
+def load_settings_in_new_process(overrides):
+    environment = os.environ.copy()
+    environment.pop("BLURFING_PROCESSOR_TIMEOUT_SECONDS", None)
+    environment.pop("BLURFING_MAX_PENDING_PROCESSOR_REQUESTS", None)
+    environment.update(overrides)
+    environment["PYTHONDONTWRITEBYTECODE"] = "1"
+    environment["PYTHONIOENCODING"] = "utf-8"
+    return subprocess.run(
+        [sys.executable, "-c",
+         "import json, main; print(json.dumps([main.PROCESSOR_TIMEOUT_SECONDS, "
+         "main.MAX_PENDING_PROCESSOR_REQUESTS]))"],
+        cwd=Path(__file__).resolve().parent,
+        env=environment,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=10,
+    )
+
+
+@pytest.mark.parametrize(
+    "overrides, expected",
+    [
+        ({}, [30.0, 4]),
+        ({"BLURFING_PROCESSOR_TIMEOUT_SECONDS": "0.2",
+          "BLURFING_MAX_PENDING_PROCESSOR_REQUESTS": "2"}, [0.2, 2]),
+    ],
+)
+def test_startup_reads_server_settings(overrides, expected):
+    result = load_settings_in_new_process(overrides)
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout) == expected
+
+
+@pytest.mark.parametrize(
+    "name, value",
+    [("BLURFING_PROCESSOR_TIMEOUT_SECONDS", value)
+     for value in ("", "0", "-1", "NaN", "inf", "invalid")]
+    + [("BLURFING_MAX_PENDING_PROCESSOR_REQUESTS", value)
+       for value in ("", "0", "-1", "1.5", "NaN", "invalid")],
+)
+def test_startup_rejects_invalid_server_settings(name, value):
+    result = load_settings_in_new_process({name: value})
+    assert result.returncode != 0
+    assert f"ValueError: {name} must be" in result.stderr
+    assert not result.stdout
 
 
 @pytest.fixture

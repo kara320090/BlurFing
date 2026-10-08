@@ -3,6 +3,7 @@ import base64
 import io
 import json
 import math
+import os
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -15,13 +16,36 @@ from pydantic import BaseModel
 
 from mock_processor import MockProcessor
 
+
+def read_positive_float_env(name: str, default: float) -> float:
+    message = f"{name} must be a finite number greater than zero."
+    try:
+        value = float(os.environ.get(name, str(default)))
+    except ValueError as exc:
+        raise ValueError(message) from exc
+    if not math.isfinite(value) or value <= 0:
+        raise ValueError(message)
+    return value
+
+
+def read_positive_int_env(name: str, default: int) -> int:
+    message = f"{name} must be an integer greater than zero."
+    try:
+        value = int(os.environ.get(name, str(default)))
+    except ValueError as exc:
+        raise ValueError(message) from exc
+    if value <= 0:
+        raise ValueError(message)
+    return value
+
+
 app = FastAPI(title="BlurFing Backend")
 app.state.protection_processor = None
 
 MAX_IMAGE_SIZE_BYTES = 15 * 1024 * 1024
 MAX_IMAGE_PIXELS = 20_000_000
-PROCESSOR_TIMEOUT_SECONDS = 30.0
-MAX_PENDING_PROCESSOR_REQUESTS = 4
+PROCESSOR_TIMEOUT_SECONDS = read_positive_float_env("BLURFING_PROCESSOR_TIMEOUT_SECONDS", 30.0)
+MAX_PENDING_PROCESSOR_REQUESTS = read_positive_int_env("BLURFING_MAX_PENDING_PROCESSOR_REQUESTS", 4)
 SUPPORTED_IMAGE_TYPES = {"image/jpeg", "image/png"}
 SUPPORTED_METHODS = {"gaussian_blur"}
 IN_FLIGHT_REQUEST_IDS: set[str] = set()

@@ -13,7 +13,7 @@
 | `main.py` | FastAPI 앱, 요청 검사, 처리 함수 호출, 결과 검사, 응답과 중복 차단 |
 | `mock_processor.py` | 지연 가능한 MockProcessor와 기본 인스턴스 |
 | `mock_main.py` | 환경 변수로 지연 시간을 읽고 Mock을 연결하는 개발용 진입점 |
-| `test_main.py` | 테스트 준비 도구와 함수 34개, 매개변수 포함 사례 48개 |
+| `test_main.py` | 테스트 준비 도구와 함수 36개, 매개변수 포함 사례 62개 |
 | `check_mock_http.py` | 실행 중인 Mock 서버에 합성 PNG·JPEG를 보내는 HTTP 확인 도구 |
 | `requirements.txt` | fastapi, pillow, python-multipart, uvicorn |
 | `requirements-dev.txt` | 실행 의존성 포함 및 httpx, pytest 추가 |
@@ -27,14 +27,15 @@
 - `POST /v1/protect` 요청 검증: 이미지 형식·크기, 처리 방식·강도, 영역 좌표
 - AI 처리 모듈을 호출할 연결 지점과 결과 이미지 형식·해상도 검사
 - 성공·오류 응답 모델과 OpenAPI 응답 정의
-- AI 처리 함수를 별도 스레드에서 실행하고 처리 결과 대기에 30초 제한 적용
+- AI 처리 함수를 별도 스레드에서 실행하고 처리 결과 대기에 기본 30초 제한 적용
 - 처리 중인 `request_id`의 중복 실행 차단
-- 실행·대기 작업의 총 접수 한도 4개와 한도 초과 시 `503 SERVER_BUSY` 반환
+- 실행·대기 작업의 총 접수 한도 기본 4개와 한도 초과 시 `503 SERVER_BUSY` 반환
+- 환경 변수로 처리 대기 시간·접수 한도 설정, 서버 시작 시 잘못된 값 거부
 - 오류 응답과 영역이 없을 때의 `no_regions` 응답
 - 필수 입력값 누락을 포함한 오류 응답 형식 통일
 - 입력을 PNG로 저장해 반환하는 개발용 Mock과 별도 실행 진입점; 합성 RGB PNG·JPEG의 크기·픽셀 유지는 테스트로 확인
 - 실행 중인 Mock 서버의 상태와 PNG·JPEG 입출력을 검사하는 HTTP 확인 스크립트
-- 합성 이미지 기반 백엔드 테스트 48개 (접수 한도, 실패·시간 초과·취소 후 자리 해제, 지연 Mock, PNG·JPEG 반환, 용량 초과, 잘못된 영역, AI 결과 크기 오류 포함)
+- 백엔드 테스트 62개 (서버 시작 설정 검사, 합성 이미지 기반 접수 한도, 실패·시간 초과·취소 후 자리 해제, 지연 Mock, PNG·JPEG 반환, 용량 초과, 잘못된 영역, AI 결과 크기 오류 포함)
 
 ## 현재 상태
 
@@ -62,15 +63,44 @@ AI 모듈 연결 지점은 `app.state.protection_processor`입니다. 연결할 
 
 서버 실행 후 `GET /`는 서버가 실행 중이면 `200`을 반환합니다. `GET /ready`는 처리 함수가 연결되어 있으면 `200`과 `{"status":"ready"}`를, 연결되지 않았으면 `503`과 `PROCESSOR_UNAVAILABLE` 오류를 반환합니다. 예를 들어 `curl http://127.0.0.1:8000/ready`로 확인할 수 있습니다. 이 응답은 함수 연결 여부만 확인하며 실제 이미지 처리 성공이나 AI 보호 성능을 검증하지 않습니다.
 
-처리 함수를 제출한 뒤 결과 대기에 30초 제한을 적용합니다. 스레드 풀 대기 시간도 포함하지만 업로드·입력 검사·결과 이미지 검사·Base64 변환을 포함한 요청 전체의 30초 제한은 아닙니다. 대기 제한을 넘으면 `504 PROCESSING_TIMEOUT`과 `retryable: true`를 반환합니다. 실행 중인 함수는 응답 뒤에도 계속 실행될 수 있습니다. 작업 자체를 중단하려면 처리 모듈의 취소 지원이나 별도 프로세스 격리가 필요합니다.
+처리 함수를 제출한 뒤 결과 대기에 설정된 제한 시간(기본 30초)을 적용합니다. 스레드 풀 대기 시간도 포함하지만 업로드·입력 검사·결과 이미지 검사·Base64 변환을 포함한 요청 전체의 제한은 아닙니다. 대기 제한을 넘으면 `504 PROCESSING_TIMEOUT`과 `retryable: true`를 반환합니다. 실행 중인 함수는 응답 뒤에도 계속 실행될 수 있습니다. 작업 자체를 중단하려면 처리 모듈의 취소 지원이나 별도 프로세스 격리가 필요합니다.
 
 같은 `request_id`가 처리 중이면 후속 요청은 `409 REQUEST_IN_PROGRESS`와 `retryable: true`를 반환합니다. 실제 AI 함수가 종료되면 성공·실패와 관계없이 ID를 정리해 재시도할 수 있습니다. 시간 초과 응답을 반환했거나 요청이 취소됐어도 AI 실행이 남아 있다면 같은 ID를 계속 차단합니다. 이 중복 차단 상태는 서버 프로세스 안에서 관리되므로 여러 서버 프로세스를 함께 실행할 때는 공유 저장소를 이용한 중복 차단이 추가로 필요합니다.
 
 시간 초과나 요청 취소는 AI 스레드를 강제로 중단하지 않습니다. AI 함수가 끝날 때까지 ID를 유지하므로 같은 ID의 이전 실행과 재시도가 겹치지 않습니다. 함수가 영구적으로 멈추면 해당 ID도 계속 차단되며 작업 자체의 취소·복구 기능은 별도 구현이 필요합니다. 완료된 결과를 저장하거나 같은 ID의 결과를 캐시하는 기능은 없습니다.
 
+## 서버 환경 변수 설정
+
+`main.py`를 처음 불러올 때 다음 환경 변수를 읽습니다. 기본 서버 `main:app`과 개발용 서버 `mock_main:app` 모두에 적용됩니다.
+
+| 환경 변수 | 기본값 | 허용 값 |
+|---|---|---|
+| `BLURFING_PROCESSOR_TIMEOUT_SECONDS` | 30초 | 0보다 큰 유한한 숫자; 소수 허용 |
+| `BLURFING_MAX_PENDING_PROCESSOR_REQUESTS` | 4개 | 0보다 큰 정수 |
+
+변수가 없으면 기본값을 사용합니다. 빈 문자열, 숫자가 아닌 값, 0·음수, NaN·무한대는 거부합니다. 접수 한도의 소수 값도 거부합니다. 잘못된 값이 있으면 변수 이름을 포함한 `ValueError`로 앱 초기화가 실패하며, 임의로 기본값으로 바꾸지 않습니다.
+
+PowerShell에서 대기 제한을 10초, 접수 한도를 2개로 설정하는 예입니다.
+
+```powershell
+$env:BLURFING_PROCESSOR_TIMEOUT_SECONDS = "10"
+$env:BLURFING_MAX_PENDING_PROCESSOR_REQUESTS = "2"
+uvicorn main:app --reload
+```
+
+Mock을 사용할 때는 마지막 명령을 `uvicorn mock_main:app --reload`로 바꿉니다. 설정을 바꾼 뒤에는 서버를 종료하고 같은 환경 변수를 지정한 터미널에서 다시 실행해야 합니다. 실행 중 자동 변경이나 `.env` 파일 자동 로딩은 구현하지 않았습니다. 기본값으로 돌아가려면 서버 종료 후 변수를 제거하고 다시 실행합니다.
+
+```powershell
+Remove-Item Env:BLURFING_PROCESSOR_TIMEOUT_SECONDS -ErrorAction SilentlyContinue
+Remove-Item Env:BLURFING_MAX_PENDING_PROCESSOR_REQUESTS -ErrorAction SilentlyContinue
+uvicorn main:app --reload
+```
+
+이 설정은 AI 처리 결과 대기와 실행·대기 작업 총 접수 한도만 바꿉니다. 스레드 풀의 스레드 수나 업로드 제한은 바꾸지 않습니다.
+
 ## 작업 접수 한도와 과부하 응답
 
-한 프로세스에서 처리 함수에 제출할 수 있는 실행·대기 작업의 합계는 기본 4개입니다. 설정은 `main.py`의 `MAX_PENDING_PROCESSOR_REQUESTS` 상수이며 환경 변수 설정은 없습니다. 값을 바꾸려면 코드를 수정하고 서버를 재시작해야 합니다.
+한 프로세스에서 처리 함수에 제출할 수 있는 실행·대기 작업의 합계는 기본 4개입니다. `BLURFING_MAX_PENDING_PROCESSOR_REQUESTS` 환경 변수의 값이 `main.py`의 `MAX_PENDING_PROCESSOR_REQUESTS`에 반영됩니다. 코드를 수정하지 않고 환경 변수를 지정한 뒤 서버를 재시작해 조정할 수 있습니다.
 
 영역이 있는 요청이 입력 검사와 처리기 연결 검사를 통과한 뒤 접수 한도를 검사합니다. 이미 등록된 ID는 한도가 차 있어도 `409 REQUEST_IN_PROGRESS`를 우선 반환합니다. 새 ID이며 한도가 차 있으면 작업을 제출하거나 ID를 등록하지 않고 다음 응답을 반환합니다.
 
@@ -94,8 +124,8 @@ HTTP 상태는 503입니다. Retry-After 헤더나 자동 재시도는 구현하
 - `app`: 이름이 `BlurFing Backend`인 FastAPI 앱입니다. `app.state.protection_processor`의 초기값은 `None`입니다.
 - `MAX_IMAGE_SIZE_BYTES`: 파일 크기 제한은 `15 * 1024 * 1024`바이트(15MiB)입니다.
 - `MAX_IMAGE_PIXELS`: 이미지 해상도 제한은 가로×세로 2,000만 화소입니다.
-- `PROCESSOR_TIMEOUT_SECONDS`: AI 함수의 응답 대기 제한은 30초입니다.
-- `MAX_PENDING_PROCESSOR_REQUESTS`: 실제 작업이 끝나지 않은 접수 ID 수를 프로세스당 4개로 제한합니다. 스레드 풀에서 실행 중인 작업과 대기 중인 작업을 합친 수입니다.
+- `PROCESSOR_TIMEOUT_SECONDS`: 환경 변수로 설정하는 AI 함수의 응답 대기 제한이며 기본값은 30초입니다.
+- `MAX_PENDING_PROCESSOR_REQUESTS`: 환경 변수로 설정하는 실제 작업이 끝나지 않은 접수 ID 수의 프로세스당 한도이며 기본값은 4개입니다. 스레드 풀에서 실행 중인 작업과 대기 중인 작업을 합친 수입니다.
 - `SUPPORTED_IMAGE_TYPES`: 업로드 MIME 타입은 `image/jpeg`, `image/png`를 허용합니다.
 - `SUPPORTED_METHODS`: 보호 방식은 `gaussian_blur`를 허용합니다.
 - `IN_FLIGHT_REQUEST_IDS`, `IN_FLIGHT_REQUEST_IDS_LOCK`: 처리 중인 요청 ID를 집합으로 관리하고 `threading.Lock`으로 등록·해제를 보호합니다.
@@ -107,6 +137,8 @@ HTTP 상태는 503입니다. Retry-After 헤더나 자동 재시도는 구현하
 
 | 함수 / API | 기능 |
 |---|---|
+| `read_positive_float_env` | 환경 변수의 실수 변환 및 유한한 양수 검사; 미설정 시 기본값, 잘못된 값은 변수 이름을 포함한 ValueError |
+| `read_positive_int_env` | 환경 변수의 정수 변환 및 양수 검사; 미설정 시 기본값, 잘못된 값은 변수 이름을 포함한 ValueError |
 | `health_check` / `GET /` | AI 미연결 상태에서도 `200`과 `{"message":"BlurFing backend is running"}` 반환 |
 | `readiness_check` / `GET /ready` | 처리 함수가 호출 가능한지 확인; 연결 시 `200 ready`, 미연결·호출 불가 시 `503 PROCESSOR_UNAVAILABLE` |
 | `error_response` | 지정된 HTTP 상태와 `request_id`, `code`, `message`, `retryable`을 담은 `JSONResponse` 생성; 재시도 기본값은 false |
@@ -145,7 +177,7 @@ HTTP 상태는 503입니다. Retry-After 헤더나 자동 재시도는 구현하
 1. 이미지 검증 뒤 영역이 생략됐거나 빈 배열이면 AI를 호출하지 않고 `200 no_regions` 반환.
 2. 영역이 있으면 AI 함수의 호출 가능 여부 검사; 미연결·호출 불가 시 `503 PROCESSOR_UNAVAILABLE`.
 3. 같은 잠금 안에서 요청 ID 중복 여부와 접수 한도를 검사합니다. 중복이면 `409 REQUEST_IN_PROGRESS`, 다른 ID이면서 한도가 차 있으면 `503 SERVER_BUSY`를 반환합니다. 허용된 ID만 등록하고 작업을 제출합니다.
-4. 동기 AI 함수를 `PROCESSOR_EXECUTOR.submit`으로 제출하고 완료 콜백을 등록합니다. `asyncio.wrap_future`로 결과를 기다리며 `asyncio.shield`로 시간 초과·요청 취소가 작업에 전파되지 않게 하고 `asyncio.wait_for`로 최대 30초 대기합니다. 이 제한에는 스레드 풀 대기 시간도 포함됩니다.
+4. 동기 AI 함수를 `PROCESSOR_EXECUTOR.submit`으로 제출하고 완료 콜백을 등록합니다. `asyncio.wrap_future`로 결과를 기다리며 `asyncio.shield`로 시간 초과·요청 취소가 작업에 전파되지 않게 하고 `asyncio.wait_for`로 설정된 제한 시간(기본 30초)까지 대기합니다. 이 제한에는 스레드 풀 대기 시간도 포함됩니다.
 5. 대기 제한 초과 또는 처리 함수의 TimeoutError는 `504 PROCESSING_TIMEOUT`; 그 밖의 이 블록에서 잡힌 예외는 `500 PROCESSING_FAILED`로 처리합니다. 작업 제출 실패도 500에 포함됩니다.
 6. AI 결과가 디코딩 가능한 PNG이고 입력과 가로·세로 크기가 같은지 검사. 실패하면 `500 PROCESSING_FAILED` 반환.
 7. 검증한 PNG를 Base64로 변환하고 `200 succeeded` 반환. 내부 예외 내용은 오류 응답에 노출하지 않습니다.
@@ -196,6 +228,7 @@ AI 함수에 전달하는 값은 `(원본 이미지 바이트, 방식 문자열,
 ### 테스트 준비 도구
 
 - `client = TestClient(app)`: 별도 서버 실행 없이 FastAPI API를 호출합니다.
+- `load_settings_in_new_process()`: 두 서버 설정 변수를 정리한 별도 Python 프로세스에서 `main`을 불러와 기본값·지정값·초기화 실패를 검사합니다. 테스트 중인 앱이나 스레드 풀을 다시 만들지 않습니다.
 - `synthetic_image()`: 흰 배경에 빨강·파랑 패턴이 있는 40×40 PNG를 메모리에서 생성합니다. 개인 사진·실제 지문은 사용하지 않습니다.
 - `protect_request()`: 합성 PNG, 기본 요청 ID, `gaussian_blur`, 강도 0.5, 정규화 영역으로 요청을 만듭니다. 이미지와 폼 값을 덮어써 오류 조건을 재현할 수 있습니다.
 - 테스트용 AI 함수를 연결한 테스트는 사용 후 함수를 해제합니다. `monkeypatch`로 변경한 제한 시간은 테스트 종료 시 복원됩니다.
@@ -204,10 +237,12 @@ AI 함수에 전달하는 값은 `(원본 이미지 바이트, 방식 문자열,
 
 ### 전체 테스트 목록
 
-테스트 함수 34개이며, 매개변수별 사례를 포함하면 총 48개입니다.
+테스트 함수 36개이며, 매개변수별 사례를 포함하면 총 62개입니다.
 
 | 테스트 함수 | 확인 내용 | 사례 수 |
 |---|---|---|
+| `test_startup_reads_server_settings` | 새 프로세스에서 미설정 기본값 30초·4개와 지정값 0.2초·2개 반영 | 2 |
+| `test_startup_rejects_invalid_server_settings` | 각 변수의 빈 값·0·음수·NaN·문자열, 시간의 무한대·한도의 소수 거부; 초기화 실패와 오류 변수 이름 확인 | 12 |
 | `test_mock_returns_png_with_original_pixels` | PNG·JPEG 입력 각각의 크기와 디코딩된 픽셀 유지, PNG 출력, mock 표시와 경고 | 2 |
 | `test_mock_without_regions_is_marked_as_mock` | 빈 영역 응답에서도 mock 표시와 두 경고 유지 | 1 |
 | `test_mock_entrypoint_connects_processor` | 환경 변수의 지연 0·0.01초 설정 반영, ready 응답 및 Mock API 호출 | 2 |
@@ -251,6 +286,8 @@ AI 함수에 전달하는 값은 `(원본 이미지 바이트, 방식 문자열,
 
 2026-10-07 과부하 처리 추가 후 같은 환경·명령으로 실행한 결과는 `48 passed, 2 warnings`입니다. 실행·대기 작업 합계 제한, 오류 응답, 작업 종료 후 자리 반환을 합성 이미지·테스트용 처리 함수로 확인했습니다. 이날 실제 HTTP 서버·Android·실제 AI 성능 확인은 실행하지 않았습니다.
 
+2026-10-08 서버 환경 변수 설정 추가 후 같은 환경·명령으로 실행한 결과는 `62 passed, 2 warnings`입니다. 새 Python 프로세스에서 기본값·지정값 적용과 잘못된 설정의 초기화 실패를 확인하고 기존 백엔드 테스트도 재실행했습니다. 경고는 위와 같은 의존성 사용 중단 경고입니다. 이날 실제 HTTP 서버·Android·실제 AI 성능 확인은 실행하지 않았습니다.
+
 코드에 구현됐지만 현재 전용 테스트가 없는 항목에는 공백 ID, 빈 이미지, 화소 제한 초과, 영역 생략, 영역 키·타입·y 경계 검사, 비PNG AI 결과, 호출 불가능한 AI 함수 등이 있습니다. 실행 1개·대기 1개의 동시 접수는 위 테스트로 확인하지만 실제 AI 작업 여러 개를 병렬 실행하는 부하 시험은 하지 않았습니다. 구현된 기능과 테스트로 확인한 범위는 구분해야 합니다.
 
 ## 이미지 반환 Mock 사용 방법
@@ -269,6 +306,7 @@ uvicorn mock_main:app --reload
 
 ```powershell
 $env:BLURFING_MOCK_DELAY_SECONDS = "35"
+$env:BLURFING_PROCESSOR_TIMEOUT_SECONDS = "30"
 uvicorn mock_main:app --reload
 ```
 
@@ -289,13 +327,15 @@ uvicorn mock_main:app --reload
 
 ## 실제 HTTP 이미지 입출력 확인
 
-`check_mock_http.py`는 `TestClient` 대신 실제로 실행 중인 서버에 HTTP 요청을 보냅니다. pytest 48개와 별도로 실행하는 확인 도구이며, 합성 이미지와 반환 PNG는 메모리에서만 처리하고 파일로 저장하지 않습니다.
+`check_mock_http.py`는 `TestClient` 대신 실제로 실행 중인 서버에 HTTP 요청을 보냅니다. pytest 62개와 별도로 실행하는 확인 도구이며, 합성 이미지와 반환 PNG는 메모리에서만 처리하고 파일로 저장하지 않습니다.
 
 `backend` 폴더의 첫 번째 터미널에서 개발 의존성을 설치하고 지연 없는 Mock 서버를 실행합니다.
 
 ```powershell
 pip install -r requirements-dev.txt
 $env:BLURFING_MOCK_DELAY_SECONDS = "0"
+$env:BLURFING_PROCESSOR_TIMEOUT_SECONDS = "30"
+$env:BLURFING_MAX_PENDING_PROCESSOR_REQUESTS = "4"
 uvicorn mock_main:app --host 127.0.0.1 --port 8765
 ```
 
@@ -337,6 +377,6 @@ python check_mock_http.py --base-url http://127.0.0.1:8765
 - 시간 초과나 코루틴 취소는 작업 자체를 중단하지 않습니다. 영구 정지한 처리 함수의 ID를 강제로 해제하는 기능도 없습니다. 클라이언트 연결 종료가 항상 코루틴 취소로 전달되는지 확인한 HTTP 테스트는 없습니다.
 - ID는 처리 함수 종료 때 해제되므로 결과 검증·응답 전송 완료까지 동일 ID를 차단하지 않습니다. 영역 없음 응답은 ID 등록·중복 검사 전에 반환합니다.
 - 출력은 PNG 여부·크기·디코딩 가능 여부를 검사합니다. 출력 파일 바이트 크기, 실제 블러 적용, 지정 영역만 변경됐는지, 보호 효과는 검사하지 않습니다.
-- 입력 디코딩·결과 검사·Base64 변환은 핸들러에서 동기 수행합니다. 별도 스레드 실행과 30초 제한은 처리 함수 결과 대기에 적용됩니다.
+- 입력 디코딩·결과 검사·Base64 변환은 핸들러에서 동기 수행합니다. 별도 스레드 실행과 설정된 제한 시간(기본 30초)은 처리 함수 결과 대기에 적용됩니다.
 - 별도 결과 저장·캐시·자동 재시도·작업 상태 조회·취소 API·사용자 인증·CORS 설정·DB 연동·평가 API는 없습니다.
 - Mock과 HTTP 확인 스크립트는 메모리에서 이미지를 처리하지만 업로드는 FastAPI/Starlette의 UploadFile을 사용합니다. 프레임워크가 큰 multipart 업로드를 임시 파일로 처리할 수 있으므로 서버 전체가 디스크를 전혀 사용하지 않는다고 보장하지 않습니다.
