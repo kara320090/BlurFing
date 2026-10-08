@@ -61,6 +61,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val uiState by viewModel.uiState.collectAsState()
                     val processingSettings by viewModel.settings.collectAsState()
+                    val backendReadiness by viewModel.readiness.collectAsState()
                     val context = LocalContext.current
                     val pendingCameraUri by cameraViewModel.pendingUri.collectAsState()
                     val cameraError by cameraViewModel.error.collectAsState()
@@ -155,6 +156,8 @@ class MainActivity : ComponentActivity() {
                                     ProcessingScreen(
                                         isProcessing = state.isProcessing,
                                         settings = processingSettings,
+                                        readiness = backendReadiness,
+                                        onCheckReadiness = viewModel::checkBackendReadiness,
                                         onSettingsChanged = viewModel::updateSettings,
                                         onStartProcessing = { method, strength, serverUrl ->
                                             viewModel.startProtection(method, strength, serverUrl)
