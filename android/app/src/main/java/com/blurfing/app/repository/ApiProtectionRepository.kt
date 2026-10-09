@@ -104,7 +104,7 @@ class ApiProtectionRepository(
                             if (call.isCanceled() || cancelledRequestIds.contains(requestId)) {
                                 throw CancellationException("취소된 응답을 적용하지 않았습니다.")
                             }
-                            if (!it.isSuccessful) throw IOException(httpError(it.code))
+                            if (!it.isSuccessful) throw ProtectionHttpError.from(it,requestId)
                             val source = it.body?.source() ?: throw IOException("서버 응답이 비어 있습니다.")
                             source.request(MAX_RESPONSE_BYTES + 1)
                             if (source.buffer.size > MAX_RESPONSE_BYTES) throw IOException("서버 응답의 크기 제한을 초과했습니다.")
@@ -114,12 +114,16 @@ class ApiProtectionRepository(
                             parsed
                         }
                     }
+                    val safeResult = result.recoverCatching { error ->
+                        if(error is IOException || error is CancellationException) throw error
+                        throw IOException("서버의 처리 응답 형식을 확인해 주세요.")
+                    }
                     val finalResult = when {
                         cancelledRequestIds.contains(requestId) ->
                             Result.failure(CancellationException("취소된 응답을 적용하지 않았습니다."))
                         call.isCanceled() ->
                             Result.failure(IOException("서버 응답 시간이 초과되었습니다. 다시 시도해 주세요."))
-                        else -> result
+                        else -> safeResult
                     }
                     if (continuation.isActive) continuation.resume(finalResult)
                 }
