@@ -123,10 +123,10 @@ def parse_strength(value: str) -> float:
     try:
         strength = float(value)
     except ValueError as exc:
-        raise ValueError("strength는 0에서 1 사이의 숫자여야 합니다.") from exc
+        raise ValueError("strength는 0.1에서 1.0 사이의 숫자여야 합니다.") from exc
 
-    if not math.isfinite(strength) or not 0 <= strength <= 1:
-        raise ValueError("strength는 0에서 1 사이의 숫자여야 합니다.")
+    if not math.isfinite(strength) or not 0.1 <= strength <= 1.0:
+        raise ValueError("strength는 0.1에서 1.0 사이의 숫자여야 합니다.")
     return strength
 
 

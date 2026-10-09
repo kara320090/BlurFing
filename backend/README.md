@@ -13,7 +13,7 @@
 | `main.py` | FastAPI 앱, 요청 검사, 처리 함수 호출, 결과 검사, 응답과 중복 차단 |
 | `mock_processor.py` | 지연 가능한 MockProcessor와 기본 인스턴스 |
 | `mock_main.py` | 환경 변수로 지연 시간을 읽고 Mock을 연결하는 개발용 진입점 |
-| `test_main.py` | 테스트 준비 도구와 함수 36개, 매개변수 포함 사례 62개 |
+| `test_main.py` | 테스트 준비 도구와 함수 37개, 매개변수 포함 사례 71개 |
 | `check_mock_http.py` | 실행 중인 Mock 서버에 합성 PNG·JPEG를 보내는 HTTP 확인 도구 |
 | `requirements.txt` | fastapi, pillow, python-multipart, uvicorn |
 | `requirements-dev.txt` | 실행 의존성 포함 및 httpx, pytest 추가 |
@@ -24,7 +24,7 @@
 ## 지금까지 구현한 것
 
 - FastAPI 서버의 실행 확인용 `GET /`와 AI 모듈 연결 확인용 `GET /ready`
-- `POST /v1/protect` 요청 검증: 이미지 형식·크기, 처리 방식·강도, 영역 좌표
+- `POST /v1/protect` 요청 검증: 이미지 형식·크기, 처리 방식·강도(0.1~1.0), 영역 좌표
 - AI 처리 모듈을 호출할 연결 지점과 결과 이미지 형식·해상도 검사
 - 성공·오류 응답 모델과 OpenAPI 응답 정의
 - AI 처리 함수를 별도 스레드에서 실행하고 처리 결과 대기에 기본 30초 제한 적용
@@ -35,7 +35,7 @@
 - 필수 입력값 누락을 포함한 오류 응답 형식 통일
 - 입력을 PNG로 저장해 반환하는 개발용 Mock과 별도 실행 진입점; 합성 RGB PNG·JPEG의 크기·픽셀 유지는 테스트로 확인
 - 실행 중인 Mock 서버의 상태와 PNG·JPEG 입출력을 검사하는 HTTP 확인 스크립트
-- 백엔드 테스트 62개 (서버 시작 설정 검사, 합성 이미지 기반 접수 한도, 실패·시간 초과·취소 후 자리 해제, 지연 Mock, PNG·JPEG 반환, 용량 초과, 잘못된 영역, AI 결과 크기 오류 포함)
+- 백엔드 테스트 71개 (서버 시작 설정 검사, 합성 이미지 기반 접수 한도, 실패·시간 초과·취소 후 자리 해제, 지연 Mock, PNG·JPEG 반환, 용량 초과, 강도 경계·잘못된 값, 잘못된 영역, AI 결과 크기 오류 포함)
 
 ## 현재 상태
 
@@ -59,7 +59,9 @@ uvicorn main:app --reload
 pytest -q
 ```
 
-AI 모듈 연결 지점은 `app.state.protection_processor`입니다. 연결할 함수는 `(image_bytes, method, strength, regions)`를 받아 입력과 같은 크기의 완성된 PNG 바이트를 반환해야 합니다. 이미지 보호 방식과 강도 해석은 AI 담당자가 결정합니다.
+AI 모듈 연결 지점은 `app.state.protection_processor`입니다. 연결할 함수는 `(image_bytes, method, strength, regions)`를 받아 입력과 같은 크기의 완성된 PNG 바이트를 반환해야 합니다. 요청 강도는 BF-43 기준에 따라 양 끝값을 포함한 `0.1~1.0`의 유한한 숫자만 허용합니다. 실제 이미지 보호 방식과 강도 해석은 AI 담당자가 결정합니다.
+
+백엔드 코드와 이 README는 BF-43 정의서의 강도 범위에 맞췄습니다. 백엔드 폴더 밖의 `contracts/protection-api.md`에는 아직 `0~1`로 표기되어 있으며, 이번 백엔드 전용 수정에는 포함하지 않았습니다. 앱·AI 연동 전에 공통 API 문서의 강도 표기도 맞춰야 합니다.
 
 서버 실행 후 `GET /`는 서버가 실행 중이면 `200`을 반환합니다. `GET /ready`는 처리 함수가 연결되어 있으면 `200`과 `{"status":"ready"}`를, 연결되지 않았으면 `503`과 `PROCESSOR_UNAVAILABLE` 오류를 반환합니다. 예를 들어 `curl http://127.0.0.1:8000/ready`로 확인할 수 있습니다. 이 응답은 함수 연결 여부만 확인하며 실제 이미지 처리 성공이나 AI 보호 성능을 검증하지 않습니다.
 
@@ -142,7 +144,7 @@ HTTP 상태는 503입니다. Retry-After 헤더나 자동 재시도는 구현하
 | `health_check` / `GET /` | AI 미연결 상태에서도 `200`과 `{"message":"BlurFing backend is running"}` 반환 |
 | `readiness_check` / `GET /ready` | 처리 함수가 호출 가능한지 확인; 연결 시 `200 ready`, 미연결·호출 불가 시 `503 PROCESSOR_UNAVAILABLE` |
 | `error_response` | 지정된 HTTP 상태와 `request_id`, `code`, `message`, `retryable`을 담은 `JSONResponse` 생성; 재시도 기본값은 false |
-| `parse_strength` | 문자열을 실수로 변환하고 0~1 범위 및 유한한 숫자인지 검사 |
+| `parse_strength` | 문자열을 실수로 변환하고 0.1~1.0 범위(양 끝값 포함) 및 유한한 숫자인지 검사 |
 | `parse_regions` | 영역 JSON 배열과 좌표 조건을 검사하고 좌표를 실수로 변환; 생략 시 `None` 반환 |
 | `claim_request_id` | 같은 잠금 안에서 중복 → 접수 한도 순서로 검사하고 허용된 ID 등록; accepted·duplicate·busy 반환 |
 | `release_request_id` | 잠금 안에서 ID 제거; ID가 없어도 오류 없이 처리 |
@@ -157,7 +159,7 @@ HTTP 상태는 503입니다. Retry-After 헤더나 자동 재시도는 구현하
 1. `request_id` 앞뒤 공백 제거: 누락 또는 공백뿐이면 `400 INVALID_REQUEST_ID`.
 2. `image`, `method`, `strength` 누락 검사: 누락 필드 이름을 포함한 `400 INVALID_REQUEST`.
 3. 보호 방식 검사: `gaussian_blur` 외에는 `400 UNSUPPORTED_METHOD`.
-4. 강도와 영역 검사: 숫자로 변환할 수 없는 강도, 0~1 범위 밖 값, NaN·무한대, 잘못된 영역은 `400 INVALID_REQUEST`.
+4. 강도와 영역 검사: 숫자로 변환할 수 없는 강도, 0.1~1.0 범위 밖 값(0·0.05 포함), NaN·무한대, 잘못된 영역은 `400 INVALID_REQUEST`. 강도 오류 메시지는 `strength는 0.1에서 1.0 사이의 숫자여야 합니다.`이며 AI를 호출하지 않습니다.
 5. 업로드 MIME 타입 검사: PNG·JPEG 외에는 파일을 닫고 `415 UNSUPPORTED_IMAGE_TYPE`.
 6. 파일을 최대 제한 크기 + 1바이트까지 읽고 닫기: 빈 파일은 `400 EMPTY_IMAGE`, 15MiB 초과는 `413 IMAGE_TOO_LARGE`.
 7. Pillow로 실제 형식·크기·내용 검사: 실제 형식도 PNG·JPEG여야 합니다. 2,000만 화소 초과는 `413 IMAGE_TOO_LARGE`; 식별·읽기·디코딩 실패와 Pillow의 압축 폭탄 오류는 `400 INVALID_IMAGE`.
@@ -237,7 +239,7 @@ AI 함수에 전달하는 값은 `(원본 이미지 바이트, 방식 문자열,
 
 ### 전체 테스트 목록
 
-테스트 함수 36개이며, 매개변수별 사례를 포함하면 총 62개입니다.
+테스트 함수 37개이며, 매개변수별 사례를 포함하면 총 71개입니다.
 
 | 테스트 함수 | 확인 내용 | 사례 수 |
 |---|---|---|
@@ -246,7 +248,7 @@ AI 함수에 전달하는 값은 `(원본 이미지 바이트, 방식 문자열,
 | `test_mock_returns_png_with_original_pixels` | PNG·JPEG 입력 각각의 크기와 디코딩된 픽셀 유지, PNG 출력, mock 표시와 경고 | 2 |
 | `test_mock_without_regions_is_marked_as_mock` | 빈 영역 응답에서도 mock 표시와 두 경고 유지 | 1 |
 | `test_mock_entrypoint_connects_processor` | 환경 변수의 지연 0·0.01초 설정 반영, ready 응답 및 Mock API 호출 | 2 |
-| `test_delayed_mock_waits_and_returns_image` | 지정한 0.05초 이상 대기 후 정상 Mock 응답 | 1 |
+| `test_delayed_mock_waits_and_returns_image` | 고정밀 시계로 지정한 0.05초 이상 대기 확인 후 정상 Mock 응답 | 1 |
 | `test_mock_rejects_invalid_delay` | 음수·NaN·양수 및 음수 무한대 지연 설정 거부 | 4 |
 | `test_timeout_keeps_id_until_worker_finishes` | 시간 초과 후 동일 ID는 409·다른 ID는 SERVER_BUSY 유지, 늦은 성공·실패 각각의 실제 종료 후 200 재시도 | 2 |
 | `test_cancellation_keeps_id_until_worker_finishes` | 코루틴 취소·이벤트 루프 종료 후 동일 ID는 409·다른 ID는 SERVER_BUSY 유지, 실제 작업 종료 후 200 재시도 | 1 |
@@ -268,7 +270,8 @@ AI 함수에 전달하는 값은 `(원본 이미지 바이트, 방식 문자열,
 | `test_request_id_is_reusable_after_processing_finishes` | 성공·실패·시간 초과 사례 각각 실제 작업 종료·ID 해제 후 정상 재시도 | 3 |
 | `test_empty_regions_do_not_claim_success` | 빈 영역은 no_regions, 결과 이미지는 null | 1 |
 | `test_invalid_image_is_rejected` | 읽을 수 없는 입력 이미지 거부 | 1 |
-| `test_rejects_strength_outside_supported_range` | 강도 1.1 거부 | 1 |
+| `test_rejects_strength_outside_supported_range` | 음수·0·0.05·0.099·1.1·NaN·무한대·문자열 거부, 오류 전체 필드와 AI 미호출 확인 | 8 |
+| `test_accepts_strength_boundaries_and_forwards_to_processor` | 강도 0.1·1.0 각각 정상 응답 및 변환된 실수의 AI 전달 확인 | 2 |
 | `test_rejects_region_outside_image_bounds` | x + width가 1을 초과하는 영역 거부 | 1 |
 | `test_rejects_invalid_region_values` | 잘못된 JSON, 음수 x, 너비 0, NaN 높이; 오류 ID·코드·retryable 확인 | 4 |
 | `test_rejects_image_over_15mb_before_processing` | 용량 초과 413 및 AI 함수 미호출 | 1 |
@@ -287,6 +290,8 @@ AI 함수에 전달하는 값은 `(원본 이미지 바이트, 방식 문자열,
 2026-10-07 과부하 처리 추가 후 같은 환경·명령으로 실행한 결과는 `48 passed, 2 warnings`입니다. 실행·대기 작업 합계 제한, 오류 응답, 작업 종료 후 자리 반환을 합성 이미지·테스트용 처리 함수로 확인했습니다. 이날 실제 HTTP 서버·Android·실제 AI 성능 확인은 실행하지 않았습니다.
 
 2026-10-08 서버 환경 변수 설정 추가 후 같은 환경·명령으로 실행한 결과는 `62 passed, 2 warnings`입니다. 새 Python 프로세스에서 기본값·지정값 적용과 잘못된 설정의 초기화 실패를 확인하고 기존 백엔드 테스트도 재실행했습니다. 경고는 위와 같은 의존성 사용 중단 경고입니다. 이날 실제 HTTP 서버·Android·실제 AI 성능 확인은 실행하지 않았습니다.
+
+2026-10-09 BF-43 강도 범위를 0.1~1.0으로 맞춘 뒤 같은 환경·명령으로 실행한 최종 결과는 `71 passed, 2 warnings`입니다. 0·0.05와 그 밖의 잘못된 강도의 거부, AI 미호출, 0.1·1.0의 정상 전달을 확인했습니다. 최초 두 실행은 기존 Mock 지연 테스트에서 각각 `70 passed, 1 failed, 2 warnings`였습니다. 이 환경의 `time.monotonic` 해상도는 0.015625초로, 실제 약 0.05초 대기를 약 0.047초로 측정하는 것을 확인했습니다. 해당 테스트의 측정 시계만 `time.perf_counter`로 변경한 뒤 전체 테스트가 통과했습니다. Mock·서버의 대기 동작은 변경하지 않았으며, 실제 HTTP 서버·Android·실제 AI 성능 확인은 실행하지 않았습니다.
 
 코드에 구현됐지만 현재 전용 테스트가 없는 항목에는 공백 ID, 빈 이미지, 화소 제한 초과, 영역 생략, 영역 키·타입·y 경계 검사, 비PNG AI 결과, 호출 불가능한 AI 함수 등이 있습니다. 실행 1개·대기 1개의 동시 접수는 위 테스트로 확인하지만 실제 AI 작업 여러 개를 병렬 실행하는 부하 시험은 하지 않았습니다. 구현된 기능과 테스트로 확인한 범위는 구분해야 합니다.
 
@@ -327,7 +332,7 @@ uvicorn mock_main:app --reload
 
 ## 실제 HTTP 이미지 입출력 확인
 
-`check_mock_http.py`는 `TestClient` 대신 실제로 실행 중인 서버에 HTTP 요청을 보냅니다. pytest 62개와 별도로 실행하는 확인 도구이며, 합성 이미지와 반환 PNG는 메모리에서만 처리하고 파일로 저장하지 않습니다.
+`check_mock_http.py`는 `TestClient` 대신 실제로 실행 중인 서버에 HTTP 요청을 보냅니다. pytest 71개와 별도로 실행하는 확인 도구이며, 합성 이미지와 반환 PNG는 메모리에서만 처리하고 파일로 저장하지 않습니다.
 
 `backend` 폴더의 첫 번째 터미널에서 개발 의존성을 설치하고 지연 없는 Mock 서버를 실행합니다.
 

@@ -134,9 +134,9 @@ def test_mock_entrypoint_connects_processor(monkeypatch, delay_seconds):
 
 def test_delayed_mock_waits_and_returns_image(monkeypatch):
     monkeypatch.setattr(app.state, "protection_processor", MockProcessor(0.05))
-    started = time.monotonic()
+    started = time.perf_counter()
     response = protect_request()
-    assert time.monotonic() - started >= 0.05
+    assert time.perf_counter() - started >= 0.05
     assert response.status_code == 200
     assert response.json()["result_kind"] == "mock"
     assert response.json()["warnings"] == ["MOCK_NO_PROTECTION"]
@@ -578,11 +578,38 @@ def test_invalid_image_is_rejected():
     assert response.json()["code"] == "INVALID_IMAGE"
 
 
-def test_rejects_strength_outside_supported_range():
-    response = protect_request(strength="1.1")
+@pytest.mark.parametrize(
+    "strength", ["-0.1", "0", "0.05", "0.099", "1.1", "NaN", "inf", "invalid"]
+)
+def test_rejects_strength_outside_supported_range(strength, monkeypatch):
+    processor_calls = []
+    monkeypatch.setattr(app.state, "protection_processor", lambda *_: processor_calls.append(True))
+    response = protect_request(strength=strength)
 
     assert response.status_code == 400
-    assert response.json()["code"] == "INVALID_REQUEST"
+    assert response.json() == {
+        "request_id": "synthetic-request-001",
+        "code": "INVALID_REQUEST",
+        "message": "strength는 0.1에서 1.0 사이의 숫자여야 합니다.",
+        "retryable": False,
+    }
+    assert processor_calls == []
+
+
+@pytest.mark.parametrize("strength", ["0.1", "1.0"])
+def test_accepts_strength_boundaries_and_forwards_to_processor(strength, monkeypatch):
+    processor_calls = []
+
+    def processor(image_bytes, method, validated_strength, regions):
+        processor_calls.append(validated_strength)
+        return image_bytes
+
+    monkeypatch.setattr(app.state, "protection_processor", processor)
+    response = protect_request(strength=strength)
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "succeeded"
+    assert processor_calls == [float(strength)]
 
 
 def test_rejects_region_outside_image_bounds():
