@@ -25,7 +25,8 @@ object ImageSaver {
     suspend fun saveProtectedCopy(
         context: Context,
         bitmap: Bitmap,
-        format: Bitmap.CompressFormat = Bitmap.CompressFormat.PNG
+        format: Bitmap.CompressFormat = Bitmap.CompressFormat.PNG,
+        jpegQuality: Int = 95
     ): Result<Uri> = withContext(Dispatchers.IO) {
         val resolver = context.contentResolver
         var itemUri: Uri? = null
@@ -33,11 +34,12 @@ object ImageSaver {
             require(format == Bitmap.CompressFormat.PNG || format == Bitmap.CompressFormat.JPEG) {
                 "PNG 또는 JPEG 형식으로 저장해 주세요."
             }
+            require(jpegQuality in 1..100) { "JPEG 품질을 확인해 주세요." }
             coroutineContext.ensureActive()
             val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
             val extension = if (format == Bitmap.CompressFormat.JPEG) "jpg" else "png"
             val mimeType = if (format == Bitmap.CompressFormat.JPEG) "image/jpeg" else "image/png"
-            val fileName = "BlurFing_$timestamp.$extension"
+            val fileName = "BlurFing_${timestamp}_${UUID.randomUUID().toString().take(8)}.$extension"
 
             val contentValues = ContentValues().apply {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
@@ -62,7 +64,7 @@ object ImageSaver {
             requireNotNull(outputStream) { "출력 스트림을 열 수 없습니다." }
 
             outputStream.use { stream ->
-                val success = bitmap.compress(format, 100, stream)
+                val success = bitmap.compress(format, if(format==Bitmap.CompressFormat.JPEG) jpegQuality else 100, stream)
                 if (!success) {
                     throw IllegalStateException("비트맵 압축 및 저장에 실패했습니다.")
                 }

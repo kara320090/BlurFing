@@ -22,6 +22,8 @@ import androidx.compose.ui.unit.dp
 import com.blurfing.app.model.EvaluationPresentation
 import com.blurfing.app.model.NormalizedRegion
 import com.blurfing.app.model.ProtectionResponse
+import com.blurfing.app.model.ProcessingSettings
+import com.blurfing.app.model.ExportFormat
 import com.blurfing.app.utils.ComparisonCrop
 import java.util.Locale
 import kotlin.math.min
@@ -39,7 +41,9 @@ fun ComparisonScreen(
     isAwaitingSavePermission: Boolean = false,
     saveError: String? = null,
     modifier: Modifier = Modifier,
-    regions: List<NormalizedRegion> = response?.appliedRegions.orEmpty()
+    regions: List<NormalizedRegion> = response?.appliedRegions.orEmpty(),
+    settings: ProcessingSettings = ProcessingSettings(),
+    onSettingsChanged: (ProcessingSettings) -> Unit = {}
 ) {
     var showProtectedOnly by rememberSaveable(response?.requestId) { mutableStateOf(true) }
     var sideBySide by rememberSaveable(response?.requestId) { mutableStateOf(false) }
@@ -115,6 +119,21 @@ fun ComparisonScreen(
                     style = MaterialTheme.typography.bodySmall)
             }
             saveError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+            Text("사본 파일 형식",style=MaterialTheme.typography.titleMedium)
+            Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                ExportFormat.entries.forEach { format ->
+                    FilterChip(selected=settings.exportFormat==format,
+                        enabled=!isSaving && !isAwaitingSavePermission,
+                        onClick={ onSettingsChanged(settings.copy(exportFormat=format)) },
+                        label={ Text(if(format==ExportFormat.PNG) "PNG (손실 없음)" else "JPEG (용량 절약)") })
+                }
+            }
+            if(settings.exportFormat==ExportFormat.JPEG) {
+                Text("JPEG 품질 ${settings.jpegQuality} · 저장 후 보호 효과가 달라질 수 있습니다.",style=MaterialTheme.typography.bodySmall)
+                Slider(value=settings.jpegQuality.toFloat(),onValueChange={ onSettingsChanged(settings.copy(jpegQuality=it.roundToInt())) },
+                    enabled=!isSaving && !isAwaitingSavePermission,valueRange=80f..100f,steps=19,
+                    modifier=Modifier.semantics { contentDescription="JPEG 저장 품질" })
+            }
             Button(onClick = onSaveProtectedImage, enabled = !isSaving && !isAwaitingSavePermission,
                 modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 14.dp)) {
                 Text(when {

@@ -172,6 +172,8 @@ class MainActivity : ComponentActivity() {
                                         originalBitmap = state.originalBitmap,
                                         protectedBitmap = state.protectedBitmap ?: state.originalBitmap,
                                         response = state.protectionResponse,
+                                        settings = processingSettings,
+                                        onSettingsChanged = viewModel::updateSettings,
                                         regions = state.protectionResponse?.appliedRegions ?: state.regions,
                                         isSaving = state.isSaving,
                                         isAwaitingSavePermission = state.savePermissionRequestId != null,
