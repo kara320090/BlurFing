@@ -1,7 +1,10 @@
 import asyncio
 import base64
+import importlib
+import inspect
 import io
 import json
+import logging
 import math
 import os
 import threading
@@ -37,6 +40,32 @@ def read_positive_int_env(name: str, default: int) -> int:
     if value <= 0:
         raise ValueError(message)
     return value
+
+
+def load_protection_processor():
+    target = os.environ.get("BLURFING_PROCESSOR", "").strip()
+    if not target:
+        return None
+
+    try:
+        module_name, attribute_name = target.split(":")
+        if not all(part.isidentifier() for part in module_name.split(".")) or not attribute_name.isidentifier():
+            raise ValueError("BLURFING_PROCESSOR must be module:callable.")
+        processor = getattr(importlib.import_module(module_name), attribute_name)
+        if (
+            not callable(processor)
+            or inspect.isclass(processor)
+            or inspect.iscoroutinefunction(processor)
+            or inspect.iscoroutinefunction(getattr(processor, "__call__", None))
+        ):
+            raise TypeError("A synchronous processor callable is required.")
+        return processor
+    except Exception as exc:
+        logging.getLogger(__name__).warning(
+            "BLURFING_PROCESSOR 연결 실패 (%s). 보호 처리 모듈을 사용할 수 없습니다.",
+            type(exc).__name__,
+        )
+        return None
 
 
 app = FastAPI(title="BlurFing Backend")
@@ -347,3 +376,6 @@ async def protect_image(
         # 작업 제출 자체가 실패했을 때만 여기서 해제한다.
         if worker is None:
             release_request_id(request_id)
+
+
+app.state.protection_processor = load_protection_processor()

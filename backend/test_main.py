@@ -22,16 +22,17 @@ from mock_processor import MockProcessor, mock_processor
 client = TestClient(app)
 
 
-def load_settings_in_new_process(overrides):
+def load_settings_in_new_process(overrides, script=None):
     environment = os.environ.copy()
     environment.pop("BLURFING_PROCESSOR_TIMEOUT_SECONDS", None)
     environment.pop("BLURFING_MAX_PENDING_PROCESSOR_REQUESTS", None)
+    environment.pop("BLURFING_PROCESSOR", None)
     environment.update(overrides)
     environment["PYTHONDONTWRITEBYTECODE"] = "1"
     environment["PYTHONIOENCODING"] = "utf-8"
     return subprocess.run(
         [sys.executable, "-c",
-         "import json, main; print(json.dumps([main.PROCESSOR_TIMEOUT_SECONDS, "
+         script or "import json, main; print(json.dumps([main.PROCESSOR_TIMEOUT_SECONDS, "
          "main.MAX_PENDING_PROCESSOR_REQUESTS]))"],
         cwd=Path(__file__).resolve().parent,
         env=environment,
@@ -68,6 +69,71 @@ def test_startup_rejects_invalid_server_settings(name, value):
     assert result.returncode != 0
     assert f"ValueError: {name} must be" in result.stderr
     assert not result.stdout
+
+
+@pytest.mark.parametrize(
+    "target, expected_status",
+    [
+        (None, 503),
+        ("", 503),
+        ("mock_processor:mock_processor", 200),
+        ("invalid-format", 503),
+        ("blurfing_missing_processor:protect", 503),
+        ("mock_processor:missing_processor", 503),
+        ("mock_processor:__doc__", 503),
+        ("asyncio:sleep", 503),
+        ("mock_processor:MockProcessor", 503),
+    ],
+)
+def test_startup_connects_configured_processor_or_stays_unavailable(target, expected_status):
+    script = """
+import io, json, main
+from fastapi.testclient import TestClient
+from PIL import Image
+image = io.BytesIO()
+Image.new("RGB", (4, 4), "white").save(image, format="PNG")
+with TestClient(main.app) as client:
+    ready = client.get("/ready")
+    protected = client.post(
+        "/v1/protect",
+        data={"request_id": "startup-processor", "method": "gaussian_blur", "strength": "0.5",
+              "regions": '[{"x":0,"y":0,"width":1,"height":1}]'},
+        files={"image": ("synthetic.png", image.getvalue(), "image/png")},
+    )
+    print(json.dumps({"health": client.get("/").status_code,
+                      "ready_status": ready.status_code, "ready": ready.json(),
+                      "protect_status": protected.status_code, "protect": protected.json()}))
+"""
+    overrides = {} if target is None else {"BLURFING_PROCESSOR": target}
+    result = load_settings_in_new_process(overrides, script)
+
+    assert result.returncode == 0, result.stderr
+    body = json.loads(result.stdout)
+    assert body["health"] == 200
+    assert body["ready_status"] == expected_status
+    assert body["protect_status"] == expected_status
+    if expected_status == 200:
+        assert body["ready"] == {"status": "ready"}
+        assert body["protect"]["request_id"] == "startup-processor"
+        assert body["protect"]["status"] == "succeeded"
+        assert body["protect"]["result_kind"] == "mock"
+        assert body["protect"]["warnings"] == ["MOCK_NO_PROTECTION"]
+        with Image.open(io.BytesIO(base64.b64decode(body["protect"]["image_base64"]))) as image:
+            assert image.format == "PNG"
+            assert image.size == (4, 4)
+            assert image.getpixel((0, 0)) == (255, 255, 255)
+    else:
+        assert body["ready"] == {
+            "request_id": "",
+            "code": "PROCESSOR_UNAVAILABLE",
+            "message": "보호 처리 모듈을 사용할 수 없습니다.",
+            "retryable": True,
+        }
+        assert body["protect"] == {
+            **body["ready"],
+            "request_id": "startup-processor",
+        }
+    assert ("BLURFING_PROCESSOR 연결 실패" in result.stderr) is bool(target and expected_status == 503)
 
 
 @pytest.fixture

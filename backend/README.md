@@ -13,7 +13,7 @@
 | `main.py` | FastAPI 앱, 요청 검사, 처리 함수 호출, 결과 검사, 응답과 중복 차단 |
 | `mock_processor.py` | 지연 가능한 MockProcessor와 기본 인스턴스 |
 | `mock_main.py` | 환경 변수로 지연 시간을 읽고 Mock을 연결하는 개발용 진입점 |
-| `test_main.py` | 테스트 준비 도구와 함수 37개, 매개변수 포함 사례 71개 |
+| `test_main.py` | 테스트 준비 도구와 함수 38개, 매개변수 포함 사례 80개 |
 | `check_mock_http.py` | 실행 중인 Mock 서버에 합성 PNG·JPEG를 보내는 HTTP 확인 도구 |
 | `requirements.txt` | fastapi, pillow, python-multipart, uvicorn |
 | `requirements-dev.txt` | 실행 의존성 포함 및 httpx, pytest 추가 |
@@ -31,15 +31,16 @@
 - 처리 중인 `request_id`의 중복 실행 차단
 - 실행·대기 작업의 총 접수 한도 기본 4개와 한도 초과 시 `503 SERVER_BUSY` 반환
 - 환경 변수로 처리 대기 시간·접수 한도 설정, 서버 시작 시 잘못된 값 거부
+- 환경 변수의 모듈·호출 대상 경로로 처리기를 연결하고, 연결 실패 시 미연결 상태 유지
 - 오류 응답과 영역이 없을 때의 `no_regions` 응답
 - 필수 입력값 누락을 포함한 오류 응답 형식 통일
 - 입력을 PNG로 저장해 반환하는 개발용 Mock과 별도 실행 진입점; 합성 RGB PNG·JPEG의 크기·픽셀 유지는 테스트로 확인
 - 실행 중인 Mock 서버의 상태와 PNG·JPEG 입출력을 검사하는 HTTP 확인 스크립트
-- 백엔드 테스트 71개 (서버 시작 설정 검사, 합성 이미지 기반 접수 한도, 실패·시간 초과·취소 후 자리 해제, 지연 Mock, PNG·JPEG 반환, 용량 초과, 강도 경계·잘못된 값, 잘못된 영역, AI 결과 크기 오류 포함)
+- 백엔드 테스트 80개 (서버 시작 설정·처리기 연결 검사, 합성 이미지 기반 접수 한도, 실패·시간 초과·취소 후 자리 해제, 지연 Mock, PNG·JPEG 반환, 용량 초과, 강도 경계·잘못된 값, 잘못된 영역, AI 결과 크기 오류 포함)
 
 ## 현재 상태
 
-새 프로세스에서 기본 `main:app` 실행 시 처리 함수 초기값은 `None`입니다. 영역이 있는 보호 요청은 연결 전 `503 PROCESSOR_UNAVAILABLE`을 반환합니다. 개발용 `mock_main:app`은 같은 앱 객체에 Mock을 연결합니다. 이미지 검증까지 통과한 요청에 영역이 없으면 연결 여부와 관계없이 `200 no_regions`를 반환합니다. 이 폴더에는 실제 AI 모듈 자동 연결이나 자동 영역 추출 코드가 없습니다. 아래 백엔드 검증 기록은 실제 AI 보호 성능을 검증한 결과가 아닙니다.
+새 프로세스에서 `main:app` 실행 시 `BLURFING_PROCESSOR` 설정이 없거나 연결에 실패하면 처리 함수는 `None`입니다. 설정한 모듈의 동기 호출 대상을 불러오면 `app.state.protection_processor`에 연결합니다. 영역이 있는 보호 요청은 연결 전 `503 PROCESSOR_UNAVAILABLE`을 반환합니다. 개발용 `mock_main:app`은 같은 앱 객체의 처리기를 Mock으로 덮어씁니다. 이미지 검증까지 통과한 요청에 영역이 없으면 연결 여부와 관계없이 `200 no_regions`를 반환합니다. 실제 AI 알고리즘과 자동 영역 추출은 아직 이 폴더에 없으며, 아래 백엔드 검증 기록은 실제 AI 보호 성능을 검증한 결과가 아닙니다.
 
 ## 다음 할 일
 
@@ -100,6 +101,30 @@ uvicorn main:app --reload
 
 이 설정은 AI 처리 결과 대기와 실행·대기 작업 총 접수 한도만 바꿉니다. 스레드 풀의 스레드 수나 업로드 제한은 바꾸지 않습니다.
 
+## 처리 모듈 자동 연결 설정
+
+`main.py`를 처음 불러올 때 `BLURFING_PROCESSOR`를 읽습니다. 값은 `모듈명:호출대상명` 형식이며, Python import 경로에서 찾을 수 있는 모듈과 그 모듈의 동기 함수 또는 이미 생성된 호출 가능한 인스턴스를 지정합니다. 클래스 자체와 비동기 처리기는 거부합니다. 객체를 자동 생성하거나 비동기 함수를 await하지 않습니다.
+
+백엔드 폴더에서 기존 Mock을 자동 연결하는 예입니다. 실제 AI 보호 처리는 하지 않습니다.
+
+```powershell
+$env:BLURFING_PROCESSOR = "mock_processor:mock_processor"
+uvicorn main:app --reload
+```
+
+연결되면 `GET /ready`는 `200 ready`를 반환하고, 정상적인 영역 포함 요청은 기존 API를 통해 처리기를 호출합니다. 이 예에서는 `result_kind: mock`과 `MOCK_NO_PROTECTION` 경고를 유지하며 지연 없는 PNG 반환만 수행합니다. 실제 AI 모듈을 받으면 설정값을 AI 담당자가 제공한 모듈·호출 대상 이름으로 바꿉니다. 입력은 `(image_bytes, method, strength, regions)`, 반환값은 입력과 같은 크기의 완성된 PNG 바이트여야 합니다. 이 설정 기능은 실제 AI 연동 완료나 보호 성능 검증을 뜻하지 않습니다.
+
+미설정·빈 값·공백뿐인 값이면 연결하지 않습니다. 잘못된 형식, import 중 예외, 없는 호출 대상, 호출 불가능한 대상, 클래스 또는 비동기 대상이면 연결하지 않고 서버 로그에 `BLURFING_PROCESSOR 연결 실패`와 예외 종류를 남깁니다. 서버는 유지되며 `GET /`는 200, `GET /ready` 및 검증을 통과한 영역 포함 보호 요청은 `503 PROCESSOR_UNAVAILABLE`을 반환합니다. 오류 응답에 import 예외 내용을 노출하지 않습니다.
+
+설정은 요청 입력이 아닌 서버 운영자가 관리하는 환경 변수입니다. 모듈을 불러오면 그 모듈의 초기화 코드가 실행됩니다. 연결 시에는 동기 호출 가능 여부를 검사할 뿐, AI 함수의 인자 호환성이나 보호 효과를 검증하지 않습니다. import 시간 제한·자동 재시도·자동 모듈 검색·설정의 실시간 변경은 없습니다. 값을 바꾼 뒤 서버를 종료하고 같은 터미널에서 다시 실행합니다. 미연결 기본 상태로 돌아가려면 서버 종료 후 다음과 같이 실행합니다.
+
+```powershell
+Remove-Item Env:BLURFING_PROCESSOR -ErrorAction SilentlyContinue
+uvicorn main:app --reload
+```
+
+`mock_main:app`은 이 설정으로 불러온 처리기를 개발용 Mock으로 덮어씁니다. 실제 AI 연결에는 `main:app`을 사용합니다. 기본 실행에서 환경 변수 없이 Mock을 자동 선택하지는 않습니다.
+
 ## 작업 접수 한도와 과부하 응답
 
 한 프로세스에서 처리 함수에 제출할 수 있는 실행·대기 작업의 합계는 기본 4개입니다. `BLURFING_MAX_PENDING_PROCESSOR_REQUESTS` 환경 변수의 값이 `main.py`의 `MAX_PENDING_PROCESSOR_REQUESTS`에 반영됩니다. 코드를 수정하지 않고 환경 변수를 지정한 뒤 서버를 재시작해 조정할 수 있습니다.
@@ -123,7 +148,7 @@ HTTP 상태는 503입니다. Retry-After 헤더나 자동 재시도는 구현하
 
 ### 서버와 설정
 
-- `app`: 이름이 `BlurFing Backend`인 FastAPI 앱입니다. `app.state.protection_processor`의 초기값은 `None`입니다.
+- `app`: 이름이 `BlurFing Backend`인 FastAPI 앱입니다. 모듈 초기화 마지막에 처리기 연결 설정을 적용하며, 미설정·연결 실패 시 `app.state.protection_processor`는 `None`입니다.
 - `MAX_IMAGE_SIZE_BYTES`: 파일 크기 제한은 `15 * 1024 * 1024`바이트(15MiB)입니다.
 - `MAX_IMAGE_PIXELS`: 이미지 해상도 제한은 가로×세로 2,000만 화소입니다.
 - `PROCESSOR_TIMEOUT_SECONDS`: 환경 변수로 설정하는 AI 함수의 응답 대기 제한이며 기본값은 30초입니다.
@@ -141,6 +166,7 @@ HTTP 상태는 503입니다. Retry-After 헤더나 자동 재시도는 구현하
 |---|---|
 | `read_positive_float_env` | 환경 변수의 실수 변환 및 유한한 양수 검사; 미설정 시 기본값, 잘못된 값은 변수 이름을 포함한 ValueError |
 | `read_positive_int_env` | 환경 변수의 정수 변환 및 양수 검사; 미설정 시 기본값, 잘못된 값은 변수 이름을 포함한 ValueError |
+| `load_protection_processor` | 환경 변수의 모듈·호출 대상을 불러와 동기 호출 가능한 객체 반환; 미설정·연결 실패 시 None, 실패 이유의 예외 종류는 서버 로그에 기록 |
 | `health_check` / `GET /` | AI 미연결 상태에서도 `200`과 `{"message":"BlurFing backend is running"}` 반환 |
 | `readiness_check` / `GET /ready` | 처리 함수가 호출 가능한지 확인; 연결 시 `200 ready`, 미연결·호출 불가 시 `503 PROCESSOR_UNAVAILABLE` |
 | `error_response` | 지정된 HTTP 상태와 `request_id`, `code`, `message`, `retryable`을 담은 `JSONResponse` 생성; 재시도 기본값은 false |
@@ -230,7 +256,7 @@ AI 함수에 전달하는 값은 `(원본 이미지 바이트, 방식 문자열,
 ### 테스트 준비 도구
 
 - `client = TestClient(app)`: 별도 서버 실행 없이 FastAPI API를 호출합니다.
-- `load_settings_in_new_process()`: 두 서버 설정 변수를 정리한 별도 Python 프로세스에서 `main`을 불러와 기본값·지정값·초기화 실패를 검사합니다. 테스트 중인 앱이나 스레드 풀을 다시 만들지 않습니다.
+- `load_settings_in_new_process()`: 처리기 경로와 두 서버 설정 변수를 정리한 별도 Python 프로세스에서 `main`을 불러와 기본값·지정값·초기화 실패를 검사합니다. 선택한 검사 스크립트를 실행해 처리기 연결과 API 동작도 확인합니다. 부모 프로세스의 앱이나 스레드 풀을 다시 만들지 않습니다.
 - `synthetic_image()`: 흰 배경에 빨강·파랑 패턴이 있는 40×40 PNG를 메모리에서 생성합니다. 개인 사진·실제 지문은 사용하지 않습니다.
 - `protect_request()`: 합성 PNG, 기본 요청 ID, `gaussian_blur`, 강도 0.5, 정규화 영역으로 요청을 만듭니다. 이미지와 폼 값을 덮어써 오류 조건을 재현할 수 있습니다.
 - 테스트용 AI 함수를 연결한 테스트는 사용 후 함수를 해제합니다. `monkeypatch`로 변경한 제한 시간은 테스트 종료 시 복원됩니다.
@@ -239,12 +265,13 @@ AI 함수에 전달하는 값은 `(원본 이미지 바이트, 방식 문자열,
 
 ### 전체 테스트 목록
 
-테스트 함수 37개이며, 매개변수별 사례를 포함하면 총 71개입니다.
+테스트 함수 38개이며, 매개변수별 사례를 포함하면 총 80개입니다.
 
 | 테스트 함수 | 확인 내용 | 사례 수 |
 |---|---|---|
 | `test_startup_reads_server_settings` | 새 프로세스에서 미설정 기본값 30초·4개와 지정값 0.2초·2개 반영 | 2 |
 | `test_startup_rejects_invalid_server_settings` | 각 변수의 빈 값·0·음수·NaN·문자열, 시간의 무한대·한도의 소수 거부; 초기화 실패와 오류 변수 이름 확인 | 12 |
+| `test_startup_connects_configured_processor_or_stays_unavailable` | 새 프로세스의 미설정·빈 설정·Mock 연결·형식 오류·없는 모듈/대상·비호출 대상·비동기 함수·클래스 검사; health·ready·보호 API·Mock PNG 및 연결 실패 로그 확인 | 9 |
 | `test_mock_returns_png_with_original_pixels` | PNG·JPEG 입력 각각의 크기와 디코딩된 픽셀 유지, PNG 출력, mock 표시와 경고 | 2 |
 | `test_mock_without_regions_is_marked_as_mock` | 빈 영역 응답에서도 mock 표시와 두 경고 유지 | 1 |
 | `test_mock_entrypoint_connects_processor` | 환경 변수의 지연 0·0.01초 설정 반영, ready 응답 및 Mock API 호출 | 2 |
@@ -293,7 +320,9 @@ AI 함수에 전달하는 값은 `(원본 이미지 바이트, 방식 문자열,
 
 2026-10-09 BF-43 강도 범위를 0.1~1.0으로 맞춘 뒤 같은 환경·명령으로 실행한 최종 결과는 `71 passed, 2 warnings`입니다. 0·0.05와 그 밖의 잘못된 강도의 거부, AI 미호출, 0.1·1.0의 정상 전달을 확인했습니다. 최초 두 실행은 기존 Mock 지연 테스트에서 각각 `70 passed, 1 failed, 2 warnings`였습니다. 이 환경의 `time.monotonic` 해상도는 0.015625초로, 실제 약 0.05초 대기를 약 0.047초로 측정하는 것을 확인했습니다. 해당 테스트의 측정 시계만 `time.perf_counter`로 변경한 뒤 전체 테스트가 통과했습니다. Mock·서버의 대기 동작은 변경하지 않았으며, 실제 HTTP 서버·Android·실제 AI 성능 확인은 실행하지 않았습니다.
 
-코드에 구현됐지만 현재 전용 테스트가 없는 항목에는 공백 ID, 빈 이미지, 화소 제한 초과, 영역 생략, 영역 키·타입·y 경계 검사, 비PNG AI 결과, 호출 불가능한 AI 함수 등이 있습니다. 실행 1개·대기 1개의 동시 접수는 위 테스트로 확인하지만 실제 AI 작업 여러 개를 병렬 실행하는 부하 시험은 하지 않았습니다. 구현된 기능과 테스트로 확인한 범위는 구분해야 합니다.
+2026-10-10 처리 모듈 자동 연결 설정 추가 후 같은 환경·명령으로 실행한 결과는 `80 passed, 2 warnings`입니다. 새 Python 프로세스에서 미설정·빈 설정·정상 Mock 연결과 연결 실패 6종을 검사하고, 서버 실행·ready·보호 API 응답과 합성 PNG 반환을 확인했습니다. 실제 HTTP 서버·Android 기기·실제 AI 보호 성능 검증은 실행하지 않았습니다.
+
+코드에 구현됐지만 현재 전용 테스트가 없는 항목에는 공백 ID, 빈 이미지, 화소 제한 초과, 영역 생략, 영역 키·타입·y 경계 검사, 비PNG AI 결과, 설정 경로가 아닌 런타임에서 직접 등록된 호출 불가능한 처리기 등이 있습니다. 실행 1개·대기 1개의 동시 접수는 위 테스트로 확인하지만 실제 AI 작업 여러 개를 병렬 실행하는 부하 시험은 하지 않았습니다. 구현된 기능과 테스트로 확인한 범위는 구분해야 합니다.
 
 ## 이미지 반환 Mock 사용 방법
 
@@ -328,11 +357,11 @@ uvicorn mock_main:app --reload
 
 영역이 있는 정상 Mock 응답은 `200`, `status: succeeded`, `result_kind: mock`, `warnings: ["MOCK_NO_PROTECTION"]`이며 `image_base64`에 PNG가 들어갑니다. 여기서 succeeded는 입출력 처리가 완료됐다는 뜻이며 이미지가 보호됐다는 뜻이 아닙니다. `/ready`는 Mock도 호출 가능한 함수이므로 ready를 반환합니다.
 
-실제 모듈 연동을 준비할 때는 개발 서버를 종료하고 기존 `uvicorn main:app --reload`로 실행합니다. Mock은 기본 서버에 자동 연결되지 않습니다. 기존 입력 검증·시간 제한·중복 요청 차단·결과 검증은 Mock 실행에도 동일하게 적용됩니다.
+실제 모듈 연동을 준비할 때는 개발 서버를 종료하고 `BLURFING_PROCESSOR`에 실제 처리기 경로를 설정한 뒤 `uvicorn main:app --reload`로 실행합니다. Mock은 명시적으로 설정한 경우에만 기본 서버에 자동 연결됩니다. 기존 입력 검증·시간 제한·중복 요청 차단·결과 검증은 Mock 실행에도 동일하게 적용됩니다.
 
 ## 실제 HTTP 이미지 입출력 확인
 
-`check_mock_http.py`는 `TestClient` 대신 실제로 실행 중인 서버에 HTTP 요청을 보냅니다. pytest 71개와 별도로 실행하는 확인 도구이며, 합성 이미지와 반환 PNG는 메모리에서만 처리하고 파일로 저장하지 않습니다.
+`check_mock_http.py`는 `TestClient` 대신 실제로 실행 중인 서버에 HTTP 요청을 보냅니다. pytest 80개와 별도로 실행하는 확인 도구이며, 합성 이미지와 반환 PNG는 메모리에서만 처리하고 파일로 저장하지 않습니다.
 
 `backend` 폴더의 첫 번째 터미널에서 개발 의존성을 설치하고 지연 없는 Mock 서버를 실행합니다.
 
@@ -376,7 +405,7 @@ python check_mock_http.py --base-url http://127.0.0.1:8765
 
 ## 현재 구현의 제한
 
-- 실제 AI 모듈 자동 연결·블러 처리·자동 영역 추출·지문 평가 점수 생성은 이 폴더에 없습니다.
+- 설정한 처리기를 자동 연결할 수 있지만 실제 AI 모듈은 아직 제공되지 않았습니다. 블러 처리·자동 영역 추출·지문 평가 점수 생성은 이 폴더에 없습니다.
 - 접수 한도는 AI 호출 전 입력 검사 이후에 적용합니다. 전체 HTTP 접속 수·업로드·입력 디코딩 동시 수·요청 빈도를 제한하지는 않습니다. 기본 4개는 개발용 초기 설정이며 실제 AI 환경의 안전한 처리량을 측정해 정한 값은 아닙니다.
 - ID 차단은 프로세스 메모리 안에서만 동작하며 재시작 시 초기화됩니다. 다중 프로세스·서버 공유 차단은 없습니다.
 - 시간 초과나 코루틴 취소는 작업 자체를 중단하지 않습니다. 영구 정지한 처리 함수의 ID를 강제로 해제하는 기능도 없습니다. 클라이언트 연결 종료가 항상 코루틴 취소로 전달되는지 확인한 HTTP 테스트는 없습니다.
