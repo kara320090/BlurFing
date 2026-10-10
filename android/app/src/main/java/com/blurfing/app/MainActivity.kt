@@ -1,6 +1,7 @@
 package com.blurfing.app
 
 import android.Manifest
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -28,6 +29,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.blurfing.app.model.ProcessingSettingsStore
 import com.blurfing.app.utils.DraftSession
+import com.blurfing.app.utils.ProtectedShareFiles
 import com.blurfing.app.ui.screens.ComparisonScreen
 import com.blurfing.app.ui.screens.ImagePickerScreen
 import com.blurfing.app.ui.screens.ProcessingScreen
@@ -114,6 +116,16 @@ class MainActivity : ComponentActivity() {
 
                     when (val state = uiState) {
                         is UiState.Ready -> {
+                            LaunchedEffect(state.pendingShare) {
+                                state.pendingShare?.let { share ->
+                                    val launched = try {
+                                        startActivity(Intent.createChooser(ProtectedShareFiles.intent(share),
+                                            if (share.isMock) "Mock 프리뷰 공유" else "처리 사본 공유"))
+                                        true
+                                    } catch (_: Exception) { false }
+                                    viewModel.consumeShare(share, launched)
+                                }
+                            }
                             LaunchedEffect(state.saveMessage) {
                                 state.saveMessage?.let { msg ->
                                     Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
@@ -178,6 +190,9 @@ class MainActivity : ComponentActivity() {
                                         isSaving = state.isSaving,
                                         isAwaitingSavePermission = state.savePermissionRequestId != null,
                                         saveError = state.saveError,
+                                        isSharing = state.isSharing,
+                                        shareError = state.shareError,
+                                        onShare = { viewModel.shareProtectedImage(context) },
                                         onSaveProtectedImage = {
                                             if (savePermissionRequestId == null) {
                                                 viewModel.saveProtectedImage(context)?.let { requestId ->
