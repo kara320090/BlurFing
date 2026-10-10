@@ -23,14 +23,6 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/camera_file_paths" />
         </provider>
-        <provider
-            android:name=".utils.ProtectedShareProvider"
-            android:authorities="${applicationId}.protected-share"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/protected_share_paths" />
-        </provider>
         <activity
             android:name=".MainActivity"
             android:exported="true">
