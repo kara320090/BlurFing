@@ -7,7 +7,9 @@ data class ProcessingSettings(
     val method: ProtectionMethod = ProtectionMethod.GAUSSIAN_BLUR,
     val strength: Float = 0.5f,
     val useServer: Boolean = false,
-    val serverAddress: String = BackendAddress.EMULATOR_DEFAULT
+    val serverAddress: String = BackendAddress.EMULATOR_DEFAULT,
+    val exportFormat: ExportFormat = ExportFormat.PNG,
+    val jpegQuality: Int = 95
 )
 
 class ProcessingSettingsStore(context: Context) {
@@ -20,13 +22,16 @@ class ProcessingSettingsStore(context: Context) {
                 if (it.isFinite() && it in 0.1f..1f) it else 0.5f
             },
             useServer = preferences.getBoolean("use-server", false),
-            serverAddress = preferences.getString("address", BackendAddress.EMULATOR_DEFAULT).orEmpty().take(2048)
+            serverAddress = preferences.getString("address", BackendAddress.EMULATOR_DEFAULT).orEmpty().take(2048),
+            exportFormat = ExportFormat.entries.firstOrNull { it.name == preferences.getString("export-format","PNG") } ?: ExportFormat.PNG,
+            jpegQuality = preferences.getInt("jpeg-quality",95).coerceIn(80,100)
         )
     } catch (_: ClassCastException) { ProcessingSettings() }
 
     fun save(settings: ProcessingSettings) {
         preferences.edit().putString("method", settings.method.apiValue)
             .putFloat("strength", settings.strength).putBoolean("use-server", settings.useServer)
-            .putString("address", settings.serverAddress).apply()
+            .putString("address", settings.serverAddress)
+            .putString("export-format",settings.exportFormat.name).putInt("jpeg-quality",settings.jpegQuality).apply()
     }
 }

@@ -85,9 +85,7 @@ sealed interface UiState {
 open class BlurFingViewModel(
     private val protectionRepository: ProtectionRepository = MockProtectionRepository(),
     private val apiRepositoryFactory: (String) -> ProtectionRepository = { ApiProtectionRepository(it) },
-    private val saveImage: suspend (Context, Bitmap) -> Result<Uri> = { context, bitmap ->
-        ImageSaver.saveProtectedCopy(context, bitmap)
-    },
+    private val saveImage: (suspend (Context, Bitmap) -> Result<Uri>)? = null,
     private val draftSession: DraftSession? = null,
     private val settingsStore: ProcessingSettingsStore? = null,
     private val readinessCheck: suspend (String) -> BackendReadiness = { BackendReadinessClient().check(it) }
@@ -103,8 +101,10 @@ open class BlurFingViewModel(
     private var readinessId: String? = null
 
     fun updateSettings(settings: ProcessingSettings) {
-        if ((_uiState.value as? UiState.Ready)?.isProcessing == true) return
+        val current = _uiState.value as? UiState.Ready
+        if (current?.isProcessing == true || current?.isSaving == true || current?.savePermissionRequestId != null) return
         if (!settings.strength.isFinite() || settings.strength !in 0.1f..1f) return
+        if (settings.jpegQuality !in 80..100) return
         val normalized = settings.copy(serverAddress = settings.serverAddress.take(2048))
         if(normalized.serverAddress != _settings.value.serverAddress || normalized.useServer != _settings.value.useServer) clearReadiness()
         _settings.value = normalized
@@ -424,13 +424,16 @@ open class BlurFingViewModel(
 
     private fun writeProtectedImage(context: Context, current: UiState.Ready) {
         val protectedBitmap = current.protectedBitmap ?: return
+        val exportSettings = _settings.value
         val saveId = UUID.randomUUID().toString()
         activeSaveId = saveId
         _uiState.value = current.copy(isSaving = true, saveMessage = null, saveError = null)
 
         activeSavingJob = viewModelScope.launch {
             try {
-                saveImage(context.applicationContext, protectedBitmap).getOrThrow()
+                (saveImage?.invoke(context.applicationContext, protectedBitmap)
+                    ?: ImageSaver.saveProtectedCopy(context.applicationContext,protectedBitmap,
+                        exportSettings.exportFormat.compression,exportSettings.jpegQuality)).getOrThrow()
                 if (activeSaveId != saveId) return@launch
                 val latest = _uiState.value as? UiState.Ready ?: return@launch
                 _uiState.value = latest.copy(
