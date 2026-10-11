@@ -1,0 +1,155 @@
+{
+  "sourceafis_version": "3.18.1",
+  "artifacts": [
+    {
+      "group": "com.machinezoo.sourceafis",
+      "artifact": "sourceafis",
+      "version": "3.18.1",
+      "file": "private/sourceafis/lib/sourceafis-3.18.1.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/machinezoo/sourceafis/sourceafis/3.18.1/sourceafis-3.18.1.jar",
+      "repository_sha1": "e2f58a29de8abc9c2a5339924921e3275aa2166c",
+      "sha256": "850582c842a7c7bf4ab87d8e8785674d9e092eb379a021d46bc053d2fc6028c0",
+      "bytes": 181525
+    },
+    {
+      "group": "com.machinezoo.stagean",
+      "artifact": "stagean",
+      "version": "1.3.0",
+      "file": "private/sourceafis/lib/stagean-1.3.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/machinezoo/stagean/stagean/1.3.0/stagean-1.3.0.jar",
+      "repository_sha1": "65102e4e96b7723ee798a6f00bb6748a5dc37507",
+      "sha256": "19a77e39c6db01950c6caedc72323995f4be38368a16f72ffce5ea49ef3c7650",
+      "bytes": 14674
+    },
+    {
+      "group": "com.machinezoo.closeablescope",
+      "artifact": "closeablescope",
+      "version": "1.0.1",
+      "file": "private/sourceafis/lib/closeablescope-1.0.1.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/machinezoo/closeablescope/closeablescope/1.0.1/closeablescope-1.0.1.jar",
+      "repository_sha1": "24945163b28082714ab2e3c19622b9fbe0410d54",
+      "sha256": "3e3554e56a831a68e168ee0e267b7e5ede9a9623c5814065888de49de0debfc8",
+      "bytes": 4524
+    },
+    {
+      "group": "com.machinezoo.noexception",
+      "artifact": "noexception",
+      "version": "1.9.1",
+      "file": "private/sourceafis/lib/noexception-1.9.1.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/machinezoo/noexception/noexception/1.9.1/noexception-1.9.1.jar",
+      "repository_sha1": "ff1bd6a895b36189a93baaa22e530fdb00314365",
+      "sha256": "29b002c8ccb17e73f06e2a237b083a38ca8e83cf833e0483c2366ff492965a8d",
+      "bytes": 252036
+    },
+    {
+      "group": "com.machinezoo.fingerprintio",
+      "artifact": "fingerprintio",
+      "version": "1.3.1",
+      "file": "private/sourceafis/lib/fingerprintio-1.3.1.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/machinezoo/fingerprintio/fingerprintio/1.3.1/fingerprintio-1.3.1.jar",
+      "repository_sha1": "19646646d35e4e5eb25f6ed0778517a0430482ab",
+      "sha256": "2c2b1e3a35eb12317a75966e2b33e27d68d6b79e21120de8220f9fb20b20429c",
+      "bytes": 160744
+    },
+    {
+      "group": "it.unimi.dsi",
+      "artifact": "fastutil",
+      "version": "8.5.12",
+      "file": "private/sourceafis/lib/fastutil-8.5.12.jar",
+      "url": "https://repo.maven.apache.org/maven2/it/unimi/dsi/fastutil/8.5.12/fastutil-8.5.12.jar",
+      "repository_sha1": "c24946d46824bd528054bface3231d2ecb7e95e8",
+      "sha256": "b5543ee08d062d551cf0a5c9bc0fb70588b0382079029ba48941fa9c9be8a5d4",
+      "bytes": 23326598
+    },
+    {
+      "group": "commons-io",
+      "artifact": "commons-io",
+      "version": "2.15.0",
+      "file": "private/sourceafis/lib/commons-io-2.15.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/commons-io/commons-io/2.15.0/commons-io-2.15.0.jar",
+      "repository_sha1": "5c3c2db10f6f797430a7f9c696b4d1273768c924",
+      "sha256": "a328dad730921d197b6a9b195dffa00e41c974c2dac8fe37e84d31706bca7792",
+      "bytes": 500628
+    },
+    {
+      "group": "com.google.code.gson",
+      "artifact": "gson",
+      "version": "2.10.1",
+      "file": "private/sourceafis/lib/gson-2.10.1.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/google/code/gson/gson/2.10.1/gson-2.10.1.jar",
+      "repository_sha1": "b3add478d4382b78ea20b1671390a858002feb6c",
+      "sha256": "4241c14a7727c34feea6507ec801318a3d4a90f070e4525681079fb94ee4c593",
+      "bytes": 283367
+    },
+    {
+      "group": "com.fasterxml.jackson.core",
+      "artifact": "jackson-databind",
+      "version": "2.15.3",
+      "file": "private/sourceafis/lib/jackson-databind-2.15.3.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.15.3/jackson-databind-2.15.3.jar",
+      "repository_sha1": "a734bc2c47a9453c4efa772461a3aeb273c010d9",
+      "sha256": "c3c53333a2172a80678bda1803e39cff45bec6ae3e9c7d4f44a81ec4e2ab18dc",
+      "bytes": 1620120
+    },
+    {
+      "group": "com.fasterxml.jackson.core",
+      "artifact": "jackson-core",
+      "version": "2.15.3",
+      "file": "private/sourceafis/lib/jackson-core-2.15.3.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-core/2.15.3/jackson-core-2.15.3.jar",
+      "repository_sha1": "60d600567c1862840397bf9ff5a92398edc5797b",
+      "sha256": "51fab7aad51ed588482edc507fd542747936c5094d1ab76ed21ddb63b96b610d",
+      "bytes": 549233
+    },
+    {
+      "group": "com.fasterxml.jackson.core",
+      "artifact": "jackson-annotations",
+      "version": "2.15.3",
+      "file": "private/sourceafis/lib/jackson-annotations-2.15.3.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.15.3/jackson-annotations-2.15.3.jar",
+      "repository_sha1": "79baf4e605eb3bbb60b1c475d44a7aecceea1d60",
+      "sha256": "aae865c3d88256d61b11523cb1e88bd48d5b9ad5855fa1fc859504fd2204708a",
+      "bytes": 75565
+    },
+    {
+      "group": "com.fasterxml.jackson.dataformat",
+      "artifact": "jackson-dataformat-cbor",
+      "version": "2.15.3",
+      "file": "private/sourceafis/lib/jackson-dataformat-cbor-2.15.3.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-cbor/2.15.3/jackson-dataformat-cbor-2.15.3.jar",
+      "repository_sha1": "c30a4e69e760401a98b9fa458a4f2db6fe392d7f",
+      "sha256": "b8c7ae4a9d82e3fd0aecfd4599f42eaf503d0faf99e2f97abfb8b2c33bc09da7",
+      "bytes": 69684
+    },
+    {
+      "group": "com.github.mhshams",
+      "artifact": "jnbis",
+      "version": "2.1.2",
+      "file": "private/sourceafis/lib/jnbis-2.1.2.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/github/mhshams/jnbis/2.1.2/jnbis-2.1.2.jar",
+      "repository_sha1": "e0dd38c347cf94ad1fe82eabb0b8e61931088de9",
+      "sha256": "275046559dbfcf11adf0811fcc71646627f00964b8421029b2d1e8340b292fe5",
+      "bytes": 82914
+    },
+    {
+      "group": "org.slf4j",
+      "artifact": "slf4j-api",
+      "version": "2.0.9",
+      "file": "private/sourceafis/lib/slf4j-api-2.0.9.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/2.0.9/slf4j-api-2.0.9.jar",
+      "repository_sha1": "7cf2726fdcfbc8610f9a71fb3ed639871f315340",
+      "sha256": "0818930dc8d7debb403204611691da58e49d42c50b6ffcfdce02dadb7c3c2b6c",
+      "bytes": 64579
+    },
+    {
+      "group": "org.slf4j",
+      "artifact": "slf4j-nop",
+      "version": "2.0.9",
+      "file": "private/sourceafis/lib/slf4j-nop-2.0.9.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/slf4j/slf4j-nop/2.0.9/slf4j-nop-2.0.9.jar",
+      "repository_sha1": "fa0627049304bf501bf6a0e4d1416bcaec9a72a9",
+      "sha256": "5612367b12bac3eacf4e6ff4e06ce5ba1c83c4d8d6d5e2ea5f924635717a6d83",
+      "bytes": 4932
+    }
+  ]
+}
