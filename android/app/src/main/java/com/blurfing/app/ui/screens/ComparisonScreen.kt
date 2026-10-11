@@ -43,7 +43,10 @@ fun ComparisonScreen(
     modifier: Modifier = Modifier,
     regions: List<NormalizedRegion> = response?.appliedRegions.orEmpty(),
     settings: ProcessingSettings = ProcessingSettings(),
-    onSettingsChanged: (ProcessingSettings) -> Unit = {}
+    onSettingsChanged: (ProcessingSettings) -> Unit = {},
+    onShare: () -> Unit = {},
+    isSharing: Boolean = false,
+    shareError: String? = null
 ) {
     var showProtectedOnly by rememberSaveable(response?.requestId) { mutableStateOf(true) }
     var sideBySide by rememberSaveable(response?.requestId) { mutableStateOf(false) }
@@ -123,7 +126,7 @@ fun ComparisonScreen(
             Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
                 ExportFormat.entries.forEach { format ->
                     FilterChip(selected=settings.exportFormat==format,
-                        enabled=!isSaving && !isAwaitingSavePermission,
+                        enabled=!isSaving && !isSharing && !isAwaitingSavePermission,
                         onClick={ onSettingsChanged(settings.copy(exportFormat=format)) },
                         label={ Text(if(format==ExportFormat.PNG) "PNG (손실 없음)" else "JPEG (용량 절약)") })
                 }
@@ -131,10 +134,10 @@ fun ComparisonScreen(
             if(settings.exportFormat==ExportFormat.JPEG) {
                 Text("JPEG 품질 ${settings.jpegQuality} · 저장 후 보호 효과가 달라질 수 있습니다.",style=MaterialTheme.typography.bodySmall)
                 Slider(value=settings.jpegQuality.toFloat(),onValueChange={ onSettingsChanged(settings.copy(jpegQuality=it.roundToInt())) },
-                    enabled=!isSaving && !isAwaitingSavePermission,valueRange=80f..100f,steps=19,
+                    enabled=!isSaving && !isSharing && !isAwaitingSavePermission,valueRange=80f..100f,steps=19,
                     modifier=Modifier.semantics { contentDescription="JPEG 저장 품질" })
             }
-            Button(onClick = onSaveProtectedImage, enabled = !isSaving && !isAwaitingSavePermission,
+            Button(onClick = onSaveProtectedImage, enabled = !isSaving && !isSharing && !isAwaitingSavePermission,
                 modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 14.dp)) {
                 Text(when {
                     isAwaitingSavePermission -> "저장 권한 확인 중…"
@@ -142,6 +145,11 @@ fun ComparisonScreen(
                     saveError != null -> "사본 저장 다시 시도"
                     else -> "보호 사본 저장 (원본 보존)"
                 })
+            }
+            shareError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            OutlinedButton(onClick = onShare, enabled = !isSharing && !isSaving && !isAwaitingSavePermission,
+                modifier = Modifier.fillMaxWidth()) {
+                Text(if (isSharing) "공유 사본 준비 중…" else if (response?.resultKind == "mock") "Mock 프리뷰 공유" else "처리 사본 공유")
             }
         }
     }

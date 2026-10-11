@@ -23,6 +23,8 @@ import com.blurfing.app.repository.BackendReadiness
 import com.blurfing.app.repository.BackendReadinessClient
 import com.blurfing.app.repository.ReadinessKind
 import com.blurfing.app.utils.ImageSaver
+import com.blurfing.app.utils.ProtectedShare
+import com.blurfing.app.utils.ProtectedShareFiles
 import com.blurfing.app.utils.CameraCaptureFiles
 import com.blurfing.app.utils.PhotoImportException
 import com.blurfing.app.utils.ProtectedImageDecoder
@@ -73,7 +75,10 @@ sealed interface UiState {
         val processingError: String? = null,
         val sessionNotice: String? = null,
         val canUndoRegions: Boolean = false,
-        val canRedoRegions: Boolean = false
+        val canRedoRegions: Boolean = false,
+        val isSharing: Boolean = false,
+        val pendingShare: ProtectedShare? = null,
+        val shareError: String? = null
     ) : UiState
     data class Error(
         val message: String,
@@ -88,7 +93,9 @@ open class BlurFingViewModel(
     private val saveImage: (suspend (Context, Bitmap) -> Result<Uri>)? = null,
     private val draftSession: DraftSession? = null,
     private val settingsStore: ProcessingSettingsStore? = null,
-    private val readinessCheck: suspend (String) -> BackendReadiness = { BackendReadinessClient().check(it) }
+    private val readinessCheck: suspend (String) -> BackendReadiness = { BackendReadinessClient().check(it) },
+    private val prepareShare: suspend (Context, Bitmap, ProcessingSettings, Boolean) -> ProtectedShare =
+        { context, bitmap, settings, mock -> ProtectedShareFiles.prepare(context, bitmap, settings, mock) }
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Idle)
@@ -102,7 +109,7 @@ open class BlurFingViewModel(
 
     fun updateSettings(settings: ProcessingSettings) {
         val current = _uiState.value as? UiState.Ready
-        if (current?.isProcessing == true || current?.isSaving == true || current?.savePermissionRequestId != null) return
+        if (current?.isProcessing == true || current?.isSaving == true || current?.isSharing == true || current?.savePermissionRequestId != null) return
         if (!settings.strength.isFinite() || settings.strength !in 0.1f..1f) return
         if (settings.jpegQuality !in 80..100) return
         val normalized = settings.copy(serverAddress = settings.serverAddress.take(2048))
@@ -142,6 +149,8 @@ open class BlurFingViewModel(
     private var imageLoadingJob: Job? = null
     private var activeSavingJob: Job? = null
     private var activeSaveId: String? = null
+    private var sharingJob: Job? = null
+    private var shareId: String? = null
     private val regionHistory = RegionEditHistory()
 
     init {
@@ -392,7 +401,7 @@ open class BlurFingViewModel(
      */
     fun saveProtectedImage(context: Context): String? {
         val current = _uiState.value as? UiState.Ready ?: return null
-        if (current.step != ScreenStep.COMPARISON || current.isProcessing || current.isSaving ||
+        if (current.step != ScreenStep.COMPARISON || current.isProcessing || current.isSaving || current.isSharing ||
             current.savePermissionRequestId != null || current.protectedBitmap == null) return null
         if (!hasStoragePermission(context)) {
             val requestId = UUID.randomUUID().toString()
@@ -461,13 +470,51 @@ open class BlurFingViewModel(
         }
     }
 
+    fun shareProtectedImage(context: Context) {
+        val current = _uiState.value as? UiState.Ready ?: return
+        val bitmap = current.protectedBitmap ?: return
+        val response = current.protectionResponse ?: return
+        if (current.step != ScreenStep.COMPARISON || current.isProcessing || current.isSaving ||
+            current.isSharing || current.pendingShare != null || current.savePermissionRequestId != null) return
+        val id = UUID.randomUUID().toString()
+        val settings = _settings.value
+        shareId = id
+        _uiState.value = current.copy(isSharing = true, shareError = null)
+        sharingJob = viewModelScope.launch {
+            try {
+                val share = prepareShare(context.applicationContext, bitmap, settings, response.resultKind == "mock")
+                if (shareId != id) return@launch
+                val latest = _uiState.value as? UiState.Ready ?: return@launch
+                _uiState.value = latest.copy(pendingShare = share, isSharing = false)
+            } catch (error: CancellationException) { throw error }
+            catch (_: Exception) {
+                if (shareId == id) {
+                    val latest = _uiState.value as? UiState.Ready
+                    if (latest != null) _uiState.value = latest.copy(isSharing = false,
+                        shareError = "공유 사본을 준비하지 못했습니다. 저장 공간을 확인한 뒤 다시 시도해 주세요.")
+                }
+            } finally { if (shareId == id) { shareId = null; sharingJob = null } }
+        }
+    }
+
+    fun consumeShare(share: ProtectedShare, launched: Boolean) {
+        val current = _uiState.value as? UiState.Ready ?: return
+        if (current.pendingShare != share) return
+        _uiState.value = current.copy(pendingShare = null,
+            shareError = if (launched) null else "공유할 앱을 열지 못했습니다. 사본을 저장한 뒤 공유해 주세요.")
+    }
+
     private fun cancelSaving() {
+        shareId = null
+        sharingJob?.cancel()
+        sharingJob = null
         // 먼저 식별자를 무효화해 취소가 늦게 반영되는 저장도 이전 화면을 되살리지 못하게 한다.
         activeSaveId = null
         activeSavingJob?.cancel()
         activeSavingJob = null
         val current = _uiState.value as? UiState.Ready ?: return
-        _uiState.value = current.copy(isSaving = false, savePermissionRequestId = null, saveMessage = null, saveError = null)
+        _uiState.value = current.copy(isSaving = false, savePermissionRequestId = null, saveMessage = null, saveError = null,
+            isSharing = false, pendingShare = null, shareError = null)
     }
 
     fun resetToIdle() {
