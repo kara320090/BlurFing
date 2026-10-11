@@ -83,6 +83,7 @@ def test_startup_rejects_invalid_server_settings(name, value):
         ("mock_processor:__doc__", 503),
         ("asyncio:sleep", 503),
         ("mock_processor:MockProcessor", 503),
+        ("json:loads", 503),
     ],
 )
 def test_startup_connects_configured_processor_or_stays_unavailable(target, expected_status):
@@ -134,6 +135,67 @@ with TestClient(main.app) as client:
             "request_id": "startup-processor",
         }
     assert ("BLURFING_PROCESSOR 연결 실패" in result.stderr) is bool(target and expected_status == 503)
+
+
+@pytest.mark.parametrize(
+    "signature_kind, expected_status",
+    [
+        ("four_positional", 200),
+        ("too_few", 503),
+        ("extra_required", 503),
+        ("keyword_only", 503),
+        ("extra_optional", 200),
+        ("varargs", 200),
+        ("uninspectable", 503),
+    ],
+)
+def test_processor_signature_is_checked_without_running_it(signature_kind, expected_status, monkeypatch, caplog):
+    processor_calls = []
+
+    def result(image_bytes, *_):
+        processor_calls.append(True)
+        return image_bytes
+
+    processors = {
+        "four_positional": lambda image_bytes, method, strength, regions: result(image_bytes),
+        "too_few": lambda image_bytes, method, strength: result(image_bytes),
+        "extra_required": lambda image_bytes, method, strength, regions, extra: result(image_bytes),
+        "keyword_only": lambda image_bytes, method, strength, *, regions: result(image_bytes),
+        "extra_optional": lambda image_bytes, method, strength, regions, extra=None: result(image_bytes),
+        "varargs": lambda *args: result(*args),
+    }
+    processor = processors.get(signature_kind, processors["four_positional"])
+    if signature_kind == "uninspectable":
+        processor.__signature__ = "invalid signature metadata"
+    monkeypatch.setattr(sys.modules["mock_processor"], "signature_test_processor", processor, raising=False)
+    monkeypatch.setenv("BLURFING_PROCESSOR", "mock_processor:signature_test_processor")
+
+    loaded_processor = backend_main.load_protection_processor()
+    assert processor_calls == []
+    assert (loaded_processor is processor) is (expected_status == 200)
+    if expected_status == 503:
+        assert loaded_processor is None
+    assert ("BLURFING_PROCESSOR 연결 실패" in caplog.text) is (expected_status == 503)
+
+    monkeypatch.setattr(app.state, "protection_processor", loaded_processor)
+    assert client.get("/").status_code == 200
+    ready = client.get("/ready")
+    protected = protect_request(request_id="signature-test-request")
+    assert ready.status_code == expected_status
+    assert protected.status_code == expected_status
+    if expected_status == 200:
+        assert ready.json() == {"status": "ready"}
+        assert protected.json()["status"] == "succeeded"
+        assert processor_calls == [True]
+    else:
+        assert ready.json()["code"] == "PROCESSOR_UNAVAILABLE"
+        assert protected.json() == {
+            "request_id": "signature-test-request",
+            "code": "PROCESSOR_UNAVAILABLE",
+            "message": "보호 처리 모듈을 사용할 수 없습니다.",
+            "retryable": True,
+        }
+        assert processor_calls == []
 
 
 @pytest.fixture

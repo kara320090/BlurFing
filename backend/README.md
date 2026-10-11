@@ -13,7 +13,7 @@
 | `main.py` | FastAPI 앱, 요청 검사, 처리 함수 호출, 결과 검사, 응답과 중복 차단 |
 | `mock_processor.py` | 지연 가능한 MockProcessor와 기본 인스턴스 |
 | `mock_main.py` | 환경 변수로 지연 시간을 읽고 Mock을 연결하는 개발용 진입점 |
-| `test_main.py` | 테스트 준비 도구와 함수 38개, 매개변수 포함 사례 80개 |
+| `test_main.py` | 테스트 준비 도구와 함수 39개, 매개변수 포함 사례 88개 |
 | `check_mock_http.py` | 실행 중인 Mock 서버에 합성 PNG·JPEG를 보내는 HTTP 확인 도구 |
 | `requirements.txt` | fastapi, pillow, python-multipart, uvicorn |
 | `requirements-dev.txt` | 실행 의존성 포함 및 httpx, pytest 추가 |
@@ -32,11 +32,12 @@
 - 실행·대기 작업의 총 접수 한도 기본 4개와 한도 초과 시 `503 SERVER_BUSY` 반환
 - 환경 변수로 처리 대기 시간·접수 한도 설정, 서버 시작 시 잘못된 값 거부
 - 환경 변수의 모듈·호출 대상 경로로 처리기를 연결하고, 연결 실패 시 미연결 상태 유지
+- 자동 연결 전에 위치 인자 4개의 호출 호환성을 검사하며 처리 함수는 실행하지 않음
 - 오류 응답과 영역이 없을 때의 `no_regions` 응답
 - 필수 입력값 누락을 포함한 오류 응답 형식 통일
 - 입력을 PNG로 저장해 반환하는 개발용 Mock과 별도 실행 진입점; 합성 RGB PNG·JPEG의 크기·픽셀 유지는 테스트로 확인
 - 실행 중인 Mock 서버의 상태와 PNG·JPEG 입출력을 검사하는 HTTP 확인 스크립트
-- 백엔드 테스트 80개 (서버 시작 설정·처리기 연결 검사, 합성 이미지 기반 접수 한도, 실패·시간 초과·취소 후 자리 해제, 지연 Mock, PNG·JPEG 반환, 용량 초과, 강도 경계·잘못된 값, 잘못된 영역, AI 결과 크기 오류 포함)
+- 백엔드 테스트 88개 (서버 시작 설정·처리기 연결·인자 호환성 검사, 합성 이미지 기반 접수 한도, 실패·시간 초과·취소 후 자리 해제, 지연 Mock, PNG·JPEG 반환, 용량 초과, 강도 경계·잘못된 값, 잘못된 영역, AI 결과 크기 오류 포함)
 
 ## 현재 상태
 
@@ -114,9 +115,11 @@ uvicorn main:app --reload
 
 연결되면 `GET /ready`는 `200 ready`를 반환하고, 정상적인 영역 포함 요청은 기존 API를 통해 처리기를 호출합니다. 이 예에서는 `result_kind: mock`과 `MOCK_NO_PROTECTION` 경고를 유지하며 지연 없는 PNG 반환만 수행합니다. 실제 AI 모듈을 받으면 설정값을 AI 담당자가 제공한 모듈·호출 대상 이름으로 바꿉니다. 입력은 `(image_bytes, method, strength, regions)`, 반환값은 입력과 같은 크기의 완성된 PNG 바이트여야 합니다. 이 설정 기능은 실제 AI 연동 완료나 보호 성능 검증을 뜻하지 않습니다.
 
-미설정·빈 값·공백뿐인 값이면 연결하지 않습니다. 잘못된 형식, import 중 예외, 없는 호출 대상, 호출 불가능한 대상, 클래스 또는 비동기 대상이면 연결하지 않고 서버 로그에 `BLURFING_PROCESSOR 연결 실패`와 예외 종류를 남깁니다. 서버는 유지되며 `GET /`는 200, `GET /ready` 및 검증을 통과한 영역 포함 보호 요청은 `503 PROCESSOR_UNAVAILABLE`을 반환합니다. 오류 응답에 import 예외 내용을 노출하지 않습니다.
+미설정·빈 값·공백뿐인 값이면 연결하지 않습니다. 잘못된 형식, import 중 예외, 없는 호출 대상, 호출 불가능한 대상, 클래스 또는 비동기 대상이면 연결하지 않고 서버 로그에 `BLURFING_PROCESSOR 연결 실패`와 예외 종류를 남깁니다. 4개 위치 인자를 받을 수 없거나 함수 시그니처를 확인할 수 없는 경우에도 연결하지 않습니다. 서버는 유지되며 `GET /`는 200, `GET /ready` 및 검증을 통과한 영역 포함 보호 요청은 `503 PROCESSOR_UNAVAILABLE`을 반환합니다. 오류 응답에 import 예외 내용을 노출하지 않습니다.
 
-설정은 요청 입력이 아닌 서버 운영자가 관리하는 환경 변수입니다. 모듈을 불러오면 그 모듈의 초기화 코드가 실행됩니다. 연결 시에는 동기 호출 가능 여부를 검사할 뿐, AI 함수의 인자 호환성이나 보호 효과를 검증하지 않습니다. import 시간 제한·자동 재시도·자동 모듈 검색·설정의 실시간 변경은 없습니다. 값을 바꾼 뒤 서버를 종료하고 같은 터미널에서 다시 실행합니다. 미연결 기본 상태로 돌아가려면 서버 종료 후 다음과 같이 실행합니다.
+자동 연결은 `inspect.signature(processor).bind(...)`로 `(image_bytes, method, strength, regions)`의 위치 인자 4개를 전달할 수 있는지 검사합니다. 매개변수 이름이 같을 필요는 없습니다. 선택적인 추가 인자와 `*args`는 허용하지만 인자 수 부족, 추가 필수 인자, 위치 인자로 전달할 수 없는 필수 키워드 인자는 거부합니다. 시그니처를 확인할 수 없는 처리기는 호환되는 Python 함수로 감싸야 합니다. 검사 중 처리 함수는 호출하지 않습니다.
+
+설정은 요청 입력이 아닌 서버 운영자가 관리하는 환경 변수입니다. 모듈을 불러오면 그 모듈의 초기화 코드가 실행됩니다. 인자 호환성 검사는 자동 연결 경로에만 적용하며, 함수 내부 동작·인자의 타입·실제 이미지 처리 성공·보호 효과를 검증하지 않습니다. import 시간 제한·자동 재시도·자동 모듈 검색·설정의 실시간 변경은 없습니다. 값을 바꾼 뒤 서버를 종료하고 같은 터미널에서 다시 실행합니다. 미연결 기본 상태로 돌아가려면 서버 종료 후 다음과 같이 실행합니다.
 
 ```powershell
 Remove-Item Env:BLURFING_PROCESSOR -ErrorAction SilentlyContinue
@@ -166,7 +169,7 @@ HTTP 상태는 503입니다. Retry-After 헤더나 자동 재시도는 구현하
 |---|---|
 | `read_positive_float_env` | 환경 변수의 실수 변환 및 유한한 양수 검사; 미설정 시 기본값, 잘못된 값은 변수 이름을 포함한 ValueError |
 | `read_positive_int_env` | 환경 변수의 정수 변환 및 양수 검사; 미설정 시 기본값, 잘못된 값은 변수 이름을 포함한 ValueError |
-| `load_protection_processor` | 환경 변수의 모듈·호출 대상을 불러와 동기 호출 가능한 객체 반환; 미설정·연결 실패 시 None, 실패 이유의 예외 종류는 서버 로그에 기록 |
+| `load_protection_processor` | 환경 변수의 모듈·호출 대상을 불러와 동기 호출 가능 여부와 4개 위치 인자 호환성을 검사한 객체 반환; 미설정·연결 실패 시 None, 실패 이유의 예외 종류는 서버 로그에 기록 |
 | `health_check` / `GET /` | AI 미연결 상태에서도 `200`과 `{"message":"BlurFing backend is running"}` 반환 |
 | `readiness_check` / `GET /ready` | 처리 함수가 호출 가능한지 확인; 연결 시 `200 ready`, 미연결·호출 불가 시 `503 PROCESSOR_UNAVAILABLE` |
 | `error_response` | 지정된 HTTP 상태와 `request_id`, `code`, `message`, `retryable`을 담은 `JSONResponse` 생성; 재시도 기본값은 false |
@@ -265,13 +268,14 @@ AI 함수에 전달하는 값은 `(원본 이미지 바이트, 방식 문자열,
 
 ### 전체 테스트 목록
 
-테스트 함수 38개이며, 매개변수별 사례를 포함하면 총 80개입니다.
+테스트 함수 39개이며, 매개변수별 사례를 포함하면 총 88개입니다.
 
 | 테스트 함수 | 확인 내용 | 사례 수 |
 |---|---|---|
 | `test_startup_reads_server_settings` | 새 프로세스에서 미설정 기본값 30초·4개와 지정값 0.2초·2개 반영 | 2 |
 | `test_startup_rejects_invalid_server_settings` | 각 변수의 빈 값·0·음수·NaN·문자열, 시간의 무한대·한도의 소수 거부; 초기화 실패와 오류 변수 이름 확인 | 12 |
-| `test_startup_connects_configured_processor_or_stays_unavailable` | 새 프로세스의 미설정·빈 설정·Mock 연결·형식 오류·없는 모듈/대상·비호출 대상·비동기 함수·클래스 검사; health·ready·보호 API·Mock PNG 및 연결 실패 로그 확인 | 9 |
+| `test_startup_connects_configured_processor_or_stays_unavailable` | 새 프로세스의 미설정·빈 설정·Mock 연결·형식 오류·없는 모듈/대상·비호출 대상·비동기 함수·클래스·인자 비호환 함수 검사; health·ready·보호 API·Mock PNG 및 연결 실패 로그 확인 | 10 |
+| `test_processor_signature_is_checked_without_running_it` | 4개 위치 인자·선택적 추가 인자·가변 인자는 허용, 인자 부족·추가 필수 인자·필수 키워드 인자·시그니처 확인 불가는 거부; 검사 시 미실행, 로그 및 API 정상/503 확인 | 7 |
 | `test_mock_returns_png_with_original_pixels` | PNG·JPEG 입력 각각의 크기와 디코딩된 픽셀 유지, PNG 출력, mock 표시와 경고 | 2 |
 | `test_mock_without_regions_is_marked_as_mock` | 빈 영역 응답에서도 mock 표시와 두 경고 유지 | 1 |
 | `test_mock_entrypoint_connects_processor` | 환경 변수의 지연 0·0.01초 설정 반영, ready 응답 및 Mock API 호출 | 2 |
@@ -322,6 +326,8 @@ AI 함수에 전달하는 값은 `(원본 이미지 바이트, 방식 문자열,
 
 2026-10-10 처리 모듈 자동 연결 설정 추가 후 같은 환경·명령으로 실행한 결과는 `80 passed, 2 warnings`입니다. 새 Python 프로세스에서 미설정·빈 설정·정상 Mock 연결과 연결 실패 6종을 검사하고, 서버 실행·ready·보호 API 응답과 합성 PNG 반환을 확인했습니다. 실제 HTTP 서버·Android 기기·실제 AI 보호 성능 검증은 실행하지 않았습니다.
 
+2026-10-11 처리기 인자 호환성 검사 추가 후 같은 환경·명령으로 실행한 결과는 `88 passed, 2 warnings`입니다. 정상 4개 위치 인자·선택적 추가 인자·가변 인자의 연결 유지, 비호환 인자와 확인 불가능한 시그니처의 연결 거부, 검사 단계의 처리기 미실행을 확인했습니다. 새 프로세스에서도 비호환 함수의 연결 실패와 health 200·ready/보호 API 503을 확인했습니다. 실제 HTTP 서버·Android 기기·실제 AI 보호 성능 검증은 실행하지 않았습니다.
+
 코드에 구현됐지만 현재 전용 테스트가 없는 항목에는 공백 ID, 빈 이미지, 화소 제한 초과, 영역 생략, 영역 키·타입·y 경계 검사, 비PNG AI 결과, 설정 경로가 아닌 런타임에서 직접 등록된 호출 불가능한 처리기 등이 있습니다. 실행 1개·대기 1개의 동시 접수는 위 테스트로 확인하지만 실제 AI 작업 여러 개를 병렬 실행하는 부하 시험은 하지 않았습니다. 구현된 기능과 테스트로 확인한 범위는 구분해야 합니다.
 
 ## 이미지 반환 Mock 사용 방법
@@ -361,7 +367,7 @@ uvicorn mock_main:app --reload
 
 ## 실제 HTTP 이미지 입출력 확인
 
-`check_mock_http.py`는 `TestClient` 대신 실제로 실행 중인 서버에 HTTP 요청을 보냅니다. pytest 80개와 별도로 실행하는 확인 도구이며, 합성 이미지와 반환 PNG는 메모리에서만 처리하고 파일로 저장하지 않습니다.
+`check_mock_http.py`는 `TestClient` 대신 실제로 실행 중인 서버에 HTTP 요청을 보냅니다. pytest 88개와 별도로 실행하는 확인 도구이며, 합성 이미지와 반환 PNG는 메모리에서만 처리하고 파일로 저장하지 않습니다.
 
 `backend` 폴더의 첫 번째 터미널에서 개발 의존성을 설치하고 지연 없는 Mock 서버를 실행합니다.
 

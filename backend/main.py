@@ -59,6 +59,8 @@ def load_protection_processor():
             or inspect.iscoroutinefunction(getattr(processor, "__call__", None))
         ):
             raise TypeError("A synchronous processor callable is required.")
+        # 처리기를 실행하지 않고 실제 호출 방식인 위치 인자 4개의 호환성만 검사한다.
+        inspect.signature(processor).bind(b"", "gaussian_blur", 0.5, [])
         return processor
     except Exception as exc:
         logging.getLogger(__name__).warning(
