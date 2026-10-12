@@ -15,9 +15,9 @@ Renderer: natural_auto_04. Compositor: boundaryblend_02. Matchers: NBIS 5.0.0 / 
 | Core transform | 검증된 development baseline | 공통 구현, 실행 검증 대기 |
 | natural_auto_04 | Validated | Same shared core |
 | boundaryblend_02 | Validated | Same shared core |
-| NBIS adapter | Validated | Implemented; runtime validation pending |
-| SourceAFIS | Validated | Implemented; runtime validation pending |
-| Full pipeline | Validated development pipeline | Windows validation pending |
+| NBIS adapter | Validated | Native build and official bridge fixture validated |
+| SourceAFIS | Validated | Actual Windows execution validated |
+| Full pipeline | Validated development pipeline | Runtime validated; Windows/Linux full pipeline equivalence unverified |
 
 ```text
 TECHNICAL_PIPELINE_COMPLETE=true
@@ -25,11 +25,16 @@ LINUX_PIPELINE_VALIDATED=true
 WINDOWS_IMPLEMENTATION_READY=true
 WINDOWS_CROSS_COMPILER_AVAILABLE=false
 WINDOWS_CROSS_BUILD_SUCCESS=false
-WINDOWS_RUNTIME_VALIDATED=false
+WINDOWS_NBIS_NATIVE_BUILD_SUCCESS=true
+WINDOWS_NBIS_FIXTURE_VALIDATED=true
+WINDOWS_SOURCEAFIS_RUNTIME_VALIDATED=true
+WINDOWS_RUNTIME_VALIDATED=true
+windows_full_equivalence_verified=false
+LINUX_REGRESSION_OK=true
 FINAL_INDEPENDENT_VALIDATION_COMPLETE=false
 PROJECT_COMPLETE=false
 ```
-Linux status는 private 작업본의 기존 검증 근거입니다. 새 공개 구조의 Linux 회귀 검사는 syntax/import/config/dispatch로 제한됩니다. Windows는 Python 정적 검사를 통과한 구현이며 실제 build/runtime/full pipeline 검증이 아닙니다.
+Linux status는 private 작업본의 기존 검증 근거입니다. LINUX_REGRESSION_OK는 syntax/import/config/dispatch와 소스 보존 검사이며 Linux native 실행을 재검증한 결과가 아닙니다. Windows에서는 NBIS native build, 공식 fixture의 87 minutiae/reference XYT byte identity/self-match 499 87 87, SourceAFIS 실제 실행이 검증되어 runtime 검증을 완료했습니다. Windows/Linux 전체 transform/evaluation pipeline 동등성은 별도 미검증이므로 windows_full_equivalence_verified=false를 유지합니다. 상세 범위는 [validation](docs/VALIDATION.md)을 확인하세요.
 
 ## Repository layout
 - scripts/: 공통 renderer, compositor, ROI/geometry 및 image helpers; OS-dispatch matcher facades; 단일 Java source.
@@ -51,7 +56,7 @@ from sourceafis_matcher import run_matcher_job
 `scripts`를 Python import path에 두거나 문서의 CLI 명령을 사용합니다. facades는 운영체제를 자동 선택하며 unsupported OS는 오류를 냅니다. 평가 score/threshold와 prune 설정은 바꾸지 않았습니다.
 
 ## 데이터 및 검증
-실제 지문/손 사진, 개인 manifest, checkpoint, archive, dataset은 공개하지 않습니다. [validation](docs/VALIDATION.md)은 Linux development-only입니다. 세 development ROI에서 두 matcher 모두 original→transformed score가 self-match보다 크게 낮았습니다. 독립 holdout 결과는 없으며 B/D 자료를 승격하지 않습니다.
+실제 지문/손 사진, 개인 manifest, checkpoint, archive, dataset은 공개하지 않습니다. [validation](docs/VALIDATION.md)은 기존 Linux development 결과와 Windows runtime 검증 범위를 구분합니다. Linux의 세 development ROI에서 두 matcher 모두 original→transformed score가 self-match보다 크게 낮았습니다. 이 수치를 Windows 결과로 승격하지 않습니다. 독립 holdout 결과는 없으며 B/D 자료를 승격하지 않습니다.
 
 ## 제한사항
 일반적 보호 효과나 완전한 자연스러움을 입증하지 않습니다. synthetic ridge regularity와 texture seam이 일부 남고 Windows full equivalence도 미검증입니다. 특징점 추출 실패를 보호 성공으로 계산하지 않습니다. NBIS와 SourceAFIS score scale은 다르므로 직접 비교하지 않습니다.
