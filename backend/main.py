@@ -12,10 +12,11 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Literal
 
-from fastapi import FastAPI, File, Form, UploadFile
+from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import JSONResponse
 from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel
+from starlette.exceptions import HTTPException
 
 from mock_processor import MockProcessor
 
@@ -141,6 +142,20 @@ def error_response(
             "retryable": retryable,
         },
     )
+
+
+@app.exception_handler(404)
+@app.exception_handler(405)
+async def routing_error_handler(_request: Request, exc: HTTPException) -> JSONResponse:
+    errors = {
+        404: ("NOT_FOUND", "요청한 API를 찾을 수 없습니다."),
+        405: ("METHOD_NOT_ALLOWED", "지원하지 않는 HTTP 요청 방식입니다."),
+    }
+    code, message = errors[exc.status_code]
+    response = error_response("", exc.status_code, code, message)
+    if exc.headers:
+        response.headers.update(exc.headers)
+    return response
 
 
 @app.get("/ready")

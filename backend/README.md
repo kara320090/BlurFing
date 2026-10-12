@@ -13,7 +13,7 @@
 | `main.py` | FastAPI 앱, 요청 검사, 처리 함수 호출, 결과 검사, 응답과 중복 차단 |
 | `mock_processor.py` | 지연 가능한 MockProcessor와 기본 인스턴스 |
 | `mock_main.py` | 환경 변수로 지연 시간을 읽고 Mock을 연결하는 개발용 진입점 |
-| `test_main.py` | 테스트 준비 도구와 함수 39개, 매개변수 포함 사례 88개 |
+| `test_main.py` | 테스트 준비 도구와 함수 41개, 매개변수 포함 사례 94개 |
 | `check_mock_http.py` | 실행 중인 Mock 서버에 합성 PNG·JPEG를 보내는 HTTP 확인 도구 |
 | `requirements.txt` | fastapi, pillow, python-multipart, uvicorn |
 | `requirements-dev.txt` | 실행 의존성 포함 및 httpx, pytest 추가 |
@@ -35,9 +35,10 @@
 - 자동 연결 전에 위치 인자 4개의 호출 호환성을 검사하며 처리 함수는 실행하지 않음
 - 오류 응답과 영역이 없을 때의 `no_regions` 응답
 - 필수 입력값 누락을 포함한 오류 응답 형식 통일
+- 없는 API의 404와 지원하지 않는 HTTP 메서드의 405도 공통 오류 형식으로 반환; 405의 Allow 헤더 유지
 - 입력을 PNG로 저장해 반환하는 개발용 Mock과 별도 실행 진입점; 합성 RGB PNG·JPEG의 크기·픽셀 유지는 테스트로 확인
 - 실행 중인 Mock 서버의 상태와 PNG·JPEG 입출력을 검사하는 HTTP 확인 스크립트
-- 백엔드 테스트 88개 (서버 시작 설정·처리기 연결·인자 호환성 검사, 합성 이미지 기반 접수 한도, 실패·시간 초과·취소 후 자리 해제, 지연 Mock, PNG·JPEG 반환, 용량 초과, 강도 경계·잘못된 값, 잘못된 영역, AI 결과 크기 오류 포함)
+- 백엔드 테스트 94개 (서버 시작 설정·처리기 연결·인자 호환성 검사, 합성 이미지 기반 접수 한도, 실패·시간 초과·취소 후 자리 해제, 지연 Mock, PNG·JPEG 반환, 용량 초과, 강도 경계·잘못된 값, 잘못된 영역, AI 결과 크기 오류, 404·405 공통 응답과 422 형식 유지 포함)
 
 ## 현재 상태
 
@@ -173,6 +174,7 @@ HTTP 상태는 503입니다. Retry-After 헤더나 자동 재시도는 구현하
 | `health_check` / `GET /` | AI 미연결 상태에서도 `200`과 `{"message":"BlurFing backend is running"}` 반환 |
 | `readiness_check` / `GET /ready` | 처리 함수가 호출 가능한지 확인; 연결 시 `200 ready`, 미연결·호출 불가 시 `503 PROCESSOR_UNAVAILABLE` |
 | `error_response` | 지정된 HTTP 상태와 `request_id`, `code`, `message`, `retryable`을 담은 `JSONResponse` 생성; 재시도 기본값은 false |
+| `routing_error_handler` | HTTP 404·405 예외만 공통 형식으로 반환; 빈 request_id·retryable false 및 405의 Allow 등 예외 헤더 유지 |
 | `parse_strength` | 문자열을 실수로 변환하고 0.1~1.0 범위(양 끝값 포함) 및 유한한 숫자인지 검사 |
 | `parse_regions` | 영역 JSON 배열과 좌표 조건을 검사하고 좌표를 실수로 변환; 생략 시 `None` 반환 |
 | `claim_request_id` | 같은 잠금 안에서 중복 → 접수 한도 순서로 검사하고 허용된 ID 등록; accepted·duplicate·busy 반환 |
@@ -233,7 +235,7 @@ AI 함수에 전달하는 값은 `(원본 이미지 바이트, 방식 문자열,
 | `processing_ms` | 핸들러 시작부터 응답 생성까지의 경과 시간을 반올림한 밀리초 |
 | `warnings` | 일반 정상 처리 시 빈 목록; 영역 없으면 `NO_REGIONS`; Mock 연결 시 `MOCK_NO_PROTECTION` 추가 |
 
-`ErrorResponse`는 `request_id`, `code`, `message`, `retryable`을 정의합니다. 다음 표는 코드에서 직접 반환하는 공통 오류입니다.
+`ErrorResponse`는 `request_id`, `code`, `message`, `retryable`을 정의합니다. 다음 표는 직접 반환하거나 404·405 예외 처리기로 변환하는 공통 오류입니다.
 
 | HTTP | 오류 코드 | 원인 | retryable |
 |---|---|---|---|
@@ -242,6 +244,8 @@ AI 함수에 전달하는 값은 `(원본 이미지 바이트, 방식 문자열,
 | 400 | `UNSUPPORTED_METHOD` | 지원하지 않는 보호 방식 | false |
 | 400 | `EMPTY_IMAGE` | 빈 이미지 파일 | false |
 | 400 | `INVALID_IMAGE` | 실제 형식 오류 또는 이미지 읽기 실패 | false |
+| 404 | `NOT_FOUND` | 요청한 API 주소가 없음 | false |
+| 405 | `METHOD_NOT_ALLOWED` | 해당 API에서 지원하지 않는 HTTP 메서드; Allow 헤더로 허용 메서드 표시 | false |
 | 409 | `REQUEST_IN_PROGRESS` | 같은 ID의 요청이 이미 처리 중 | true |
 | 413 | `IMAGE_TOO_LARGE` | 파일 크기 또는 화소 제한 초과 | false |
 | 415 | `UNSUPPORTED_IMAGE_TYPE` | 지원하지 않는 MIME 타입 | false |
@@ -252,7 +256,9 @@ AI 함수에 전달하는 값은 `(원본 이미지 바이트, 방식 문자열,
 
 `PROTECT_ERROR_RESPONSES`는 400·409·413·415·500·503·504의 설명과 `ErrorResponse` 모델을 OpenAPI에 등록합니다. 정상 200 응답에는 `ProtectionResponse` 모델을 사용합니다.
 
-공통 오류 형식은 코드가 error_response로 직접 반환하는 응답에 적용됩니다. FastAPI·multipart 파싱·업로드 읽기 등 모든 오류를 이 형식으로 변환하는 전역 예외 처리기는 없습니다. retryable은 재요청 가능 표시이며 자동 재시도나 다음 요청의 성공을 보장하지 않습니다.
+공통 오류 형식은 코드가 `error_response`로 직접 반환하는 응답과 404·405 예외 처리에 적용됩니다. 그 밖의 프레임워크 422 검증 오류, multipart 파싱·업로드 읽기 오류, 처리 블록 밖의 예외 전체를 공통 형식으로 바꾸지는 않습니다. retryable은 재요청 가능 표시이며 자동 재시도나 다음 요청의 성공을 보장하지 않습니다.
+
+없는 API 주소는 `404 NOT_FOUND`, 지원하지 않는 HTTP 메서드는 `405 METHOD_NOT_ALLOWED`를 반환합니다. 라우팅 단계에서는 폼의 요청 ID를 검사하지 않으므로 `request_id`는 빈 문자열이며 `retryable`은 false입니다. 예외의 헤더를 보존해 405의 `Allow`로 허용 메서드를 확인할 수 있습니다. 두 상태는 라우팅 단계 응답이며 보호 API의 기존 OpenAPI 응답 목록은 변경하지 않습니다.
 
 ## test_main.py 전체 기능
 
@@ -268,7 +274,7 @@ AI 함수에 전달하는 값은 `(원본 이미지 바이트, 방식 문자열,
 
 ### 전체 테스트 목록
 
-테스트 함수 39개이며, 매개변수별 사례를 포함하면 총 88개입니다.
+테스트 함수 41개이며, 매개변수별 사례를 포함하면 총 94개입니다.
 
 | 테스트 함수 | 확인 내용 | 사례 수 |
 |---|---|---|
@@ -310,6 +316,8 @@ AI 함수에 전달하는 값은 `(원본 이미지 바이트, 방식 문자열,
 | `test_rejects_unsupported_image_type` | GIF MIME 타입 거부 | 1 |
 | `test_missing_required_input_uses_common_error_response` | image·method·strength 각각 누락, 필드 이름과 오류 전체 필드 | 3 |
 | `test_missing_request_id_uses_common_error_response` | ID 누락 시 빈 ID와 오류 전체 필드 | 1 |
+| `test_routing_errors_use_common_response_and_keep_allow_header` | 없는 주소 GET·POST의 404, 보호 API GET·상태 API POST의 405; 공통 오류 전체 필드·JSON 타입·Allow 헤더·처리기 미호출 | 5 |
+| `test_framework_validation_error_keeps_default_format` | 업로드 파일이 아닌 image 입력의 프레임워크 422와 기존 detail 형식 유지 | 1 |
 | `test_openapi_defines_protection_success_and_error_responses` | 정상 200과 일곱 오류 상태 등록, 응답 모델 참조 | 1 |
 
 ### 검증 범위
@@ -327,6 +335,8 @@ AI 함수에 전달하는 값은 `(원본 이미지 바이트, 방식 문자열,
 2026-10-10 처리 모듈 자동 연결 설정 추가 후 같은 환경·명령으로 실행한 결과는 `80 passed, 2 warnings`입니다. 새 Python 프로세스에서 미설정·빈 설정·정상 Mock 연결과 연결 실패 6종을 검사하고, 서버 실행·ready·보호 API 응답과 합성 PNG 반환을 확인했습니다. 실제 HTTP 서버·Android 기기·실제 AI 보호 성능 검증은 실행하지 않았습니다.
 
 2026-10-11 처리기 인자 호환성 검사 추가 후 같은 환경·명령으로 실행한 결과는 `88 passed, 2 warnings`입니다. 정상 4개 위치 인자·선택적 추가 인자·가변 인자의 연결 유지, 비호환 인자와 확인 불가능한 시그니처의 연결 거부, 검사 단계의 처리기 미실행을 확인했습니다. 새 프로세스에서도 비호환 함수의 연결 실패와 health 200·ready/보호 API 503을 확인했습니다. 실제 HTTP 서버·Android 기기·실제 AI 보호 성능 검증은 실행하지 않았습니다.
+
+2026-10-12 404·405 오류 응답 형식 통일 후 같은 환경·명령으로 실행한 결과는 `94 passed, 2 warnings`입니다. 없는 주소의 GET·POST와 정상 API의 잘못된 메서드에서 공통 오류 전체 필드, JSON 타입, Allow 헤더, 처리기 미호출을 확인했습니다. 프레임워크 422의 기존 detail 형식과 기존 백엔드 테스트도 통과했습니다. 실제 HTTP 서버·Android 기기·실제 AI 보호 성능 검증은 실행하지 않았습니다.
 
 코드에 구현됐지만 현재 전용 테스트가 없는 항목에는 공백 ID, 빈 이미지, 화소 제한 초과, 영역 생략, 영역 키·타입·y 경계 검사, 비PNG AI 결과, 설정 경로가 아닌 런타임에서 직접 등록된 호출 불가능한 처리기 등이 있습니다. 실행 1개·대기 1개의 동시 접수는 위 테스트로 확인하지만 실제 AI 작업 여러 개를 병렬 실행하는 부하 시험은 하지 않았습니다. 구현된 기능과 테스트로 확인한 범위는 구분해야 합니다.
 
@@ -367,7 +377,7 @@ uvicorn mock_main:app --reload
 
 ## 실제 HTTP 이미지 입출력 확인
 
-`check_mock_http.py`는 `TestClient` 대신 실제로 실행 중인 서버에 HTTP 요청을 보냅니다. pytest 88개와 별도로 실행하는 확인 도구이며, 합성 이미지와 반환 PNG는 메모리에서만 처리하고 파일로 저장하지 않습니다.
+`check_mock_http.py`는 `TestClient` 대신 실제로 실행 중인 서버에 HTTP 요청을 보냅니다. pytest 94개와 별도로 실행하는 확인 도구이며, 합성 이미지와 반환 PNG는 메모리에서만 처리하고 파일로 저장하지 않습니다.
 
 `backend` 폴더의 첫 번째 터미널에서 개발 의존성을 설치하고 지연 없는 Mock 서버를 실행합니다.
 
@@ -411,7 +421,7 @@ python check_mock_http.py --base-url http://127.0.0.1:8765
 
 ## 현재 구현의 제한
 
-- 설정한 처리기를 자동 연결할 수 있지만 실제 AI 모듈은 아직 제공되지 않았습니다. 블러 처리·자동 영역 추출·지문 평가 점수 생성은 이 폴더에 없습니다.
+- 설정한 처리기를 자동 연결할 수 있지만 이 백엔드의 검증 기록은 Mock·테스트용 처리기 기준이며 실제 AI 연동 완료의 근거는 아닙니다. 블러 처리·자동 영역 추출·지문 평가 점수 생성은 이 폴더에 없습니다.
 - 접수 한도는 AI 호출 전 입력 검사 이후에 적용합니다. 전체 HTTP 접속 수·업로드·입력 디코딩 동시 수·요청 빈도를 제한하지는 않습니다. 기본 4개는 개발용 초기 설정이며 실제 AI 환경의 안전한 처리량을 측정해 정한 값은 아닙니다.
 - ID 차단은 프로세스 메모리 안에서만 동작하며 재시작 시 초기화됩니다. 다중 프로세스·서버 공유 차단은 없습니다.
 - 시간 초과나 코루틴 취소는 작업 자체를 중단하지 않습니다. 영구 정지한 처리 함수의 ID를 강제로 해제하는 기능도 없습니다. 클라이언트 연결 종료가 항상 코루틴 취소로 전달되는지 확인한 HTTP 테스트는 없습니다.
