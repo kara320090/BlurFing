@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
+import android.os.SystemClock
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -33,6 +34,8 @@ import com.blurfing.app.utils.DraftSession
 import com.blurfing.app.model.ProcessingSettings
 import com.blurfing.app.model.ProcessingSettingsStore
 import com.blurfing.app.model.RegionEditHistory
+import com.blurfing.app.model.ProcessingTiming
+import com.blurfing.app.model.ProcessingRunInfo
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -78,7 +81,9 @@ sealed interface UiState {
         val canRedoRegions: Boolean = false,
         val isSharing: Boolean = false,
         val pendingShare: ProtectedShare? = null,
-        val shareError: String? = null
+        val shareError: String? = null,
+        val processingTiming: ProcessingTiming? = null,
+        val processingRun: ProcessingRunInfo? = null
     ) : UiState
     data class Error(
         val message: String,
@@ -95,7 +100,8 @@ open class BlurFingViewModel(
     private val settingsStore: ProcessingSettingsStore? = null,
     private val readinessCheck: suspend (String) -> BackendReadiness = { BackendReadinessClient().check(it) },
     private val prepareShare: suspend (Context, Bitmap, ProcessingSettings, Boolean) -> ProtectedShare =
-        { context, bitmap, settings, mock -> ProtectedShareFiles.prepare(context, bitmap, settings, mock) }
+        { context, bitmap, settings, mock -> ProtectedShareFiles.prepare(context, bitmap, settings, mock) },
+    private val monotonicMs: () -> Long = SystemClock::elapsedRealtime
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Idle)
@@ -282,7 +288,7 @@ open class BlurFingViewModel(
         cancelSaving()
         val latest = _uiState.value as? UiState.Ready ?: return
         _uiState.value = latest.copy(regions = updated.toList(), protectedBitmap = null,
-            protectionResponse = null, processingError = null,
+            protectionResponse = null, processingError = null, processingTiming = null, processingRun = null,
             canUndoRegions = regionHistory.canUndo, canRedoRegions = regionHistory.canRedo)
         draftSession?.updateRegions(updated)
     }
@@ -330,12 +336,15 @@ open class BlurFingViewModel(
         val pending = current.copy(
             step = ScreenStep.PROCESSING, isProcessing = true, processingError = null,
             protectedBitmap = null, protectionResponse = null, saveMessage = null,
-            isSaving = false, savePermissionRequestId = null, saveError = null
+            isSaving = false, savePermissionRequestId = null, saveError = null,
+            isSharing = false, pendingShare = null, shareError = null,
+            processingTiming = null, processingRun = null
         )
         _uiState.value = pending
 
         activeProcessingJob = viewModelScope.launch {
             try {
+                val started = monotonicMs()
                 val imageBytes = withContext(Dispatchers.IO) {
                     ByteArrayOutputStream().use { stream ->
                         check(current.originalBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)) {
@@ -344,17 +353,22 @@ open class BlurFingViewModel(
                         stream.toByteArray()
                     }
                 }
+                val encoded = monotonicMs()
                 val request = ProtectionRequest(requestId, method, strength, current.regions)
                 val response = repository.protectImage(request, imageBytes).getOrThrow()
+                val received = monotonicMs()
                 if (activeRequestId != requestId) return@launch
                 ProtectionResponseValidator.validate(response, requestId)
                 val protectedBitmap = withContext(Dispatchers.Default) {
                     ProtectedImageDecoder.decode(response, current.originalBitmap, strength)
                 }
+                val decoded = monotonicMs()
                 if (activeRequestId != requestId) return@launch
                 _uiState.value = pending.copy(
                     step = ScreenStep.COMPARISON, isProcessing = false,
-                    protectedBitmap = protectedBitmap, protectionResponse = response
+                    protectedBitmap = protectedBitmap, protectionResponse = response,
+                    processingTiming = ProcessingTiming.between(started, encoded, received, decoded),
+                    processingRun = ProcessingRunInfo(method, strength, serverUrl != null)
                 )
             } catch (e: CancellationException) {
                 if (activeRequestId == requestId) {

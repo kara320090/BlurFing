@@ -192,6 +192,7 @@ class MainActivity : ComponentActivity() {
                                         saveError = state.saveError,
                                         isSharing = state.isSharing,
                                         shareError = state.shareError,
+                                        processingTiming = state.processingTiming,
                                         onShare = { viewModel.shareProtectedImage(context) },
                                         onSaveProtectedImage = {
                                             if (savePermissionRequestId == null) {

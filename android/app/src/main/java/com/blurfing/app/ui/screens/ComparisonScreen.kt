@@ -24,6 +24,7 @@ import com.blurfing.app.model.NormalizedRegion
 import com.blurfing.app.model.ProtectionResponse
 import com.blurfing.app.model.ProcessingSettings
 import com.blurfing.app.model.ExportFormat
+import com.blurfing.app.model.ProcessingTiming
 import com.blurfing.app.utils.ComparisonCrop
 import java.util.Locale
 import kotlin.math.min
@@ -46,7 +47,8 @@ fun ComparisonScreen(
     onSettingsChanged: (ProcessingSettings) -> Unit = {},
     onShare: () -> Unit = {},
     isSharing: Boolean = false,
-    shareError: String? = null
+    shareError: String? = null,
+    processingTiming: ProcessingTiming? = null
 ) {
     var showProtectedOnly by rememberSaveable(response?.requestId) { mutableStateOf(true) }
     var sideBySide by rememberSaveable(response?.requestId) { mutableStateOf(false) }
@@ -111,7 +113,13 @@ fun ComparisonScreen(
                 Text("서버 처리 이미지 · 보호 성능은 아래 측정 자료와 별도로 확인하세요.", style = MaterialTheme.typography.bodySmall)
             }
             response?.processingMs?.takeIf { it >= 0 }?.let {
-                Text("서버 보고 처리 시간: ${it}ms", style = MaterialTheme.typography.bodySmall)
+                Text(if (response.resultKind == "mock") "Mock 보고 지연 시간: ${it}ms" else "서버 보고 처리 시간: ${it}ms",
+                    style = MaterialTheme.typography.bodySmall)
+            }
+            processingTiming?.let {
+                Text("앱 측정 전체 시간: ${it.totalMs}ms\n사진 변환 ${it.encodeMs}ms · 요청/대기 ${it.requestMs}ms · 결과 표시 준비 ${it.decodeMs}ms",
+                    style = MaterialTheme.typography.bodySmall)
+                Text("통신과 앱 처리가 포함된 경과 시간이며 지문 보호 성능 점수가 아닙니다.", style = MaterialTheme.typography.bodySmall)
             }
             HorizontalDivider()
             Text("지문 평가", style = MaterialTheme.typography.titleMedium)
