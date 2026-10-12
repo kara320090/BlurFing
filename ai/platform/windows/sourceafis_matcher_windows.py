@@ -1,4 +1,4 @@
-"""Linux SourceAFIS adapter with isolated temporary outputs and template cache.
+"""Windows SourceAFIS adapter with isolated temporary outputs and template cache.
 
 Keeps the Windows adapter's call and result contracts. Existing manifests,
 classes, results and caches are read-only; each call creates a job under /tmp.
@@ -23,19 +23,22 @@ import subprocess
 
 import tempfile
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 def _runtime():
-    runtime_path = ROOT / 'docs/sourceafis_runtime.json'
+    runtime_path = Path(os.environ.get('BLURFING_SOURCEAFIS_CONFIG', ROOT / 'docs/sourceafis_runtime.json'))
     runtime = json.loads(runtime_path.read_text(encoding='utf8'))
     for artifact in runtime['artifacts']:
-        path = ROOT / artifact['file']
+        path = Path(artifact['file'])
+        if not path.is_absolute():
+            home = os.environ.get('BLURFING_SOURCEAFIS_HOME')
+            path = Path(home) / 'lib' / path.name if home else ROOT / path
         if hashlib.sha256(path.read_bytes()).hexdigest() != artifact['sha256']:
             raise RuntimeError('SourceAFIS dependency hash changed')
-    java = shutil.which('java')
+    java = shutil.which('java.exe') or shutil.which('java')
     if not java:
-        raise RuntimeError('Java executable not found on Linux PATH')
-    tools = ROOT / 'private/sourceafis'
+        raise RuntimeError('Java executable not found on Windows PATH')
+    tools = Path(os.environ.get('BLURFING_SOURCEAFIS_HOME', ROOT / 'private/sourceafis'))
     return java, tools / 'classes', str(tools / 'lib' / '*')
 
 def run_matcher_job(images, pairs, *, dpi=500., run_name='poc_matcher'):
@@ -64,17 +67,17 @@ def run_matcher_job(images, pairs, *, dpi=500., run_name='poc_matcher'):
              and (classes / 'BlurFingMatcher.class').is_file())
     javac = None
     if not reuse:
-        javac = shutil.which('javac')
+        javac = shutil.which('javac.exe') or shutil.which('javac')
         if not javac:
-            raise RuntimeError('Matching cached class unavailable; javac required on Linux PATH')
+            raise RuntimeError('Matching cached class unavailable; javac required on Windows PATH')
 
-    output = Path(tempfile.mkdtemp(prefix='blurfing_' + run_name + '_', dir='/tmp'))
+    output = Path(tempfile.mkdtemp(prefix='blurfing_' + run_name + '_', dir=tempfile.gettempdir()))
     if not reuse:
         classes = output / 'classes'
         classes.mkdir()
         subprocess.run([javac, '-encoding', 'UTF-8', '--release', '11',
                         '-cp', jars, '-d', str(classes), str(source)],
-                       check=True, timeout=60)
+                       check=True, timeout=60, shell=False)
     cache = output / 'templates'
     cache.mkdir()
     request = {'dpi': float(dpi),
@@ -83,12 +86,12 @@ def run_matcher_job(images, pairs, *, dpi=500., run_name='poc_matcher'):
     request_path = output / 'matcher_request.json'
     result_path = output / 'matcher_raw.json'
     request_path.write_text(json.dumps(request, indent=2), encoding='utf8')
-    classpath = os.pathsep.join([str(classes), jars])
+    classpath = ';'.join([str(classes), jars])
     with (output / 'java_stderr.log').open('w', encoding='utf8') as log:
         subprocess.run([java, '-Xmx1g', '-Djava.awt.headless=true', '-cp',
                         classpath, 'BlurFingMatcher', str(request_path),
                         str(result_path), str(cache)],
-                       check=True, stderr=log, timeout=300)
+                       check=True, stderr=log, timeout=300, shell=False)
     result = json.loads(result_path.read_text(encoding='utf8'))
     result['output_folder'] = str(output)
     return result

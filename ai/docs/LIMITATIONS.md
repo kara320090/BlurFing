@@ -10,3 +10,5 @@
 - Public source check는 원본 private capture inventory 검증을 대신하지 않음.
 
 환경·촬영 조건·센서·matcher에 따라 결과가 달라질 수 있습니다.
+
+Windows build/runtime/full-pipeline validation은 아직 수행하지 않았습니다.

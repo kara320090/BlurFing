@@ -1,0 +1,68 @@
+{
+  "CROSS_PLATFORM_AI_READY": true,
+  "WINDOWS_IMPLEMENTATION_READY": true,
+  "WINDOWS_CROSS_COMPILER_AVAILABLE": false,
+  "WINDOWS_CROSS_BUILD_SUCCESS": false,
+  "WINDOWS_RUNTIME_VALIDATED": false,
+  "LINUX_PIPELINE_VALIDATED": true,
+  "FINAL_INDEPENDENT_VALIDATION_COMPLETE": false,
+  "PROJECT_COMPLETE": false,
+  "python_compile_count": 39,
+  "python_compile_exit": 0,
+  "private_findings": [],
+  "secret_findings": [],
+  "image_count": 0,
+  "files_over_50_MiB": 0,
+  "algorithm_AST_equal_after_temp_path_normalization": {
+    "natural_auto_04": true,
+    "transform_automatic_fingerprint_poc_v4_boundaryblend_02": true,
+    "transform_automatic_fingerprint_poc_v4": true
+  },
+  "native_algorithm_sections_identical": true,
+  "Windows_adapter_static_mock_cases": [
+    {
+      "mode": "normal",
+      "static_mock_result": "passed",
+      "status": "ok"
+    },
+    {
+      "mode": "low_features",
+      "static_mock_result": "passed",
+      "status": "insufficient_features"
+    },
+    {
+      "mode": "process_failure",
+      "static_mock_result": "expected_failure",
+      "exception": "RuntimeError"
+    },
+    {
+      "mode": "timeout",
+      "static_mock_result": "expected_failure",
+      "exception": "RuntimeError"
+    },
+    {
+      "mode": "malformed_raw",
+      "static_mock_result": "expected_failure",
+      "exception": "RuntimeError"
+    },
+    {
+      "mode": "malformed_match",
+      "static_mock_result": "expected_failure",
+      "exception": "RuntimeError"
+    }
+  ],
+  "classpath_separators": {
+    "Linux": ":",
+    "Windows": ";"
+  },
+  "linux_config_loader": "existing stable ELF/hash validated; no execution",
+  "platform_dispatch": "Linux/Windows import, unsupported OS error verified",
+  "PowerShell_parser": "unavailable; source review only",
+  "Windows_native_compile": "not performed; MinGW headers/compiler unavailable",
+  "original_snapshot_matched": 129766,
+  "checkpoint_matched": 303,
+  "actual_runtime_evaluations_performed": false,
+  "linux_NBIS_job_AST_identical_after_temp_path_normalization": true,
+  "linux_native_syntax_check": "g++ syntax-only exit 0",
+  "linux_setup_shell_syntax": "bash -n exit 0"
+}

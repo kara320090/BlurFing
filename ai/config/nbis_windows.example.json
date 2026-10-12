@@ -1,0 +1,6 @@
+{
+  "version": "NBIS5.0.0",
+  "contract": "blurfing-raw-match-v1",
+  "exe": "C:\\path\\to\\nbis_local_windows.exe",
+  "exe_sha256": "<sha256>"
+}

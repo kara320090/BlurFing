@@ -1,4 +1,4 @@
-"""Run one frozen v4 transform with Linux extraction and /tmp-only outputs.
+"""Run one frozen v4 transform with platform extraction and temporary outputs.
 
 No batch evaluation, NBIS, model loading, or changes to frozen source files.
 The structure-check bindings are overridden only within this invocation.
@@ -25,10 +25,10 @@ ROOT = Path(__file__).resolve().parents[1]
 def load_implementation():
     # Imported legacy helpers load Matplotlib; keep its configuration cache isolated too.
     if not getattr(load_implementation, '_cache_dir', None):
-        load_implementation._cache_dir = tempfile.mkdtemp(prefix='blurfing_v4_mpl_', dir='/tmp')
+        load_implementation._cache_dir = tempfile.mkdtemp(prefix='blurfing_v4_mpl_', dir=tempfile.gettempdir())
     os.environ['MPLCONFIGDIR'] = load_implementation._cache_dir
     import fingerprint_structure_check as structure
-    import sourceafis_matcher_linux as matcher
+    import sourceafis_matcher as matcher
     from transform_automatic_fingerprint_poc_v4 import transform_fingerprint_photo
     return structure, matcher, transform_fingerprint_photo
 
@@ -53,10 +53,10 @@ def main():
         print(json.dumps(dict(input_path=str(source),shape=list(original.shape),
                               project_root=str(ROOT),java=java,
                               classes=str(classes),jars=jars,
-                              output_parent='/tmp',dry_run=True)))
+                              output_parent=tempfile.gettempdir(),dry_run=True)))
         return
 
-    folder = Path(tempfile.mkdtemp(prefix='blurfing_v4_linux_smoke_', dir='/tmp'))
+    folder = Path(tempfile.mkdtemp(prefix='blurfing_v4_linux_smoke_', dir=tempfile.gettempdir()))
     old_out, old_matcher = structure.OUT, structure.run_matcher_job
     extraction_jobs = []
 
@@ -85,7 +85,7 @@ def main():
             raise RuntimeError('Saved PNG differs from returned image')
     details.update(input_path=str(source),source_sha256=source_sha,
                    output_path=str(output),sourceafis_linux_jobs=extraction_jobs,
-                   linux_entry_point=True)
+                   platform_entry_point=True)
     (folder / 'details.json').write_text(json.dumps(details,indent=2),encoding='utf-8')
     print(json.dumps(dict(output_folder=str(folder),output_path=str(output),
                           status=details['status'],applied=details['applied'],

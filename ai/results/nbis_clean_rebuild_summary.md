@@ -10,3 +10,5 @@ Clean rebuilt bridge SHA-256는 stable bridge와 동일합니다:
 `b8eff6329edf8ee59c5462afc8f07caab2f346ecc70507811808b552ff4299dc`.
 
 이 결과는 fixture 및 clean build 재현성 검증입니다. Windows full equivalence나 실제 보호 효과를 주장하지 않습니다.
+
+이 build/fixture 결과는 Linux에서 얻었으며 Windows 결과가 아닙니다.

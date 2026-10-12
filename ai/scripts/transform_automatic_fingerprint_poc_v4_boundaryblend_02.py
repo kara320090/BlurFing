@@ -1,8 +1,9 @@
+import tempfile
 """Boundary/detail fusion experiment based on auto04; human review required.
 
 Reuses frozen detection, independent ridge generation, photometric reference,
 structure gate and fail-closed return logic. Overrides are scoped and restored
-even on exceptions. Invoke as the Linux entry point with --input; /tmp only.
+even on exceptions. Invoke the common entry point with --input; temporary outputs only.
 Original detail is retained in the transition band; core structure stays independent.
 """
 
@@ -143,7 +144,7 @@ def transform_fingerprint_photo(image, strength=.5, *, return_details=True):
             from PIL import Image
             import fingerprint_structure_check as structure
             diagnostic_dir = Path(structure.OUT).resolve()
-            if not diagnostic_dir.is_relative_to(Path('/tmp')):
+            if not diagnostic_dir.is_relative_to(Path(tempfile.gettempdir())):
                 raise ValueError('Boundary diagnostics require /tmp output')
             diagnostic_dir = diagnostic_dir / ('boundary_proposal_' + str(seed))
             diagnostic_dir.mkdir(exist_ok=False)
@@ -200,7 +201,7 @@ def transform_fingerprint_photo(image, strength=.5, *, return_details=True):
             frozen.render_whole_pad_candidate = old_render
 
 if __name__ == '__main__':
-    import run_structure_transform_v4_linux as entry
+    import run_structure_transform as entry
     load = entry.load_implementation
 
     def load_variant():

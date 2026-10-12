@@ -16,13 +16,18 @@ def main():
     try:
         for name in ['natural_auto_04.py', 'transform_automatic_fingerprint_poc_v4.py',
                      'transform_automatic_fingerprint_poc_v4_boundaryblend_02.py',
-                     'nbis_matcher_linux.py', 'sourceafis_matcher_linux.py',
-                     'run_structure_transform_v4_linux.py', 'native/nbis_local_linux.cpp',
+                     'nbis_matcher.py', 'sourceafis_matcher.py', 'platform_loader.py',
+                     'run_structure_transform.py',
                      'java/BlurFingMatcher.java']:
             if not (ROOT / 'scripts' / name).is_file():
                 raise FileNotFoundError(name)
+        for target in ('linux', 'windows'):
+            for file in ('nbis_matcher_' + target + '.py', 'sourceafis_matcher_' + target + '.py',
+                         'nbis_local_' + target + '.cpp'):
+                if not (ROOT / 'platform' / target / file).is_file():
+                    raise FileNotFoundError(file)
         if args.nbis_config:
-            from nbis_matcher_linux import inspect_runtime
+            from nbis_matcher import inspect_runtime
             inspect_runtime(args.nbis_config)
             print('Private NBIS runtime: ELF and SHA-256 checked; not executed')
         print('PUBLIC SOURCE CHECK PASSED; private capture/runtime validation not performed')

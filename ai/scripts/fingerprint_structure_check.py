@@ -21,11 +21,11 @@ from contactless_finger_width import estimate_finger_width
 
 from evaluate_query_width_protection import width_frame
 
-from sourceafis_matcher_linux import run_matcher_job
+from sourceafis_matcher import run_matcher_job
 
 ROOT=Path(__file__).resolve().parents[1]
 
-OUT=Path(tempfile.mkdtemp(prefix='blurfing_structure_', dir='/tmp'))
+OUT=Path(tempfile.mkdtemp(prefix='blurfing_structure_', dir=tempfile.gettempdir()))
 
 def assess_structure(before,after,skeleton_changed_fraction):
     similarity=point_similarity(before,after)

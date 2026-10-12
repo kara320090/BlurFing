@@ -27,7 +27,7 @@ def sha(path):
 
 def inspect_runtime(config_path=None):
     """Validate explicit hash-pinned ELF bridge without launching it."""
-    value = config_path or os.environ.get('BLURFING_NBIS_LINUX_CONFIG')
+    value = config_path or os.environ.get('BLURFING_NBIS_LINUX_CONFIG') or os.environ.get('BLURFING_NBIS_CONFIG')
     if not value:
         raise RuntimeError('Linux NBIS runtime is not configured; no Windows fallback')
     config = Path(value).resolve(strict=True)
@@ -79,7 +79,7 @@ def run_nbis_job(images, pairs, *, run_name):
             if not all(32 <= size <= 4096 for size in im.size):
                 raise ValueError('NBIS project dimensions must be 32..4096')
             im.load()
-    folder = Path(tempfile.mkdtemp(prefix='blurfing_nbis_linux_' + run_name + '_', dir='/tmp'))
+    folder = Path(tempfile.mkdtemp(prefix='blurfing_nbis_linux_' + run_name + '_', dir=tempfile.gettempdir()))
     audit_path = folder / 'audit.json'
     audit = dict(status='running', commands=[], retry_count=0, failure_is_nonmatch=False,
                  output_folder=str(folder), runtime_sha256=runtime['exe_sha256'])
