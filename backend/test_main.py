@@ -846,6 +846,48 @@ def test_missing_request_id_uses_common_error_response():
     }
 
 
+@pytest.mark.parametrize(
+    "method, path, status_code, code, message, allowed_method",
+    [
+        ("GET", "/missing-api", 404, "NOT_FOUND", "요청한 API를 찾을 수 없습니다.", None),
+        ("POST", "/missing-api", 404, "NOT_FOUND", "요청한 API를 찾을 수 없습니다.", None),
+        ("GET", "/v1/protect", 405, "METHOD_NOT_ALLOWED", "지원하지 않는 HTTP 요청 방식입니다.", "POST"),
+        ("POST", "/", 405, "METHOD_NOT_ALLOWED", "지원하지 않는 HTTP 요청 방식입니다.", "GET"),
+        ("POST", "/ready", 405, "METHOD_NOT_ALLOWED", "지원하지 않는 HTTP 요청 방식입니다.", "GET"),
+    ],
+)
+def test_routing_errors_use_common_response_and_keep_allow_header(
+    method, path, status_code, code, message, allowed_method, monkeypatch
+):
+    processor_calls = []
+    monkeypatch.setattr(app.state, "protection_processor", lambda *_: processor_calls.append(True))
+    response = client.request(method, path)
+
+    assert response.status_code == status_code
+    assert response.headers["content-type"] == "application/json"
+    assert response.json() == {
+        "request_id": "",
+        "code": code,
+        "message": message,
+        "retryable": False,
+    }
+    assert response.headers.get("allow") == allowed_method
+    assert processor_calls == []
+
+
+def test_framework_validation_error_keeps_default_format():
+    response = client.post(
+        "/v1/protect",
+        data={"image": "not-an-upload", "request_id": "framework-validation",
+              "method": "gaussian_blur", "strength": "0.5"},
+    )
+
+    assert response.status_code == 422
+    body = response.json()
+    assert set(body) == {"detail"}
+    assert any(error["loc"] == ["body", "image"] for error in body["detail"])
+
+
 def test_openapi_defines_protection_success_and_error_responses():
     operation = client.get("/openapi.json").json()["paths"]["/v1/protect"]["post"]
     responses = operation["responses"]
