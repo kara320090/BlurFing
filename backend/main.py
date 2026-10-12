@@ -9,10 +9,12 @@ import math
 import os
 import threading
 import time
+from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Literal
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel
@@ -115,6 +117,7 @@ PROTECT_ERROR_RESPONSES = {
     409: {"model": ErrorResponse, "description": "같은 요청 ID가 이미 처리 중임"},
     413: {"model": ErrorResponse, "description": "이미지 용량 또는 해상도 제한 초과"},
     415: {"model": ErrorResponse, "description": "지원하지 않는 이미지 형식"},
+    422: {"model": ErrorResponse, "description": "요청 입력 형식 검증 실패"},
     500: {"model": ErrorResponse, "description": "AI 처리 결과 검증 실패"},
     503: {"model": ErrorResponse, "description": "AI 처리 모듈 미연결 또는 작업 접수 한도 초과"},
     504: {"model": ErrorResponse, "description": "AI 처리 제한 시간 초과"},
@@ -156,6 +159,15 @@ async def routing_error_handler(_request: Request, exc: HTTPException) -> JSONRe
     if exc.headers:
         response.headers.update(exc.headers)
     return response
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(_request: Request, exc: RequestValidationError) -> JSONResponse:
+    raw_request_id = exc.body.get("request_id") if isinstance(exc.body, Mapping) else None
+    request_id = raw_request_id.strip() if isinstance(raw_request_id, str) else ""
+    return error_response(
+        request_id, 422, "VALIDATION_ERROR", "요청 입력 형식이 올바르지 않습니다."
+    )
 
 
 @app.get("/ready")

@@ -875,28 +875,63 @@ def test_routing_errors_use_common_response_and_keep_allow_header(
     assert processor_calls == []
 
 
-def test_framework_validation_error_keeps_default_format():
+@pytest.mark.parametrize(
+    "request_id, expected_request_id",
+    [("framework-validation", "framework-validation"), ("  trimmed-id  ", "trimmed-id"),
+     (None, ""), ("   ", "")],
+)
+def test_framework_validation_error_uses_common_response(request_id, expected_request_id, monkeypatch):
+    processor_calls = []
+    monkeypatch.setattr(app.state, "protection_processor", lambda *_: processor_calls.append(True))
+    data = {"image": "synthetic-private-input", "method": "gaussian_blur", "strength": "0.5"}
+    if request_id is not None:
+        data["request_id"] = request_id
     response = client.post(
         "/v1/protect",
-        data={"image": "not-an-upload", "request_id": "framework-validation",
-              "method": "gaussian_blur", "strength": "0.5"},
+        data=data,
     )
 
     assert response.status_code == 422
-    body = response.json()
-    assert set(body) == {"detail"}
-    assert any(error["loc"] == ["body", "image"] for error in body["detail"])
+    assert response.headers["content-type"] == "application/json"
+    assert response.json() == {
+        "request_id": expected_request_id,
+        "code": "VALIDATION_ERROR",
+        "message": "요청 입력 형식이 올바르지 않습니다.",
+        "retryable": False,
+    }
+    assert "synthetic-private-input" not in response.text
+    assert processor_calls == []
+
+
+@pytest.mark.parametrize("body", [None, {"request_id": 123}, b"synthetic-private-body"])
+def test_validation_error_without_string_request_id_is_safe(body):
+    exc = backend_main.RequestValidationError(
+        [{"loc": ("body", "image"), "msg": "synthetic-internal-error",
+          "input": "synthetic-private-input"}],
+        body=body,
+    )
+    response = asyncio.run(
+        backend_main.validation_error_handler(backend_main.Request({"type": "http"}), exc)
+    )
+
+    assert response.status_code == 422
+    assert json.loads(response.body) == {
+        "request_id": "",
+        "code": "VALIDATION_ERROR",
+        "message": "요청 입력 형식이 올바르지 않습니다.",
+        "retryable": False,
+    }
 
 
 def test_openapi_defines_protection_success_and_error_responses():
     operation = client.get("/openapi.json").json()["paths"]["/v1/protect"]["post"]
     responses = operation["responses"]
 
-    assert {"200", "400", "409", "413", "415", "500", "503", "504"} <= set(responses)
+    assert {"200", "400", "409", "413", "415", "422", "500", "503", "504"} <= set(responses)
     assert responses["200"]["content"]["application/json"]["schema"] == {
         "$ref": "#/components/schemas/ProtectionResponse"
     }
-    for status_code in ("400", "409", "413", "415", "500", "503", "504"):
+    for status_code in ("400", "409", "413", "415", "422", "500", "503", "504"):
         assert responses[status_code]["content"]["application/json"]["schema"] == {
             "$ref": "#/components/schemas/ErrorResponse"
         }
