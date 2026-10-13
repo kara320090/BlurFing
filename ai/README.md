@@ -64,3 +64,7 @@ Public-source smoke test: `python ai/scripts/test_detection_artifact.py`. Actual
 ## Linux SAM-to-pad development path
 
 See [SAM_PAD_PIPELINE.md](docs/SAM_PAD_PIPELINE.md) for native-coordinate private-mask input, extraction, evaluation and detector-only benchmark commands. This experimental path is not approved for protection use.
+
+## Unified photo/scanner front-end (experimental)
+
+Use `scripts/protect_fingerprint.py --input /path/to/image --output /path/to/new-result`. Content routes to PHOTO, FINGERPRINT_IMAGE or UNKNOWN; failures return unchanged pixels. Scanner detection is development-validated on 21 fixtures with structure-guarded scanner transformation. The new landmark-prompted photo adapter is implemented but model/runtime-blocked and unapproved; legacy algorithms are preserved. [Architecture and setup](docs/UNIFIED_FINGERPRINT_FRONTEND.md), [measured validation](results/unified_frontend_validation.md). No general protection or final-independent-validation claim.

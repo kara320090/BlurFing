@@ -37,3 +37,7 @@ IoU and coverage are unchanged (macro 0.9051, 7/7). DET-03 lacks agreeing observ
 ### Crease-optional estimator GT7 rejection
 
 Unmodified estimator, seven human nonempty positive masks: macro IoU 0.4913, coverage 7/10, false pad regions in extra samples. Approval false. No ambiguous/non-target annotation exists in this set; those branches are tested only synthetically. No downstream transform/matcher. [Detailed GT7 result](../results/distal_pad_GT7_summary.md).
+
+### Unified scanner/photo front-end
+
+Scanner: 21/21 known fixture routes and ridge ROIs, one structure-guarded transform and matcher/benchmark validation. Photo: new adapter runtime unavailable; no new GT7 metric or approval. Existing legacy GT results are preserved. [Unified validation](../results/unified_frontend_validation.md).
