@@ -10,7 +10,7 @@ import time
 import cv2
 import numpy as np
 
-VERSION='sam_pad_axis_v2_foreground_review'
+VERSION='sam_pad_axis_v3_proximal_evidence_review'
 
 
 def digest(path):
@@ -110,6 +110,13 @@ def extract_one(rgb,finger,prepared_quality=None,tip_hint=None):
     peaks,_=find_peaks(signal,prominence=1.5,distance=max(2,round(.25*width)))
     possible=[int(p) for p in peaks if lo<=p<=hi and signal[p]>=1.5 and coverage[p]>=.65]
     observed=bool(possible);bottom=possible[0] if observed else min(end,round(start+1.8*width))
+    from proximal_boundary_evidence import observe_proximal_boundary
+    warped_rgb=cv2.warpAffine(image,matrix,(mask.shape[1],mask.shape[0]),flags=cv2.INTER_LINEAR)
+    chroma_margin=warped_rgb[:,:,0].astype(float)-warped_rgb[:,:,1].astype(float)-float(foreground.get('otsu_threshold',0))
+    proximal=observe_proximal_boundary(gray,mask,widths,start,end,width,signal,coverage,chroma_margin)
+    boundary_source='legacy_observed_crease' if observed else 'geometry_fallback_diagnostic_only'
+    if not observed and proximal['observed']:
+        bottom=proximal['selected_row'];observed=True;boundary_source='OBSERVED_PROXIMAL_BOUNDARY'
     # Trace the crease locally; clip to input finger geometry on inverse mapping.
     curve=np.full(mask.shape[1],float(bottom));radius=max(1,round(.10*width))
     if observed:
@@ -138,9 +145,9 @@ def extract_one(rgb,finger,prepared_quality=None,tip_hint=None):
     if projected_outside or not endpoint_on_mask:reasons.append('geometric_tip_endpoint_unreliable')
     if min(tip_xy[0],tip_xy[1],w-1-tip_xy[0],h-1-tip_xy[1])<=1:reasons.append('tip_truncated_by_image_border')
     if not hint_used and ambiguity<.1:reasons.append('tip_direction_ambiguous')
-    if not observed:reasons.append('crease_not_observed_geometry_fallback')
+    if not observed:reasons.append('proximal_boundary_unobserved')
     if full.sum()<100:reasons.append('too_small')
-    return dict(mask=full,status='proposal_requires_review',bbox=bbox(full),axis_xy=axis.tolist(),tip_xy=tip_xy.tolist(),quality=quality|dict(reject_reasons=reasons,crease_observed=observed,axis_endpoint_ambiguity=ambiguity,RGB_tip_hint_used=hint_used,finger_mask_exterior_pixels=0),width_profile=dict(median_native=width/scale,length_native=length/scale,relative_iqr=float(np.subtract(*np.percentile(reference,[75,25]))/width),samples_native=(widths[::max(1,len(widths)//20)]/scale).tolist()),bottom_native_distance=(bottom-start)/scale,analysis_scale=scale,crease_candidates_native=[(p-start)/scale for p in possible])
+    return dict(mask=full,status='proposal_requires_review',bbox=bbox(full),axis_xy=axis.tolist(),tip_xy=tip_xy.tolist(),quality=quality|dict(reject_reasons=reasons,crease_observed=observed,axis_endpoint_ambiguity=ambiguity,RGB_tip_hint_used=hint_used,finger_mask_exterior_pixels=0),width_profile=dict(median_native=width/scale,length_native=length/scale,relative_iqr=float(np.subtract(*np.percentile(reference,[75,25]))/width),samples_native=(widths[::max(1,len(widths)//20)]/scale).tolist()),proximal_boundary=proximal|dict(boundary_source=boundary_source,geometry_fallback_native=(min(end,round(start+1.8*width))-start)/scale,axis_xy=axis.tolist(),analysis_to_native_scale=1/scale),bottom_native_distance=(bottom-start)/scale,analysis_scale=scale,crease_candidates_native=[(p-start)/scale for p in possible])
 
 
 def extract_pad_candidates(rgb,finger_masks,prepared_qualities=None,tip_hints=None):

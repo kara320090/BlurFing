@@ -29,3 +29,7 @@ See [SAM pad evaluation](../results/sam_pad_evaluation_summary.md): macro IoU 0.
 ### SAM foreground follow-up
 
 Macro pad IoU 0.9051, coverage 7/7; DET-03 outside-GT ratio 14.16% versus 38.67%. Other sample masks are unchanged. The comparative metrics improve but automatic pad approval is withheld because DET-03 still lacks a verified proximal boundary. No transform/matcher run. See [follow-up evidence](../results/sam_pad_foreground_refinement_summary.md).
+
+### Proximal evidence follow-up
+
+IoU and coverage are unchanged (macro 0.9051, 7/7). DET-03 lacks agreeing observed crease/appearance evidence; `proximal_boundary_unobserved` blocks approval. 56 tests pass, no downstream execution. See [proximal evidence result](../results/sam_pad_proximal_summary.md).

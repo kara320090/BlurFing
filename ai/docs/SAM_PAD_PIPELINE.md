@@ -36,3 +36,15 @@ Gate values and outcomes are documented in ../results/sam_pad_evaluation_summary
 ## Foreground follow-up
 
 The v2 review extractor detects near-full-frame SAM contamination using frame occupancy and image-edge proximity, then performs RGB-only Otsu red-minus-green chroma separation before axis estimation. Uncertain partitions stay unchanged. It remains review-gated; missing crease is explicitly reported. See [foreground follow-up](../results/sam_pad_foreground_refinement_summary.md) for four-sample results, residual proximal leakage and approval status. Existing CLI commands are unchanged.
+
+## Proximal boundary evidence observer
+
+`proximal_boundary_evidence.py` computes axial grayscale, crease, width, distance-transform, ridge energy/coherence and spectral diagnostics from the RGB/mask analysis frame. Its API accepts no GT. Slightly tilted transverse crease sampling is included. A crease plus independent appearance transition is required; width and distance alone are insufficient. Missing evidence returns `proximal_boundary_unobserved`. Diagnostic geometry fallback must never authorize protection. Existing accepted crease masks are retained without boundary recalculation, but are labeled legacy evidence rather than newly certified multi-cue boundaries.
+
+Private signal rendering:
+
+```sh
+python ai/scripts/plot_proximal_diagnostics.py --details /path/to/private/evaluation/DET-03/pad_candidates.private.json --output /path/to/private/proximal_signals
+```
+
+Output CSV uses analysis rows and native longitudinal distances. Orange plot lines indicate geometry fallback, blue lines show diagnostic peaks; neither denotes accepted ground truth. See [proximal observation report](../results/sam_pad_proximal_summary.md). No detector approval or downstream execution was granted.
