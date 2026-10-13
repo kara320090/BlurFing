@@ -21,3 +21,7 @@
 NBIS와 SourceAFIS score scale은 다르므로 직접 비교하지 않습니다. 작은 development sample의 결과이며 일반적 보호 성능이나 식별 불가능성·보안을 보장하지 않습니다. insufficient_features/추출 실패는 보호 성공으로 집계하지 않습니다.
 
 FINAL_INDEPENDENT_VALIDATION_COMPLETE=false
+
+## SAM pad development evaluation
+
+See [SAM pad evaluation](../results/sam_pad_evaluation_summary.md): macro IoU 0.8458, coverage 7/7, approval false due to sample-specific outside-GT leakage. No downstream transform or matcher run.
