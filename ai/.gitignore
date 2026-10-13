@@ -43,3 +43,11 @@ cache/
 *.so
 *.dylib
 *.pyd
+
+# Private automatic detection outputs
+detection_result/
+*.npy
+
+# Human annotation and GT evaluation are private
+ground_truth/
+*.private.json

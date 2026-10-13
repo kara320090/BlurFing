@@ -1,0 +1,575 @@
+{
+  "status": "NOT_READY_FOR_AUTOMATIC_PROTECTION",
+  "completion_criteria_met": false,
+  "baseline": {
+    "total_images": 20,
+    "eligibility_counts": {
+      "palmar_fingerprint_visible": 4,
+      "ambiguous": 11,
+      "non_target": 5
+    },
+    "eligibility_provisional": true,
+    "candidate_images": 10,
+    "candidate_count": 17,
+    "approved_boundaries": 1,
+    "approved_boundary_images": 1,
+    "head_cached": "52cd12528854b0974858e6fb081cf69972f3d3f1",
+    "remote_current_head_verified": false,
+    "rows": [
+      {
+        "sample_id": "DET-01",
+        "candidate_count": 0,
+        "approved_boundary_count": 0,
+        "legacy_reject_reasons": []
+      },
+      {
+        "sample_id": "DET-02",
+        "candidate_count": 2,
+        "approved_boundary_count": 0,
+        "legacy_reject_reasons": [
+          "scope_pad_sides_clipped",
+          "scope_pad_sides_clipped"
+        ]
+      },
+      {
+        "sample_id": "DET-03",
+        "candidate_count": 0,
+        "approved_boundary_count": 0,
+        "legacy_reject_reasons": []
+      },
+      {
+        "sample_id": "DET-04",
+        "candidate_count": 2,
+        "approved_boundary_count": 0,
+        "legacy_reject_reasons": [
+          "scope_pad_sides_clipped",
+          "scope_pad_sides_clipped"
+        ]
+      },
+      {
+        "sample_id": "DET-05",
+        "candidate_count": 1,
+        "approved_boundary_count": 0,
+        "legacy_reject_reasons": [
+          "scope_pad_sides_clipped"
+        ]
+      },
+      {
+        "sample_id": "DET-06",
+        "candidate_count": 0,
+        "approved_boundary_count": 0,
+        "legacy_reject_reasons": []
+      },
+      {
+        "sample_id": "DET-07",
+        "candidate_count": 0,
+        "approved_boundary_count": 0,
+        "legacy_reject_reasons": []
+      },
+      {
+        "sample_id": "DET-08",
+        "candidate_count": 1,
+        "approved_boundary_count": 0,
+        "legacy_reject_reasons": [
+          "scope_width_unavailable"
+        ]
+      },
+      {
+        "sample_id": "DET-09",
+        "candidate_count": 0,
+        "approved_boundary_count": 0,
+        "legacy_reject_reasons": []
+      },
+      {
+        "sample_id": "DET-10",
+        "candidate_count": 0,
+        "approved_boundary_count": 0,
+        "legacy_reject_reasons": []
+      },
+      {
+        "sample_id": "DET-11",
+        "candidate_count": 0,
+        "approved_boundary_count": 0,
+        "legacy_reject_reasons": []
+      },
+      {
+        "sample_id": "DET-12",
+        "candidate_count": 4,
+        "approved_boundary_count": 0,
+        "legacy_reject_reasons": [
+          "scope_width_unavailable",
+          "scope_pad_sides_clipped",
+          "scope_width_unavailable",
+          "scope_width_unavailable"
+        ]
+      },
+      {
+        "sample_id": "DET-13",
+        "candidate_count": 0,
+        "approved_boundary_count": 0,
+        "legacy_reject_reasons": []
+      },
+      {
+        "sample_id": "DET-14",
+        "candidate_count": 1,
+        "approved_boundary_count": 0,
+        "legacy_reject_reasons": [
+          "scope_pad_sides_clipped"
+        ]
+      },
+      {
+        "sample_id": "DET-15",
+        "candidate_count": 1,
+        "approved_boundary_count": 0,
+        "legacy_reject_reasons": [
+          "scope_width_unavailable"
+        ]
+      },
+      {
+        "sample_id": "DET-16",
+        "candidate_count": 0,
+        "approved_boundary_count": 0,
+        "legacy_reject_reasons": []
+      },
+      {
+        "sample_id": "DET-17",
+        "candidate_count": 1,
+        "approved_boundary_count": 0,
+        "legacy_reject_reasons": [
+          "scope_pad_sides_clipped"
+        ]
+      },
+      {
+        "sample_id": "DET-18",
+        "candidate_count": 2,
+        "approved_boundary_count": 1,
+        "legacy_reject_reasons": [
+          "scope_boundary_requires_review"
+        ]
+      },
+      {
+        "sample_id": "DET-19",
+        "candidate_count": 2,
+        "approved_boundary_count": 0,
+        "legacy_reject_reasons": [
+          "scope_pad_sides_clipped",
+          "scope_merged_or_wide_silhouette"
+        ]
+      },
+      {
+        "sample_id": "DET-20",
+        "candidate_count": 0,
+        "approved_boundary_count": 0,
+        "legacy_reject_reasons": []
+      }
+    ],
+    "eligible_candidate_photos": 2
+  },
+  "after": {
+    "raw_candidate_count": 27,
+    "legacy_boundary_count": 1,
+    "approved_regions": 0,
+    "transformed_20set_regions": 0,
+    "reject_reasons": {
+      "neighbor_finger_connected": 9,
+      "boundary_review_required": 1,
+      "frozen_square_scope_incompatible": 1,
+      "crease_not_observed": 15,
+      "pitch_invalid": 2
+    },
+    "legacy_sole_boundary_mask_preserved": true,
+    "background_leakage_count": null,
+    "background_leakage_ground_truth_available": false,
+    "rows": [
+      {
+        "sample_id": "DET-01",
+        "eligibility": "palmar_fingerprint_visible",
+        "eligibility_ground_truth": false,
+        "eligibility_basis": "historical human-reviewed ridge-visible ROI; not whole-pad boundary ground truth",
+        "raw_proposals": 0,
+        "legacy_boundaries": 0,
+        "approved_regions": 0,
+        "reject_reasons": {},
+        "candidate_generation_seconds": 0.15157876908779144,
+        "boundary_and_pitch_seconds": 0.14773486799094826,
+        "new_masks_review_gated": true
+      },
+      {
+        "sample_id": "DET-02",
+        "eligibility": "ambiguous",
+        "eligibility_ground_truth": false,
+        "eligibility_basis": "scale/blur/side/perspective uncertainty",
+        "raw_proposals": 2,
+        "legacy_boundaries": 0,
+        "approved_regions": 0,
+        "reject_reasons": {
+          "neighbor_finger_connected": 1,
+          "boundary_review_required": 1
+        },
+        "candidate_generation_seconds": 0.17973958712536842,
+        "boundary_and_pitch_seconds": 1.4804021778982133,
+        "new_masks_review_gated": true
+      },
+      {
+        "sample_id": "DET-03",
+        "eligibility": "palmar_fingerprint_visible",
+        "eligibility_ground_truth": false,
+        "eligibility_basis": "historical human-reviewed ridge-visible ROI; not whole-pad boundary ground truth",
+        "raw_proposals": 1,
+        "legacy_boundaries": 0,
+        "approved_regions": 0,
+        "reject_reasons": {
+          "frozen_square_scope_incompatible": 1
+        },
+        "candidate_generation_seconds": 3.7040297818602994,
+        "boundary_and_pitch_seconds": 0.9516993031138554,
+        "new_masks_review_gated": true
+      },
+      {
+        "sample_id": "DET-04",
+        "eligibility": "palmar_fingerprint_visible",
+        "eligibility_ground_truth": false,
+        "eligibility_basis": "historical human-reviewed ridge-visible ROI; not whole-pad boundary ground truth",
+        "raw_proposals": 2,
+        "legacy_boundaries": 0,
+        "approved_regions": 0,
+        "reject_reasons": {
+          "crease_not_observed": 1,
+          "neighbor_finger_connected": 1
+        },
+        "candidate_generation_seconds": 0.2328028610209003,
+        "boundary_and_pitch_seconds": 1.3426738320849836,
+        "new_masks_review_gated": true
+      },
+      {
+        "sample_id": "DET-05",
+        "eligibility": "palmar_fingerprint_visible",
+        "eligibility_ground_truth": false,
+        "eligibility_basis": "historical human-reviewed ridge-visible ROI; not whole-pad boundary ground truth",
+        "raw_proposals": 1,
+        "legacy_boundaries": 0,
+        "approved_regions": 0,
+        "reject_reasons": {
+          "neighbor_finger_connected": 1
+        },
+        "candidate_generation_seconds": 0.2766458831029013,
+        "boundary_and_pitch_seconds": 0.8290981618920341,
+        "new_masks_review_gated": true
+      },
+      {
+        "sample_id": "DET-06",
+        "eligibility": "non_target",
+        "eligibility_ground_truth": false,
+        "eligibility_basis": "object grip/occlusion; not an unconditional positive",
+        "raw_proposals": 2,
+        "legacy_boundaries": 0,
+        "approved_regions": 0,
+        "reject_reasons": {
+          "crease_not_observed": 1,
+          "neighbor_finger_connected": 1
+        },
+        "candidate_generation_seconds": 0.21727504499722272,
+        "boundary_and_pitch_seconds": 1.1863866930361837,
+        "new_masks_review_gated": true
+      },
+      {
+        "sample_id": "DET-07",
+        "eligibility": "non_target",
+        "eligibility_ground_truth": false,
+        "eligibility_basis": "object grip/occlusion; not an unconditional positive",
+        "raw_proposals": 0,
+        "legacy_boundaries": 0,
+        "approved_regions": 0,
+        "reject_reasons": {},
+        "candidate_generation_seconds": 0.13722909800708294,
+        "boundary_and_pitch_seconds": 0.14207724097650498,
+        "new_masks_review_gated": true
+      },
+      {
+        "sample_id": "DET-08",
+        "eligibility": "non_target",
+        "eligibility_ground_truth": false,
+        "eligibility_basis": "object grip/occlusion; not an unconditional positive",
+        "raw_proposals": 1,
+        "legacy_boundaries": 0,
+        "approved_regions": 0,
+        "reject_reasons": {
+          "crease_not_observed": 1
+        },
+        "candidate_generation_seconds": 0.15291029901709408,
+        "boundary_and_pitch_seconds": 1.3019749129889533,
+        "new_masks_review_gated": true
+      },
+      {
+        "sample_id": "DET-09",
+        "eligibility": "non_target",
+        "eligibility_ground_truth": false,
+        "eligibility_basis": "object grip/occlusion; not an unconditional positive",
+        "raw_proposals": 0,
+        "legacy_boundaries": 0,
+        "approved_regions": 0,
+        "reject_reasons": {},
+        "candidate_generation_seconds": 0.13395010505337268,
+        "boundary_and_pitch_seconds": 0.14129365095868707,
+        "new_masks_review_gated": true
+      },
+      {
+        "sample_id": "DET-10",
+        "eligibility": "non_target",
+        "eligibility_ground_truth": false,
+        "eligibility_basis": "object grip/occlusion; not an unconditional positive",
+        "raw_proposals": 1,
+        "legacy_boundaries": 0,
+        "approved_regions": 0,
+        "reject_reasons": {
+          "crease_not_observed": 1
+        },
+        "candidate_generation_seconds": 0.2775258480105549,
+        "boundary_and_pitch_seconds": 0.6913894038880244,
+        "new_masks_review_gated": true
+      },
+      {
+        "sample_id": "DET-11",
+        "eligibility": "ambiguous",
+        "eligibility_ground_truth": false,
+        "eligibility_basis": "scale/blur/side/perspective uncertainty",
+        "raw_proposals": 1,
+        "legacy_boundaries": 0,
+        "approved_regions": 0,
+        "reject_reasons": {
+          "neighbor_finger_connected": 1
+        },
+        "candidate_generation_seconds": 0.13500160595867783,
+        "boundary_and_pitch_seconds": 0.8518659319961444,
+        "new_masks_review_gated": true
+      },
+      {
+        "sample_id": "DET-12",
+        "eligibility": "ambiguous",
+        "eligibility_ground_truth": false,
+        "eligibility_basis": "scale/blur/side/perspective uncertainty",
+        "raw_proposals": 4,
+        "legacy_boundaries": 0,
+        "approved_regions": 0,
+        "reject_reasons": {
+          "crease_not_observed": 3,
+          "neighbor_finger_connected": 1
+        },
+        "candidate_generation_seconds": 0.16012302797753364,
+        "boundary_and_pitch_seconds": 1.44510764896404,
+        "new_masks_review_gated": true
+      },
+      {
+        "sample_id": "DET-13",
+        "eligibility": "ambiguous",
+        "eligibility_ground_truth": false,
+        "eligibility_basis": "scale/blur/side/perspective uncertainty",
+        "raw_proposals": 1,
+        "legacy_boundaries": 0,
+        "approved_regions": 0,
+        "reject_reasons": {
+          "crease_not_observed": 1
+        },
+        "candidate_generation_seconds": 0.20027885294985026,
+        "boundary_and_pitch_seconds": 0.5217410039622337,
+        "new_masks_review_gated": true
+      },
+      {
+        "sample_id": "DET-14",
+        "eligibility": "ambiguous",
+        "eligibility_ground_truth": false,
+        "eligibility_basis": "scale/blur/side/perspective uncertainty",
+        "raw_proposals": 1,
+        "legacy_boundaries": 0,
+        "approved_regions": 0,
+        "reject_reasons": {
+          "neighbor_finger_connected": 1
+        },
+        "candidate_generation_seconds": 0.24314672604668885,
+        "boundary_and_pitch_seconds": 0.670736582018435,
+        "new_masks_review_gated": true
+      },
+      {
+        "sample_id": "DET-15",
+        "eligibility": "ambiguous",
+        "eligibility_ground_truth": false,
+        "eligibility_basis": "scale/blur/side/perspective uncertainty",
+        "raw_proposals": 3,
+        "legacy_boundaries": 0,
+        "approved_regions": 0,
+        "reject_reasons": {
+          "neighbor_finger_connected": 2,
+          "crease_not_observed": 1
+        },
+        "candidate_generation_seconds": 0.13975760305766016,
+        "boundary_and_pitch_seconds": 0.9928216859698296,
+        "new_masks_review_gated": true
+      },
+      {
+        "sample_id": "DET-16",
+        "eligibility": "ambiguous",
+        "eligibility_ground_truth": false,
+        "eligibility_basis": "scale/blur/side/perspective uncertainty",
+        "raw_proposals": 0,
+        "legacy_boundaries": 0,
+        "approved_regions": 0,
+        "reject_reasons": {},
+        "candidate_generation_seconds": 0.13829839508980513,
+        "boundary_and_pitch_seconds": 0.14445211191195995,
+        "new_masks_review_gated": true
+      },
+      {
+        "sample_id": "DET-17",
+        "eligibility": "ambiguous",
+        "eligibility_ground_truth": false,
+        "eligibility_basis": "scale/blur/side/perspective uncertainty",
+        "raw_proposals": 2,
+        "legacy_boundaries": 0,
+        "approved_regions": 0,
+        "reject_reasons": {
+          "crease_not_observed": 2
+        },
+        "candidate_generation_seconds": 0.13990470208227634,
+        "boundary_and_pitch_seconds": 0.5704585869098082,
+        "new_masks_review_gated": true
+      },
+      {
+        "sample_id": "DET-18",
+        "eligibility": "ambiguous",
+        "eligibility_ground_truth": false,
+        "eligibility_basis": "scale/blur/side/perspective uncertainty",
+        "raw_proposals": 2,
+        "legacy_boundaries": 1,
+        "approved_regions": 0,
+        "reject_reasons": {
+          "crease_not_observed": 1,
+          "pitch_invalid": 2
+        },
+        "candidate_generation_seconds": 0.1788530150661245,
+        "boundary_and_pitch_seconds": 3.047522191889584,
+        "new_masks_review_gated": true
+      },
+      {
+        "sample_id": "DET-19",
+        "eligibility": "ambiguous",
+        "eligibility_ground_truth": false,
+        "eligibility_basis": "scale/blur/side/perspective uncertainty",
+        "raw_proposals": 3,
+        "legacy_boundaries": 0,
+        "approved_regions": 0,
+        "reject_reasons": {
+          "crease_not_observed": 3
+        },
+        "candidate_generation_seconds": 0.1388624879764393,
+        "boundary_and_pitch_seconds": 1.0113858031108975,
+        "new_masks_review_gated": true
+      },
+      {
+        "sample_id": "DET-20",
+        "eligibility": "ambiguous",
+        "eligibility_ground_truth": false,
+        "eligibility_basis": "scale/blur/side/perspective uncertainty",
+        "raw_proposals": 0,
+        "legacy_boundaries": 0,
+        "approved_regions": 0,
+        "reject_reasons": {},
+        "candidate_generation_seconds": 0.1380410590209067,
+        "boundary_and_pitch_seconds": 0.13968589797150344,
+        "new_masks_review_gated": true
+      }
+    ],
+    "raw_proposal_count_not_directly_comparable_to_legacy": true,
+    "eligible_raw_candidate_photos": 3,
+    "eligible_approved_regions": 0,
+    "non_target_approved_regions": 0
+  },
+  "control_regression": {
+    "sample_id": "CTRL-01",
+    "scope": "existing developer baseline control; outside the 20-image detector validation set",
+    "NBIS": {
+      "original_features": 39,
+      "transformed_features": 34,
+      "self": 320,
+      "transformed": 4
+    },
+    "SourceAFIS": {
+      "original_features": 31,
+      "transformed_features": 20,
+      "self": 373.5210741111065,
+      "transformed": 1.3059248593999524
+    },
+    "changed_pixels": 204414,
+    "applied_runs": 10,
+    "boundary_exterior_preserved": true
+  },
+  "control_timing": {
+    "warmup": 1,
+    "repetitions": 10,
+    "applied_runs": 10,
+    "unchanged_runs": 0,
+    "timing_success": {
+      "detection_seconds": {
+        "mean": 0.1941961765056476,
+        "median": 0.1926295300363563,
+        "min": 0.17611941311042756,
+        "max": 0.21311265288386494,
+        "std": 0.012679787794488206,
+        "p95": 0.2116813820437528
+      },
+      "boundary_seconds": {
+        "mean": 4.564543088979553,
+        "median": 4.56518875801703,
+        "min": 4.530685474863276,
+        "max": 4.6012371849501505,
+        "std": 0.024145663902467845,
+        "p95": 4.597144594736164
+      },
+      "transform_seconds": {
+        "mean": 2.9284136868896895,
+        "median": 2.90388802398229,
+        "min": 2.8648897159146145,
+        "max": 3.0402059180196375,
+        "std": 0.05499338067403128,
+        "p95": 3.0211892470018937
+      },
+      "nbis_seconds": {
+        "mean": 0.02941085889469832,
+        "median": 0.029837969923391938,
+        "min": 0.026327808969654143,
+        "max": 0.03320656204596162,
+        "std": 0.0021026915618333596,
+        "p95": 0.03228814308531582
+      },
+      "sourceafis_seconds": {
+        "mean": 0.8929066232289188,
+        "median": 0.900252427032683,
+        "min": 0.8470929560717195,
+        "max": 0.965231042006053,
+        "std": 0.03425552717976375,
+        "p95": 0.9396342594816814
+      },
+      "total_seconds": {
+        "mean": 9.643877558805979,
+        "median": 9.623741409974173,
+        "min": 9.554019114002585,
+        "max": 9.784950681962073,
+        "std": 0.08362825830235138,
+        "p95": 9.770406810677377
+      }
+    },
+    "timing_unchanged": {
+      "detection_seconds": null,
+      "boundary_seconds": null,
+      "total_seconds": null
+    }
+  },
+  "artifact_deterministic_real_control": true,
+  "synthetic_contract_tests_passed": 17,
+  "GT_blocker": "EXPERT_PAD_MASK_REFERENCE_REQUIRED",
+  "Git_blocker": "GITHUB_DNS_UNAVAILABLE",
+  "WINDOWS_FULL_EQUIVALENCE_VERIFIED": false,
+  "FINAL_INDEPENDENT_VALIDATION_COMPLETE": false,
+  "PROJECT_COMPLETE": false,
+  "checkpoint_matched": 303,
+  "eligibility_notes": "Four photos have historical human-reviewed ridge ROIs; these are positive texture patches, not pad/background mask ground truth. Other palmar-looking photos remain ambiguous."
+}

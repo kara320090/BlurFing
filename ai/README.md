@@ -55,3 +55,8 @@ from sourceafis_matcher import run_matcher_job
 
 ## 제한사항
 일반적 보호 효과나 완전한 자연스러움을 입증하지 않습니다. synthetic ridge regularity와 texture seam이 일부 남고 Windows full equivalence도 미검증입니다. 특징점 추출 실패를 보호 성공으로 계산하지 않습니다. NBIS와 SourceAFIS score scale은 다르므로 직접 비교하지 않습니다.
+
+## Experimental automatic detection artifact
+The new automatic boundary prototype is **not ready for unattended protection**. The 20-image baseline reproduced 17 candidates and one accepted boundary; new graph-cut masks are review-gated. [Detection contract, CLI, tests and limitations](docs/DETECTION_PIPELINE.md) and [results](results/linux_detection_validation_summary.md) distinguish the 20-image diagnostics from the successful existing-baseline artifact control.
+
+Public-source smoke test: `python ai/scripts/test_detection_artifact.py`. Actual private-data detector/consumer and benchmark commands are in the detection guide. Windows consumers must use the identical source bytes, EXIF-transposed dimensions, decoded RGB and mask hashes. This artifact work does not change existing Windows runtime verification claims or establish Windows full equivalence.

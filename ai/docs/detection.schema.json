@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BlurFing detection v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "detector_version",
+    "source_sha256",
+    "decoded_rgb_sha256",
+    "image_width",
+    "image_height",
+    "exif_orientation_applied",
+    "status",
+    "reject_reason",
+    "mask_path",
+    "mask_sha256",
+    "regions",
+    "quality"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "blurfing-detection-v1"
+    },
+    "detector_version": {
+      "type": "string"
+    },
+    "source_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "decoded_rgb_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "image_width": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "image_height": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "exif_orientation_applied": {
+      "type": "boolean"
+    },
+    "status": {
+      "enum": [
+        "accepted",
+        "rejected"
+      ]
+    },
+    "reject_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "mask_path": {
+      "const": "fingerprint_mask.png"
+    },
+    "mask_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "regions": {
+      "type": "array"
+    },
+    "quality": {
+      "type": "object"
+    }
+  }
+}

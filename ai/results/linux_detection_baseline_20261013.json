@@ -1,0 +1,163 @@
+{
+  "total_images": 20,
+  "eligibility_counts": {
+    "palmar_fingerprint_visible": 4,
+    "ambiguous": 11,
+    "non_target": 5
+  },
+  "eligibility_provisional": true,
+  "candidate_images": 10,
+  "candidate_count": 17,
+  "approved_boundaries": 1,
+  "approved_boundary_images": 1,
+  "head_cached": "52cd12528854b0974858e6fb081cf69972f3d3f1",
+  "remote_current_head_verified": false,
+  "rows": [
+    {
+      "sample_id": "DET-01",
+      "candidate_count": 0,
+      "approved_boundary_count": 0,
+      "legacy_reject_reasons": []
+    },
+    {
+      "sample_id": "DET-02",
+      "candidate_count": 2,
+      "approved_boundary_count": 0,
+      "legacy_reject_reasons": [
+        "scope_pad_sides_clipped",
+        "scope_pad_sides_clipped"
+      ]
+    },
+    {
+      "sample_id": "DET-03",
+      "candidate_count": 0,
+      "approved_boundary_count": 0,
+      "legacy_reject_reasons": []
+    },
+    {
+      "sample_id": "DET-04",
+      "candidate_count": 2,
+      "approved_boundary_count": 0,
+      "legacy_reject_reasons": [
+        "scope_pad_sides_clipped",
+        "scope_pad_sides_clipped"
+      ]
+    },
+    {
+      "sample_id": "DET-05",
+      "candidate_count": 1,
+      "approved_boundary_count": 0,
+      "legacy_reject_reasons": [
+        "scope_pad_sides_clipped"
+      ]
+    },
+    {
+      "sample_id": "DET-06",
+      "candidate_count": 0,
+      "approved_boundary_count": 0,
+      "legacy_reject_reasons": []
+    },
+    {
+      "sample_id": "DET-07",
+      "candidate_count": 0,
+      "approved_boundary_count": 0,
+      "legacy_reject_reasons": []
+    },
+    {
+      "sample_id": "DET-08",
+      "candidate_count": 1,
+      "approved_boundary_count": 0,
+      "legacy_reject_reasons": [
+        "scope_width_unavailable"
+      ]
+    },
+    {
+      "sample_id": "DET-09",
+      "candidate_count": 0,
+      "approved_boundary_count": 0,
+      "legacy_reject_reasons": []
+    },
+    {
+      "sample_id": "DET-10",
+      "candidate_count": 0,
+      "approved_boundary_count": 0,
+      "legacy_reject_reasons": []
+    },
+    {
+      "sample_id": "DET-11",
+      "candidate_count": 0,
+      "approved_boundary_count": 0,
+      "legacy_reject_reasons": []
+    },
+    {
+      "sample_id": "DET-12",
+      "candidate_count": 4,
+      "approved_boundary_count": 0,
+      "legacy_reject_reasons": [
+        "scope_width_unavailable",
+        "scope_pad_sides_clipped",
+        "scope_width_unavailable",
+        "scope_width_unavailable"
+      ]
+    },
+    {
+      "sample_id": "DET-13",
+      "candidate_count": 0,
+      "approved_boundary_count": 0,
+      "legacy_reject_reasons": []
+    },
+    {
+      "sample_id": "DET-14",
+      "candidate_count": 1,
+      "approved_boundary_count": 0,
+      "legacy_reject_reasons": [
+        "scope_pad_sides_clipped"
+      ]
+    },
+    {
+      "sample_id": "DET-15",
+      "candidate_count": 1,
+      "approved_boundary_count": 0,
+      "legacy_reject_reasons": [
+        "scope_width_unavailable"
+      ]
+    },
+    {
+      "sample_id": "DET-16",
+      "candidate_count": 0,
+      "approved_boundary_count": 0,
+      "legacy_reject_reasons": []
+    },
+    {
+      "sample_id": "DET-17",
+      "candidate_count": 1,
+      "approved_boundary_count": 0,
+      "legacy_reject_reasons": [
+        "scope_pad_sides_clipped"
+      ]
+    },
+    {
+      "sample_id": "DET-18",
+      "candidate_count": 2,
+      "approved_boundary_count": 1,
+      "legacy_reject_reasons": [
+        "scope_boundary_requires_review"
+      ]
+    },
+    {
+      "sample_id": "DET-19",
+      "candidate_count": 2,
+      "approved_boundary_count": 0,
+      "legacy_reject_reasons": [
+        "scope_pad_sides_clipped",
+        "scope_merged_or_wide_silhouette"
+      ]
+    },
+    {
+      "sample_id": "DET-20",
+      "candidate_count": 0,
+      "approved_boundary_count": 0,
+      "legacy_reject_reasons": []
+    }
+  ]
+}

@@ -1,0 +1,192 @@
+{
+  "detector_version": "automatic_boundary_v1_review",
+  "coordinate_system": "encoded_original_pixels",
+  "comparison_dimensions": [
+    4000,
+    3000
+  ],
+  "development_only": true,
+  "samples": [
+    {
+      "sample_id": "DET-01",
+      "gt_polygons": 2,
+      "raw_candidate_count": 0,
+      "approved_regions": 0,
+      "artifact_status": "rejected",
+      "metrics": {
+        "iou": 0.0,
+        "precision": null,
+        "recall": 0.0,
+        "false_positive_rate": 0.0,
+        "leakage_fraction": null,
+        "mask_area_ratio": 0.0,
+        "predicted_area": 0,
+        "gt_area": 295556,
+        "true_positive_pixels": 0,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 295556
+      },
+      "raw_proposal_metrics": [],
+      "reject_reasons": [
+        "no_fingertip"
+      ],
+      "detection_seconds_single_run": 0.4360944520449266
+    },
+    {
+      "sample_id": "DET-03",
+      "gt_polygons": 1,
+      "raw_candidate_count": 1,
+      "approved_regions": 0,
+      "artifact_status": "rejected",
+      "metrics": {
+        "iou": 0.0,
+        "precision": null,
+        "recall": 0.0,
+        "false_positive_rate": 0.0,
+        "leakage_fraction": null,
+        "mask_area_ratio": 0.0,
+        "predicted_area": 0,
+        "gt_area": 6629458,
+        "true_positive_pixels": 0,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 6629458
+      },
+      "raw_proposal_metrics": [
+        {
+          "iou": 0.9667715199868646,
+          "precision": 0.9821307088688583,
+          "recall": 0.9840813532569329,
+          "leakage_fraction": 0.01786929113114168,
+          "false_positive_rate": 0.02210186606863888,
+          "mask_area_ratio": 1.0019861352164838
+        }
+      ],
+      "reject_reasons": [
+        "frozen_square_scope_incompatible"
+      ],
+      "detection_seconds_single_run": 4.874554165988229
+    },
+    {
+      "sample_id": "DET-04",
+      "gt_polygons": 3,
+      "raw_candidate_count": 2,
+      "approved_regions": 0,
+      "artifact_status": "rejected",
+      "metrics": {
+        "iou": 0.0,
+        "precision": null,
+        "recall": 0.0,
+        "false_positive_rate": 0.0,
+        "leakage_fraction": null,
+        "mask_area_ratio": 0.0,
+        "predicted_area": 0,
+        "gt_area": 1019360,
+        "true_positive_pixels": 0,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 1019360
+      },
+      "raw_proposal_metrics": [],
+      "reject_reasons": [
+        "crease_not_observed",
+        "neighbor_finger_connected"
+      ],
+      "detection_seconds_single_run": 1.7087436699075624
+    },
+    {
+      "sample_id": "DET-05",
+      "gt_polygons": 1,
+      "raw_candidate_count": 1,
+      "approved_regions": 0,
+      "artifact_status": "rejected",
+      "metrics": {
+        "iou": 0.0,
+        "precision": null,
+        "recall": 0.0,
+        "false_positive_rate": 0.0,
+        "leakage_fraction": null,
+        "mask_area_ratio": 0.0,
+        "predicted_area": 0,
+        "gt_area": 760401,
+        "true_positive_pixels": 0,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 760401
+      },
+      "raw_proposal_metrics": [],
+      "reject_reasons": [
+        "neighbor_finger_connected"
+      ],
+      "detection_seconds_single_run": 1.1930576949380338
+    }
+  ],
+  "aggregate": {
+    "iou": {
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "valid_samples": 4
+    },
+    "precision": {
+      "mean": null,
+      "median": null,
+      "min": null,
+      "max": null,
+      "valid_samples": 0
+    },
+    "recall": {
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "valid_samples": 4
+    },
+    "false_positive_rate": {
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "valid_samples": 4
+    },
+    "leakage_fraction": {
+      "mean": null,
+      "median": null,
+      "min": null,
+      "max": null,
+      "valid_samples": 0
+    },
+    "mask_area_ratio": {
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "valid_samples": 4
+    }
+  },
+  "decision": {
+    "DETECTOR_GT_EVALUATION_COMPLETE": true,
+    "DETECTOR_APPROVED_FOR_USE": false,
+    "VISIBLE_PAD_BOUNDARY_IMPROVED": false,
+    "BACKGROUND_LEAKAGE_REGRESSION_OK": false,
+    "MULTI_FINGER_SEPARATION_OK": false,
+    "ROTATED_FINGER_HANDLING_OK": false,
+    "SMALL_FINGER_HANDLING_OK": false,
+    "LINUX_PROTECTION_TRANSFORM_OK": false,
+    "NBIS_DEVELOPMENT_CHECK": "NOT_RUN_APPROVAL_GATE_FAILED",
+    "SOURCEAFIS_DEVELOPMENT_CHECK": "NOT_RUN_APPROVAL_GATE_FAILED",
+    "LINUX_DETECTION_BENCHMARK_COMPLETE": false,
+    "LINUX_REGRESSION_OK": true,
+    "FINAL_INDEPENDENT_VALIDATION_COMPLETE": false,
+    "PROJECT_COMPLETE": false
+  },
+  "regression_scope": "21 synthetic tests and Python syntax; no protection/matcher/benchmark rerun because approval failed",
+  "baseline_four_eligible_approved_regions": 0,
+  "after_four_eligible_approved_regions": 0,
+  "approval_blockers": [
+    "Three positive GT inputs yield no usable pad mask",
+    "Close-up foreground proposal exceeds frozen square scope",
+    "No negative/rotated/small control GT validation; no deployment safety claim"
+  ],
+  "thresholds_tuned": false,
+  "renderer_changed": false,
+  "private_outputs_excluded": true
+}
