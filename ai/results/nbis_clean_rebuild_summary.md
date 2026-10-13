@@ -1,14 +1,14 @@
-# NBIS clean rebuild summary
+# NBIS 새 빌드 검증 요약
 
-Official NBIS 5.0.0 archive에서 별도 clean tree를 만들었습니다. 기존 build tree를 사용하지 않았으며 source patch 없이 공식 setup/config/header-copy 절차를 사용했습니다. pcasys의 generated little.h 및 IJG headers/libs도 공식 build 순서로 준비했습니다.
+공식 NBIS 5.0.0 압축 파일에서 별도의 새 소스 디렉터리를 만들었습니다. 기존 빌드 디렉터리를 사용하지 않았으며 소스 수정 없이 공식 설정·구성·헤더 복사 절차를 사용했습니다. pcasys에서 생성하는 little.h 및 IJG 헤더·라이브러리도 공식 빌드 순서로 준비했습니다.
 
-MINDTCT, BOZORTH3, required static libs, native bridge compile/link 및 dwsq가 성공했습니다. ELF64 little-endian x86-64이며 unresolved NBIS symbols는 없습니다. 시스템 동적 라이브러리 imports는 정상적으로 남습니다.
+MINDTCT, BOZORTH3, 필수 정적 라이브러리, 네이티브 브리지 컴파일·링크 및 dwsq 빌드가 성공했습니다. ELF64 리틀 엔디언 x86-64 형식이며 해결되지 않은 NBIS 심볼은 없습니다. 시스템 동적 라이브러리 가져오기는 정상적으로 남아 있습니다.
 
-Public fixture: 336x512, depth 8, raw 172032 bytes, minutiae 87 rows, 공개 fixture XYT와 byte-identical, self-match `499 87 87`.
+공개 검증용 자료 결과는 336x512, 깊이 8비트, RAW 172032바이트, 특징점 87행, 공개 참조 XYT 바이트 일치, 동일 지문 매칭 결과 `499 87 87`입니다.
 
-Clean rebuilt bridge SHA-256는 stable bridge와 동일합니다:
+새로 빌드한 브리지의 SHA-256은 기존 안정 버전의 브리지와 동일합니다.
 `b8eff6329edf8ee59c5462afc8f07caab2f346ecc70507811808b552ff4299dc`.
 
-이 결과는 fixture 및 clean build 재현성 검증입니다. Windows full equivalence나 실제 보호 효과를 주장하지 않습니다.
+이 결과는 검증용 자료 및 새 빌드 재현성 검증입니다. Windows 전체 동등성이나 실제 보호 효과를 주장하지 않습니다.
 
-이 build/fixture 결과는 Linux에서 얻었으며 Windows 결과가 아닙니다.
+이 빌드·검증용 자료 결과는 Linux에서 얻었으며 Windows 결과가 아닙니다.

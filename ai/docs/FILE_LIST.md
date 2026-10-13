@@ -1,4 +1,4 @@
-# Public file inventory
+# 공개 파일 목록
 
 - `.gitignore`
 - `README.md`

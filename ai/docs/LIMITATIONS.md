@@ -1,14 +1,14 @@
-# Limitations
+# 제한사항
 
-- Independent holdout 미검증; 새 사람/다른 날짜의 촬영 및 개발 미사용 provenance 필요.
-- 작은 development sample; 기존 등록/미확인 자료를 독립 holdout으로 승격하지 않음.
-- Score 감소가 일반적 fingerprint protection 또는 보안을 보장하지 않음.
-- Synthetic ridge regularity 및 일부 texture seam이 남음.
-- 완전한 자연스러움은 입증되지 않음; 사람 검토 필요.
-- Windows full equivalence 미검증; 공개 fixture 일치와 구분.
-- 실제 생체정보와 private runtime은 공개하지 않음.
-- Public source check는 원본 private capture inventory 검증을 대신하지 않음.
+- 독립 검증용 보류 자료(holdout)는 미검증입니다. 새로운 사람·다른 날짜의 촬영 자료와 개발에 사용하지 않았다는 출처 기록이 필요합니다.
+- 소수의 개발용 시료 결과이며, 기존 등록 자료나 확인되지 않은 자료를 독립 검증용 보류 자료로 승격하지 않습니다.
+- 점수 감소가 일반적 지문 보호 효과나 보안을 보장하지 않습니다.
+- 합성 지문 능선의 규칙성과 일부 질감 경계가 남습니다.
+- 완전한 자연스러움은 입증되지 않았으며 사람의 검토가 필요합니다.
+- Windows/Linux 전체 파이프라인 동등성은 미검증이며 공개 검증용 자료 일치와 구분합니다.
+- 실제 생체정보와 비공개 실행 환경 자료는 공개하지 않습니다.
+- 공개 소스 검사는 원본 비공개 촬영 자료 목록 검증을 대신하지 않습니다.
 
-환경·촬영 조건·센서·matcher에 따라 결과가 달라질 수 있습니다.
+환경·촬영 조건·센서·매칭 엔진에 따라 결과가 달라질 수 있습니다.
 
-Windows build/runtime/full-pipeline validation은 아직 수행하지 않았습니다.
+Windows 네이티브 NBIS 빌드, 공식 브리지 검증용 자료 확인 및 SourceAFIS 실제 실행 검증은 완료했습니다. Windows/Linux 전체 파이프라인 동등성은 아직 검증하지 않았으며 windows_full_equivalence_verified=false를 유지합니다. 독립 검증과 프로젝트 완료 상태도 FINAL_INDEPENDENT_VALIDATION_COMPLETE=false, PROJECT_COMPLETE=false를 유지합니다. 현재 결과와 검증 범위는 [검증 기록](VALIDATION.md)을 확인하세요.
