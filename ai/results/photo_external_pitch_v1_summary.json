@@ -1,0 +1,410 @@
+{
+  "status": {
+    "PHOTO_V5_CONTRACT_IMPLEMENTED": true,
+    "FROZEN_V4_UNCHANGED": true,
+    "EXTERNAL_PITCH_EVIDENCE_SCHEMA_OK": true,
+    "EXTERNAL_PITCH_OBSERVER_IMPLEMENTED": true,
+    "CAP016_REAL_PITCH_EVIDENCE_AVAILABLE": false,
+    "CAP016_OBSERVED_PITCH": null,
+    "CAP054_REAL_PITCH_EVIDENCE_AVAILABLE": false,
+    "CAP054_OBSERVED_PITCH": null,
+    "CUE_AGREEMENT_RULE_OK": true,
+    "PITCH_COORDINATE_CONVERSION_OK": true,
+    "SILENT_CLAMP_USED": false,
+    "V5_EXPERIMENTAL_TRANSFORM_COUNT": 2,
+    "V5_EXTERIOR_PRESERVED": true,
+    "V5_DETERMINISTIC_OUTPUT_OK": true,
+    "DET01_WIDTH_BLOCKER_REMAINS": true,
+    "DET04_FEATURE_BLOCKER_REMAINS": true,
+    "DET05_FEATURE_BLOCKER_REMAINS": true,
+    "PHOTO_EXTERNAL_PITCH_EXPERIMENTAL": true,
+    "PHOTO_DETECTOR_APPROVED": false,
+    "PHOTO_PROTECTION_PRODUCTION_READY": false,
+    "SCANNER_REGRESSION_OK": true,
+    "LINUX_REGRESSION_OK": true,
+    "WINDOWS_FULL_EQUIVALENCE_VERIFIED": false,
+    "FINAL_INDEPENDENT_VALIDATION_COMPLETE": false,
+    "PROJECT_COMPLETE": false
+  },
+  "renderer": "original whole_pad_skin_relief code object; not frozen natural_auto_04/boundaryblend_02 output equivalence",
+  "scope": "GT7 source-image diagnostics only; no GT masks or tuning",
+  "rules": {
+    "minimum_patches": 6,
+    "local_coherence": 0.65,
+    "minimum_contrast": 2,
+    "minimum_ACF_correlation": 0.6,
+    "ACF_prominence": 0.15,
+    "minimum_FFT_peak_energy": 0.5,
+    "maximum_relative_cue_difference": 0.15,
+    "maximum_relative_IQR": 0.15,
+    "pitch_range_pixels": [
+      2,
+      50
+    ]
+  },
+  "rows": [
+    {
+      "sample_id": "DET-01",
+      "component": 1,
+      "evidence_status": "cue_disagreement",
+      "observed_pitch_working": null,
+      "autocorrelation_pitch": 7.25895781069994,
+      "FFT_pitch": 7.715825184027984,
+      "tested_patch_count": 47,
+      "accepted_patch_count": 8,
+      "relative_IQR": 0.18259576943566241,
+      "frozen_pitch_working": 9.482409309595823,
+      "internal_external_relative_difference": null,
+      "applied": false,
+      "reject_reason": "cue_disagreement",
+      "conversion": null,
+      "structure_counts": null,
+      "matcher": null
+    },
+    {
+      "sample_id": "DET-01",
+      "component": 2,
+      "evidence_status": "accepted",
+      "observed_pitch_working": 9.038564893144706,
+      "autocorrelation_pitch": 8.933754660189152,
+      "FFT_pitch": 9.14337512610026,
+      "tested_patch_count": 48,
+      "accepted_patch_count": 8,
+      "relative_IQR": 0.09558252824108215,
+      "frozen_pitch_working": 9.917524934280664,
+      "internal_external_relative_difference": 0.09273642920432805,
+      "applied": false,
+      "reject_reason": "original_width_unavailable",
+      "conversion": {
+        "measured_pitch": 9.038564893144706,
+        "measured_space": "normalized_working_pixels",
+        "image_scale": 1.254467182597943,
+        "pitch_native": 7.205102706972581,
+        "pitch_renderer": 9.038564893144706,
+        "conversion": "native = measured / working_scale; renderer = measured",
+        "silent_clamp": false
+      },
+      "structure_counts": null,
+      "matcher": null
+    },
+    {
+      "sample_id": "DET-03",
+      "component": 1,
+      "evidence_status": "accepted",
+      "observed_pitch_working": 10.0809390231205,
+      "autocorrelation_pitch": 10.054616270179395,
+      "FFT_pitch": 10.107261776061605,
+      "tested_patch_count": 32,
+      "accepted_patch_count": 10,
+      "relative_IQR": 0.05947573502607471,
+      "frozen_pitch_working": 9.484697055901051,
+      "internal_external_relative_difference": 0.060947874611523054,
+      "applied": true,
+      "reject_reason": null,
+      "conversion": {
+        "measured_pitch": 10.0809390231205,
+        "measured_space": "normalized_working_pixels",
+        "image_scale": 0.2043982042300348,
+        "pitch_native": 49.320095844751954,
+        "pitch_renderer": 10.0809390231205,
+        "conversion": "native = measured / working_scale; renderer = measured",
+        "silent_clamp": false
+      },
+      "structure_counts": {
+        "before_count": 18,
+        "after_count": 26,
+        "matched": 1,
+        "removed": 17,
+        "added": 25,
+        "similarity": 0.045454545454545456,
+        "metric": "same-coordinate same-type one-to-one Dice within 6px; not a matcher score"
+      },
+      "matcher": {
+        "NBIS_features": [
+          23,
+          30
+        ],
+        "NBIS_scores": [
+          114,
+          3
+        ],
+        "NBIS_status": [
+          "ok",
+          "ok"
+        ],
+        "SourceAFIS_features": [
+          2,
+          0
+        ],
+        "SourceAFIS_scores": [
+          16.586865026205977,
+          0.0
+        ]
+      }
+    },
+    {
+      "sample_id": "DET-04",
+      "component": 1,
+      "evidence_status": "insufficient_patches",
+      "observed_pitch_working": null,
+      "autocorrelation_pitch": 10.624567095190287,
+      "FFT_pitch": 11.000281342824332,
+      "tested_patch_count": 39,
+      "accepted_patch_count": 2,
+      "relative_IQR": 0.040100499237959567,
+      "frozen_pitch_working": null,
+      "internal_external_relative_difference": null,
+      "applied": false,
+      "reject_reason": "insufficient_patches",
+      "conversion": null,
+      "structure_counts": null,
+      "matcher": null
+    },
+    {
+      "sample_id": "DET-04",
+      "component": 2,
+      "evidence_status": "accepted",
+      "observed_pitch_working": 7.067810104302559,
+      "autocorrelation_pitch": 6.903404518961906,
+      "FFT_pitch": 7.232215689643212,
+      "tested_patch_count": 39,
+      "accepted_patch_count": 6,
+      "relative_IQR": 0.14773128058803522,
+      "frozen_pitch_working": 7.797850915230811,
+      "internal_external_relative_difference": 0.09821841221442937,
+      "applied": true,
+      "reject_reason": null,
+      "conversion": {
+        "measured_pitch": 7.067810104302559,
+        "measured_space": "normalized_working_pixels",
+        "image_scale": 0.8403361344537815,
+        "pitch_native": 8.410694024120046,
+        "pitch_renderer": 7.067810104302559,
+        "conversion": "native = measured / working_scale; renderer = measured",
+        "silent_clamp": false
+      },
+      "structure_counts": {
+        "before_count": 13,
+        "after_count": 33,
+        "matched": 0,
+        "removed": 13,
+        "added": 33,
+        "similarity": 0.0,
+        "metric": "same-coordinate same-type one-to-one Dice within 6px; not a matcher score"
+      },
+      "matcher": {
+        "NBIS_features": [
+          8,
+          4
+        ],
+        "NBIS_scores": [
+          0,
+          0
+        ],
+        "NBIS_status": [
+          "insufficient_features",
+          "insufficient_features"
+        ],
+        "SourceAFIS_features": [
+          0,
+          0
+        ],
+        "SourceAFIS_scores": [
+          0.0,
+          0.0
+        ]
+      }
+    },
+    {
+      "sample_id": "DET-04",
+      "component": 3,
+      "evidence_status": "accepted",
+      "observed_pitch_working": 8.785657426041091,
+      "autocorrelation_pitch": 8.929200978949666,
+      "FFT_pitch": 8.642113873132516,
+      "tested_patch_count": 40,
+      "accepted_patch_count": 10,
+      "relative_IQR": 0.11728841183248963,
+      "frozen_pitch_working": 9.413254395403783,
+      "internal_external_relative_difference": 0.06897082369761874,
+      "applied": false,
+      "reject_reason": "insufficient_features",
+      "conversion": {
+        "measured_pitch": 8.785657426041091,
+        "measured_space": "normalized_working_pixels",
+        "image_scale": 0.8403361344537815,
+        "pitch_native": 10.454932336988898,
+        "pitch_renderer": 8.785657426041091,
+        "conversion": "native = measured / working_scale; renderer = measured",
+        "silent_clamp": false
+      },
+      "structure_counts": {
+        "before_count": 2,
+        "after_count": 3,
+        "matched": 0,
+        "removed": 2,
+        "added": 3,
+        "similarity": 0.0,
+        "metric": "same-coordinate same-type one-to-one Dice within 6px; not a matcher score"
+      },
+      "matcher": null
+    },
+    {
+      "sample_id": "DET-05",
+      "component": 1,
+      "evidence_status": "cue_disagreement",
+      "observed_pitch_working": null,
+      "autocorrelation_pitch": 11.071236252784729,
+      "FFT_pitch": 11.196288712286956,
+      "tested_patch_count": 33,
+      "accepted_patch_count": 14,
+      "relative_IQR": 0.16922854976032892,
+      "frozen_pitch_working": 10.933773580487468,
+      "internal_external_relative_difference": null,
+      "applied": false,
+      "reject_reason": "cue_disagreement",
+      "conversion": null,
+      "structure_counts": null,
+      "matcher": null
+    },
+    {
+      "sample_id": "CAP-016",
+      "component": 1,
+      "evidence_status": "unstable_orientation",
+      "observed_pitch_working": null,
+      "autocorrelation_pitch": null,
+      "FFT_pitch": null,
+      "tested_patch_count": 45,
+      "accepted_patch_count": 0,
+      "relative_IQR": null,
+      "frozen_pitch_working": null,
+      "internal_external_relative_difference": null,
+      "applied": false,
+      "reject_reason": "unstable_orientation",
+      "conversion": null,
+      "structure_counts": null,
+      "matcher": null
+    },
+    {
+      "sample_id": "CAP-042",
+      "component": 1,
+      "evidence_status": "cue_disagreement",
+      "observed_pitch_working": null,
+      "autocorrelation_pitch": 9.229075737297535,
+      "FFT_pitch": 9.506320829301885,
+      "tested_patch_count": 39,
+      "accepted_patch_count": 12,
+      "relative_IQR": 0.16094775280493162,
+      "frozen_pitch_working": 7.820806928211823,
+      "internal_external_relative_difference": null,
+      "applied": false,
+      "reject_reason": "cue_disagreement",
+      "conversion": null,
+      "structure_counts": null,
+      "matcher": null
+    },
+    {
+      "sample_id": "CAP-054",
+      "component": 1,
+      "evidence_status": "no_periodicity",
+      "observed_pitch_working": null,
+      "autocorrelation_pitch": null,
+      "FFT_pitch": null,
+      "tested_patch_count": 41,
+      "accepted_patch_count": 0,
+      "relative_IQR": null,
+      "frozen_pitch_working": null,
+      "internal_external_relative_difference": null,
+      "applied": false,
+      "reject_reason": "no_periodicity",
+      "conversion": null,
+      "structure_counts": null,
+      "matcher": null
+    }
+  ],
+  "benchmark": {
+    "device": "CPU",
+    "sample_id": "DET-03",
+    "warmup": 1,
+    "measurements": 10,
+    "cache_consumer_and_matchers_seconds": {
+      "consumer": {
+        "mean": 4.373424023296684,
+        "median": 4.310659986978862,
+        "min": 4.270236768992618,
+        "max": 4.694247461971827,
+        "std": 0.12941761036565852,
+        "p95": 4.6241804783931
+      },
+      "NBIS": {
+        "mean": 0.056293571996502575,
+        "median": 0.05702524050138891,
+        "min": 0.049391472013667226,
+        "max": 0.06527039292268455,
+        "std": 0.005507403182635602,
+        "p95": 0.06369117918657138
+      },
+      "SourceAFIS": {
+        "mean": 0.9137927208910697,
+        "median": 0.8995142950443551,
+        "min": 0.8935427659889683,
+        "max": 0.9944732099538669,
+        "std": 0.0303277728977616,
+        "p95": 0.9717383760900702
+      },
+      "total": {
+        "mean": 5.586756985692773,
+        "median": 5.514020341972355,
+        "min": 5.482875103014521,
+        "max": 5.891681465902366,
+        "std": 0.135280577733338,
+        "p95": 5.84154748164583
+      }
+    },
+    "observer_renderer_microbenchmark_seconds": {
+      "observer": {
+        "mean": 0.020442544226534666,
+        "median": 0.019962117541581392,
+        "min": 0.01920744904782623,
+        "max": 0.02569899894297123,
+        "std": 0.0018051536675224283,
+        "p95": 0.023398851900128644
+      },
+      "renderer_structure": {
+        "mean": 1.5235228485893457,
+        "median": 1.5141020739683881,
+        "min": 1.4981380420504138,
+        "max": 1.5735144179780036,
+        "std": 0.02325167154866253,
+        "p95": 1.5634790521289688
+      },
+      "total": {
+        "mean": 1.5439653928158805,
+        "median": 1.5334871095255949,
+        "min": 1.5187256031204015,
+        "max": 1.5928745160344988,
+        "std": 0.023608550559819627,
+        "p95": 1.5830781586875673
+      }
+    },
+    "deterministic": true,
+    "COLFISPOOF_inference_included": false
+  },
+  "regression": {
+    "v4_seven_mask_RGB_byte_identical": true,
+    "scanner_fixture_RGB_byte_identical": true,
+    "checkpoint": "303/303",
+    "captures": "55/55",
+    "unrelated_data_unchanged": true
+  },
+  "limitations": [
+    "No calibrated confidence/probability",
+    "ACF and FFT share pixels/profile; not statistically independent biological evidence",
+    "Different low-level renderer path, no frozen-baseline output equivalence",
+    "CAP-016/CAP-054 lack approved external pitch",
+    "DET-05 feature gate not retested because external pitch dispersion rejects first",
+    "GT7 already-used development data, no generalization/independent validation",
+    "Pixel pitch, physical DPI unknown",
+    "Evidence hashes are integrity checks, not signatures"
+  ]
+}

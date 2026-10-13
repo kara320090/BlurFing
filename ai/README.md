@@ -87,3 +87,8 @@ See [PHOTO_COARSE_EXPERIMENTAL.md](docs/PHOTO_COARSE_EXPERIMENTAL.md) for
 source-bound private semantic caches, native-coordinate compositing, runtime
 preparation and the complete 10-run benchmark. Detector and production approval
 remain false; the rejected refinement model is not used.
+
+An additional opt-in [external observed pitch v1 experiment](docs/PHOTO_EXTERNAL_PITCH_V1.md)
+provides a versioned ACF/FFT evidence contract. It preserves frozen v4 and uses
+an unchanged lower-level renderer; its output is not equivalent to the frozen
+natural_auto_04/boundaryblend_02 baseline. Production approval remains false.
