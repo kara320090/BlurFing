@@ -1,0 +1,14 @@
+{
+  "schema_version": "independent-photo-v1",
+  "samples": [
+    {
+      "sample_id": "HOLDOUT-001",
+      "source": "/path/to/new_capture.jpg",
+      "source_sha256": "<actual SHA256>",
+      "capture_date": "YYYY-MM-DD",
+      "participant_alias": "NEW-PARTICIPANT-01",
+      "not_used_for_training_or_tuning": false,
+      "independence_confirmed_by_provider": false
+    }
+  ]
+}

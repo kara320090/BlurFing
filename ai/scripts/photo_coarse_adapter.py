@@ -49,7 +49,7 @@ def adapt(source,semantics):
         mask=labels==i;working_mask=cv2.resize(orient(mask.astype(np.uint8),orientation),(working_shape[1],working_shape[0]),interpolation=cv2.INTER_NEAREST)>0
         try:seed=seed_square(working_mask);pitch,measurement,_=observed_seed_pitch(upright,seed)
         except ValueError as e:rejected.append(dict(component=i,reject_reason=str(e)));continue
-        if pitch is None:rejected.append(dict(component=i,reject_reason='pitch_unobserved'));continue
+        if pitch is None:rejected.append(dict(component=i,reject_reason='pitch_unobserved',pitch_measurement=measurement));continue
         if not 2<=pitch<=50:rejected.append(dict(component=i,reject_reason='renderer_pitch_out_of_range',observed_pitch=pitch));continue
         y,x=np.where(mask);a,b,c,d=int(x.min()),int(y.min()),int(x.max())+1,int(y.max())+1;gray=cv2.cvtColor(rgb,cv2.COLOR_RGB2GRAY);_,quality=ridge_evidence(gray[b:d,a:c],mask[b:d,a:c]);quality|=dict(pitch_native=float(pitch/scale),pitch_source='frozen_observed_seed_pitch',confidence_semantics='ridge credible-window fraction; geometric candidate not production-approved')
         roi=canonical_roi(gray,mask,sha,'PHOTO',quality,'COLFISPOOF_finger_body_distal_experimental');roi.validate(rgb,sha)

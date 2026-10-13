@@ -62,3 +62,19 @@ Use scripts/nbis_matcher.py run_nbis_job(images, pairs, run_name=...) with the e
 
 ## 8. SourceAFIS evaluation and completion
 Use scripts/sourceafis_matcher.py run_matcher_job on exactly the same pairs. Record raw scores separately: matcher scales differ. On real Windows, verify SourceAFIS extraction/match, native fixture, Unicode/space paths, failure return, mask-exterior preservation, and NBIS insufficient_features/timeout/process errors. Only then update Windows validation status with its actual scope. Independent final validation still requires new person/different-date non-development captures.
+
+## Unified GUI and actual verification
+
+Launch `python ai/app/windows/unified_gui.py` from the configured core environment. Configure BLURFING_COLFISPOOF_PYTHON, BLURFING_COLFISPOOF_SOURCE and BLURFING_COLFISPOOF_MODEL to Windows-local absolute paths and keep TensorFlow dependencies isolated. Runtime check is prerequisite inventory only. Run PHOTO and scanner on actual Windows, save JSON/returned images and compare with Linux before claiming equivalence. Existing frozen core and numeric settings must remain unchanged. See [FAIL_CLOSED_SYSTEM.md](FAIL_CLOSED_SYSTEM.md).
+
+Actual single-case parity probe (reference files and input stay private):
+
+```powershell
+python ai/platform/windows/validate_unified_case.py --input /path/to/input.jpg --reference-json /path/to/linux/result.json --reference-image /path/to/linux/returned.png --output /path/to/fresh/windows-case
+```
+
+The probe verifies source identity, routed outcome/counts, region pixel-mask
+signatures and returned pixels. It reports only CASE_EQUIVALENCE_PASS; one case
+cannot set WINDOWS_FULL_EQUIVALENCE_VERIFIED=true. Use PHOTO success/partial/
+rejected, UNKNOWN and scanner cases, including Unicode/space paths, and actual GUI
+runtime operation before full equivalence claims. On Linux it reports NOT_RUN.

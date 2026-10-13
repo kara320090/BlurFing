@@ -1,0 +1,335 @@
+{
+  "status": {
+    "SCANNER_PIPELINE_COMPLETE": true,
+    "PHOTO_FAIL_CLOSED_PIPELINE_COMPLETE": true,
+    "PHOTO_QUALITY_GATE_IMPLEMENTED": true,
+    "PHOTO_PARTIAL_SUCCESS_API_READY": true,
+    "UNIFIED_CLI_COMPLETE": true,
+    "PHOTO_DETECTOR_APPROVED": false,
+    "PHOTO_PROTECTION_PRODUCTION_READY": false,
+    "PHOTO_EXTERIOR_PRESERVED": true,
+    "PHOTO_DETERMINISTIC_OUTPUT_OK": true,
+    "INDEPENDENT_HOLDOUT_AVAILABLE": false,
+    "FINAL_INDEPENDENT_VALIDATION_COMPLETE": false,
+    "WINDOWS_GUI_INTEGRATED": false,
+    "WINDOWS_GUI_BRIDGE_IMPLEMENTED": true,
+    "WINDOWS_FULL_EQUIVALENCE_VERIFIED": false,
+    "DOCUMENTATION_COMPLETE": true,
+    "LINUX_REGRESSION_OK": true,
+    "SCANNER_REGRESSION_OK": true,
+    "CHECKPOINT_INTEGRITY": "303/303",
+    "CAPTURE_INTEGRITY": "55/55",
+    "TESTS_PASS": true,
+    "BENCHMARK_COMPLETE": true,
+    "FUNCTIONAL_IMPLEMENTATION_COMPLETE": false,
+    "PROJECT_COMPLETE": false,
+    "STOP_REASON": [
+      "STOP_A",
+      "STOP_L"
+    ]
+  },
+  "PHOTO_samples": [
+    {
+      "sample_id": "DET-01",
+      "status": "rejected",
+      "detected": 2,
+      "transformed": 0,
+      "rejected": 2,
+      "exterior": true,
+      "deterministic": true,
+      "regions": [
+        {
+          "region_id": 1,
+          "quality_status": "REJECT_WIDTH_UNAVAILABLE",
+          "reason": "original_width_unavailable"
+        },
+        {
+          "region_id": 2,
+          "quality_status": "REJECT_WIDTH_UNAVAILABLE",
+          "reason": "original_width_unavailable"
+        }
+      ]
+    },
+    {
+      "sample_id": "DET-03",
+      "status": "success",
+      "detected": 1,
+      "transformed": 1,
+      "rejected": 0,
+      "exterior": true,
+      "deterministic": true,
+      "regions": [
+        {
+          "region_id": 1,
+          "quality_status": "TRANSFORMED",
+          "reason": null
+        }
+      ]
+    },
+    {
+      "sample_id": "DET-04",
+      "status": "partial_success",
+      "detected": 3,
+      "transformed": 1,
+      "rejected": 2,
+      "exterior": true,
+      "deterministic": true,
+      "regions": [
+        {
+          "region_id": 1,
+          "quality_status": "REJECT_PITCH_UNOBSERVED",
+          "reason": "pitch_unobserved"
+        },
+        {
+          "region_id": 2,
+          "quality_status": "TRANSFORMED",
+          "reason": null
+        },
+        {
+          "region_id": 3,
+          "quality_status": "REJECT_INSUFFICIENT_FEATURES",
+          "reason": "insufficient_features"
+        }
+      ]
+    },
+    {
+      "sample_id": "DET-05",
+      "status": "rejected",
+      "detected": 1,
+      "transformed": 0,
+      "rejected": 1,
+      "exterior": true,
+      "deterministic": true,
+      "regions": [
+        {
+          "region_id": 1,
+          "quality_status": "REJECT_INSUFFICIENT_FEATURES",
+          "reason": "insufficient_features"
+        }
+      ]
+    },
+    {
+      "sample_id": "CAP-016",
+      "status": "rejected",
+      "detected": 1,
+      "transformed": 0,
+      "rejected": 1,
+      "exterior": true,
+      "deterministic": true,
+      "regions": [
+        {
+          "region_id": 1,
+          "quality_status": "REJECT_PITCH_UNOBSERVED",
+          "reason": "pitch_unobserved"
+        }
+      ]
+    },
+    {
+      "sample_id": "CAP-042",
+      "status": "success",
+      "detected": 1,
+      "transformed": 1,
+      "rejected": 0,
+      "exterior": true,
+      "deterministic": true,
+      "regions": [
+        {
+          "region_id": 1,
+          "quality_status": "TRANSFORMED",
+          "reason": null
+        }
+      ]
+    },
+    {
+      "sample_id": "CAP-054",
+      "status": "rejected",
+      "detected": 1,
+      "transformed": 0,
+      "rejected": 1,
+      "exterior": true,
+      "deterministic": true,
+      "regions": [
+        {
+          "region_id": 1,
+          "quality_status": "REJECT_PITCH_UNOBSERVED",
+          "reason": "pitch_unobserved"
+        }
+      ]
+    }
+  ],
+  "rejected_pad_distribution": {
+    "REJECT_WIDTH_UNAVAILABLE": 2,
+    "REJECT_PITCH_UNOBSERVED": 3,
+    "REJECT_INSUFFICIENT_FEATURES": 2
+  },
+  "detected_pads": 10,
+  "transformed_pads": 3,
+  "coarse_detector_unchanged": {
+    "GT7_macro_IoU": 0.7529,
+    "coverage": "10/10"
+  },
+  "benchmark": {
+    "device": "CPU",
+    "warmup": 1,
+    "measurements": 10,
+    "photo": {
+      "routing": {
+        "mean": 0.013234827818814665,
+        "median": 0.014483738515991718,
+        "min": 0.010838372982107103,
+        "max": 0.015103872050531209,
+        "std": 0.0017882818871154376,
+        "p95": 0.014938408409943803
+      },
+      "PHOTO_renderer_composite": {
+        "mean": 0.3952020314754918,
+        "median": 0.3903668254497461,
+        "min": 0.38769367791246623,
+        "max": 0.42215711693279445,
+        "std": 0.010580220731429162,
+        "p95": 0.41560155025799755
+      },
+      "PHOTO_quality_gate_inclusive": {
+        "mean": 12.914285215607379,
+        "median": 12.919834041560534,
+        "min": 12.719936421024613,
+        "max": 13.22626006102655,
+        "std": 0.13828825920922486,
+        "p95": 13.114397374424152
+      },
+      "pitch_observer": {
+        "mean": 0.7725530121009797,
+        "median": 0.7616461050347425,
+        "min": 0.7504935639444739,
+        "max": 0.882935750996694,
+        "std": 0.037080176984710556,
+        "p95": 0.8314009594556409
+      },
+      "structure_validation": {
+        "mean": 1.4826784020289778,
+        "median": 1.4832211760804057,
+        "min": 1.408108273986727,
+        "max": 1.610423060017638,
+        "std": 0.05869805796990673,
+        "p95": 1.5731940064870287
+      },
+      "coarse_estimator": {
+        "mean": 0.2877387236920185,
+        "median": 0.2871737274690531,
+        "min": 0.2824961459264159,
+        "max": 0.29143756499979645,
+        "std": 0.0023505480285869185,
+        "p95": 0.2912358682777267
+      },
+      "total": {
+        "mean": 14.354867586586625,
+        "median": 14.349883572489489,
+        "min": 14.147416446940042,
+        "max": 14.66238599200733,
+        "std": 0.14015596492058996,
+        "p95": 14.559457619319437
+      },
+      "COLFISPOOF_subprocess_including_startup": {
+        "mean": 8.630848475196398,
+        "median": 8.687695355969481,
+        "min": 8.463816531933844,
+        "max": 8.767112486995757,
+        "std": 0.10477551134408646,
+        "p95": 8.7445553090889
+      }
+    },
+    "scanner": {
+      "scanner_transform": {
+        "mean": 0.1543477790080942,
+        "median": 0.15417357301339507,
+        "min": 0.15207341802306473,
+        "max": 0.15711122599896044,
+        "std": 0.0016016000407794275,
+        "p95": 0.15676460046088322
+      },
+      "ridge_validation": {
+        "mean": 0.1827010324690491,
+        "median": 0.18224638688843697,
+        "min": 0.17882087000180036,
+        "max": 0.18660392297897488,
+        "std": 0.0019110811722965915,
+        "p95": 0.18557456151465884
+      },
+      "routing": {
+        "mean": 0.09634948909515514,
+        "median": 0.09611082449555397,
+        "min": 0.0933368249097839,
+        "max": 0.09969930199440569,
+        "std": 0.00190927759084109,
+        "p95": 0.09907559478306212
+      },
+      "scanner_segmentation_and_ridge": {
+        "mean": 0.092156678205356,
+        "median": 0.09200874745147303,
+        "min": 0.09069951600395143,
+        "max": 0.09362010506447405,
+        "std": 0.0008177929717910671,
+        "p95": 0.09341046266490594
+      },
+      "scanner_structure_validation": {
+        "mean": 1.7380942226736806,
+        "median": 1.7383988839574158,
+        "min": 1.6844836989184842,
+        "max": 1.7978326989104971,
+        "std": 0.034307382190634846,
+        "p95": 1.7951844926050398
+      },
+      "total": {
+        "mean": 2.1146900970023124,
+        "median": 2.110686001018621,
+        "min": 2.066847395966761,
+        "max": 2.177963108988479,
+        "std": 0.03286857129664106,
+        "p95": 2.1736778494145255
+      },
+      "COLFISPOOF_subprocess_including_startup": {
+        "mean": 0.0,
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "std": 0.0,
+        "p95": 0.0
+      }
+    },
+    "nested_profile_timings_not_additive": true,
+    "model_process_startup_included": true,
+    "optional_identity_matcher_observation_times_excluded": true,
+    "structure_guard_feature_extraction_included": true
+  },
+  "tests": {
+    "total": 144,
+    "passed": 141,
+    "optional_Torch_skips": 3,
+    "CLI_error_JSON": true,
+    "UNKNOWN_original_preserved": true,
+    "PHOTO_baseline_pixels_unchanged": true,
+    "scanner_baseline_pixels_unchanged": true
+  },
+  "windows": {
+    "thin_GUI_source_added": true,
+    "existing_GUI_source_not_available_in_working_clone": true,
+    "syntax_only": true,
+    "actual_execution": false
+  },
+  "independent_validation": {
+    "evaluator_and_manifest_ready": true,
+    "old_55_hashes_excluded": true,
+    "data_available": false,
+    "provider_provenance_and_visual_review_required": true
+  },
+  "limitations": [
+    "PHOTO detector/production not approved",
+    "Fail-closed mechanics are not detector accuracy or absence of catastrophic false positives",
+    "Refinement rejected, never default",
+    "External pitch v1 separate experiment, not silently selected",
+    "No independent capture verification",
+    "No actual Windows GUI/equivalence validation",
+    "Score decreases/extraction failures are not privacy proof",
+    "Synthetic ridge regularity and texture seam remain"
+  ]
+}

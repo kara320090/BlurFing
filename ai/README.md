@@ -29,7 +29,7 @@ WINDOWS_RUNTIME_VALIDATED=false
 FINAL_INDEPENDENT_VALIDATION_COMPLETE=false
 PROJECT_COMPLETE=false
 ```
-Linux status는 private 작업본의 기존 검증 근거입니다. 새 공개 구조의 Linux 회귀 검사는 syntax/import/config/dispatch로 제한됩니다. Windows는 Python 정적 검사를 통과한 구현이며 실제 build/runtime/full pipeline 검증이 아닙니다.
+Linux는 실제 개발 사진의 fail-closed 처리·반환 RGB·반복 실행·scanner 회귀까지 확인했습니다. 개발 검증을 독립 검증으로 간주하지 않습니다. Windows는 Python 정적 검사를 통과한 구현이며 실제 build/runtime/full pipeline 검증이 아닙니다.
 
 ## Repository layout
 - scripts/: 공통 renderer, compositor, ROI/geometry 및 image helpers; OS-dispatch matcher facades; 단일 Java source.
@@ -67,7 +67,7 @@ See [SAM_PAD_PIPELINE.md](docs/SAM_PAD_PIPELINE.md) for native-coordinate privat
 
 ## Unified photo/scanner front-end (experimental)
 
-Use `scripts/protect_fingerprint.py --input /path/to/image --output /path/to/new-result`. Content routes to PHOTO, FINGERPRINT_IMAGE or UNKNOWN; failures return unchanged pixels. Scanner detection is development-validated on 21 fixtures with structure-guarded scanner transformation. The new landmark-prompted photo adapter is implemented but model/runtime-blocked and unapproved; legacy algorithms are preserved. [Architecture and setup](docs/UNIFIED_FINGERPRINT_FRONTEND.md), [measured validation](results/unified_frontend_validation.md). No general protection or final-independent-validation claim.
+Use `scripts/protect_fingerprint.py --input /path/to/image --output /path/to/new-result`. Content routes to PHOTO, FINGERPRINT_IMAGE or UNKNOWN; failures return unchanged pixels. Scanner detection is development-validated on 21 fixtures with structure-guarded scanner transformation. The configured COLFISPOOF body/distal PHOTO branch now has a fail-closed quality gate and partial-success response; it remains detector/production-unapproved. MediaPipe/SAM and legacy are optional, not primary. [Architecture and setup](docs/UNIFIED_FINGERPRINT_FRONTEND.md), [measured validation](results/unified_frontend_validation.md). No general protection or final-independent-validation claim.
 
 ## Raw COLFISPOOF pretrained PHOTO evaluation
 
@@ -75,7 +75,7 @@ Use `scripts/protect_fingerprint.py --input /path/to/image --output /path/to/new
 
 [Class 1+2 finger-body distal 실험](docs/FINGER_BODY_DISTAL.md)은 class 2가 없는 초근접 입력에서도 후보를 생성합니다. GT7에서 macro IoU 0.7529, coverage 10/10을 기록했지만, 목표 IoU 0.85와 경계 정밀도를 충족하지 못해 자동 보호 frontend로 승인하지 않았습니다. Ridge 검사는 별도 진단이며 기존 renderer·scanner·legacy 경로는 유지합니다.
 
-[PHOTO pad refinement 학습 준비](docs/PAD_REFINEMENT_TRAINING.md): 지정된 10개 annotation을 검증하고 coarse-guided crop 27개와 source 단위 5-fold 학습 코드를 준비했습니다. 공식 pretrained encoder 다운로드가 DNS 오류로 막혀 실제 학습·GT7 최종 평가는 아직 실행하지 않았습니다. GT7은 one-shot final test로 유지합니다.
+[PHOTO pad refinement 학습 준비](docs/PAD_REFINEMENT_TRAINING.md): 지정된 10개 annotation을 검증하고 coarse-guided crop 27개와 source 단위 5-fold 학습 코드를 준비했습니다. 학습과 최종 평가는 완료됐으나 GT7 IoU 0.4149, coverage 3/10으로 회귀하여 모델을 거절했습니다. 기본 inference에는 사용하지 않습니다.
 
 [Refinement 최종 학습·GT7 결과](results/pad_refinement_final_summary.md): pretrained encoder 확보 후 고정 5-fold와 최종 13 epoch 학습을 완료했습니다. GT7 macro IoU 0.4149, coverage 3/10으로 coarse baseline보다 나빠져 모델을 채택하지 않았습니다. 보호 변환에는 연결하지 않았으며 GT7을 보고 설정을 바꾸거나 재학습하지 않았습니다.
 
@@ -92,3 +92,9 @@ An additional opt-in [external observed pitch v1 experiment](docs/PHOTO_EXTERNAL
 provides a versioned ACF/FFT evidence contract. It preserves frozen v4 and uses
 an unchanged lower-level renderer; its output is not equivalent to the frozen
 natural_auto_04/boundaryblend_02 baseline. Production approval remains false.
+
+## Unified fail-closed development system
+
+[현재 구조·quality gate·독립 평가 준비·GUI·완료 제한](docs/FAIL_CLOSED_SYSTEM.md)을 참고하세요.
+`protect_image()`와 공통 CLI는 자동 routing 후 success/partial_success/rejected를 반환합니다.
+독립 촬영본 검증과 실제 Windows equivalence는 미완료이며 PROJECT_COMPLETE=false입니다.

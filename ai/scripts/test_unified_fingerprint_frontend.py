@@ -45,7 +45,7 @@ class FrontendTests(unittest.TestCase):
             p=Path(td)/'input.png';Image.fromarray(synthetic_ridges()).save(p);out,d=protect_fingerprint(p,Path(td)/'out',experimental_scanner=True);self.assertEqual(d['fingerprints_transformed'],0);self.assertEqual(d['transform']['reason'],'scanner_structure_guard_required')
     def test_API_source_and_EXIF_preserved_on_photo(self):
         with tempfile.TemporaryDirectory() as td:
-            p=Path(td)/'input.jpg';exif=Image.Exif();exif[274]=6;Image.new('RGB',(80,60),(180,100,80)).save(p,exif=exif);before=p.read_bytes();out,d=protect_fingerprint(p,Path(td)/'out');self.assertEqual(d['status'],'blocked');self.assertEqual(p.read_bytes(),before)
+            p=Path(td)/'input.jpg';exif=Image.Exif();exif[274]=6;Image.new('RGB',(80,60),(180,100,80)).save(p,exif=exif);before=p.read_bytes();out,d=protect_fingerprint(p,Path(td)/'out');self.assertEqual(d['status'],'rejected');self.assertEqual(p.read_bytes(),before)
             with Image.open(d['output_path']) as im:self.assertEqual(im.getexif()[274],6);self.assertEqual(im.size,(80,60))
     def test_API_unknown_unchanged(self):
         with tempfile.TemporaryDirectory() as td:
@@ -88,8 +88,8 @@ class FrontendTests(unittest.TestCase):
     def test_photo_runtime_failure_returns_original(self):
         with tempfile.TemporaryDirectory() as td:
             p=Path(td)/'input.png';Image.new('RGB',(80,60),(180,100,80)).save(p)
-            with patch('protect_fingerprint.detect_photo',side_effect=RuntimeError('synthetic failure')):out,d=protect_fingerprint(p,Path(td)/'out')
-            self.assertEqual(d['status'],'blocked');self.assertEqual(d['fingerprints_transformed'],0);self.assertTrue((out==np.array([180,100,80])).all())
+            with patch('photo_quality_gate.evaluate',side_effect=RuntimeError('synthetic failure')):out,d=protect_fingerprint(p,Path(td)/'out')
+            self.assertEqual(d['status'],'rejected');self.assertEqual(d['fingerprints_transformed'],0);self.assertTrue((out==np.array([180,100,80])).all())
 
     def test_full_frame_ridges_can_form_full_scanner_ROI(self):
         yy,xx=np.indices((192,192));gray=np.rint(128+70*np.sin(xx*2*np.pi/8)).astype(np.uint8);rgb=np.repeat(gray[:,:,None],3,axis=2)
