@@ -54,3 +54,5 @@ Renderer, compositing and frozen structure checking are timed together. Routing 
 The unmodified coarse GT7 baseline remains macro IoU 0.7529 / coverage 10/10. No detector improvement or independent validation is claimed. Native-resolution matcher sampling and visual assessment of resampling boundaries remain future experimental work; no default pipeline promotion.
 
 See [usage and contract](../docs/PHOTO_COARSE_EXPERIMENTAL.md). Private photos, masks, cache, detailed audits, weights and runtime files are excluded.
+
+All seven samples additionally repeated with source-bound semantic caches: native mask/RGB hashes identical and exterior preserved. Real CLI smoke returned valid JSON without child-process progress contamination and pixel-identical output.

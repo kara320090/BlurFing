@@ -305,5 +305,10 @@
     "No protection/generalization/privacy claim from zero or insufficient-feature scores",
     "Not independent holdout; Windows full equivalence unverified",
     "Renderer/compositor/structure timing is combined, not separately instrumented"
-  ]
+  ],
+  "additional_regression": {
+    "all_seven_cached_semantics_repeat_mask_and_returned_RGB_identical": true,
+    "CLI_stdout_valid_JSON": true,
+    "CLI_returned_pixels_identical": true
+  }
 }

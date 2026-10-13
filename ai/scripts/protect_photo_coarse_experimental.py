@@ -31,4 +31,6 @@ def run(source,semantics,output,strength=.5):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--input',type=Path,required=True);p.add_argument('--semantics',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--strength',type=float,choices=[0,.5],default=.5);a=p.parse_args()
-    print(json.dumps(run(a.input,a.semantics,a.output,a.strength),default=lambda x:x.item() if isinstance(x,np.generic) else str(x)))
+    from protect_fingerprint import cli_progress_to_stderr
+    with cli_progress_to_stderr():report=run(a.input,a.semantics,a.output,a.strength)
+    print(json.dumps(report,default=lambda x:x.item() if isinstance(x,np.generic) else str(x)))
