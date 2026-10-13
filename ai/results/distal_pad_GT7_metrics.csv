@@ -1,0 +1,8 @@
+sample_id,evaluation_class,candidate_count,predicted_pad_count,iou,dice,precision,recall,outside_GT_ratio,matched_components,GT_components,false_positive_components,missed_components,boundary_sources,confidence
+DET-01,valid_positive,2,2,0.9318176601932516,0.9647056028052214,0.9678678341183322,0.9615639675729811,0.032132165881667805,2,2,0,0,observed_crease_axis_width;observed_crease_axis_width,0.75;0.75
+DET-03,valid_positive,1,0,0.0,0.0,,0.0,,0,1,0,1,unobserved,0.5
+DET-04,valid_positive,4,3,0.9251067241885573,0.9610965590268713,0.9579093441022213,0.9643050541516246,0.042090655897778724,3,3,0,0,observed_crease_axis_width;observed_crease_axis_width;observed_crease_axis_width;rejected,0.75;0.75;0.75;0.0
+DET-05,valid_positive,1,1,0.9173164835867434,0.9568753947921109,0.9337829989836839,0.9811388990808797,0.06621700101631613,1,1,0,0,observed_crease_axis_width,0.75
+CAP-016,valid_positive,2,1,0.0,0.0,0.0,0.0,1.0,0,1,1,1,multicue_distal_transition;unobserved,0.75;0.5
+CAP-042,valid_positive,5,2,0.0,0.0,0.0,0.0,1.0,0,1,2,1,rejected;multicue_distal_transition;unobserved;unobserved;observed_crease_axis_width,0.0;0.75;0.0;0.25;0.75
+CAP-054,valid_positive,4,2,0.6645427691134899,0.7984688425487741,0.6751101961265175,0.9769876626226967,0.3248898038734826,1,1,1,0,observed_crease_axis_width;multicue_distal_transition;unobserved;unobserved,0.75;0.75;0.25;0.25

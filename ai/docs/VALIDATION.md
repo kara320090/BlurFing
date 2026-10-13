@@ -33,3 +33,7 @@ Macro pad IoU 0.9051, coverage 7/7; DET-03 outside-GT ratio 14.16% versus 38.67%
 ### Proximal evidence follow-up
 
 IoU and coverage are unchanged (macro 0.9051, 7/7). DET-03 lacks agreeing observed crease/appearance evidence; `proximal_boundary_unobserved` blocks approval. 56 tests pass, no downstream execution. See [proximal evidence result](../results/sam_pad_proximal_summary.md).
+
+### Crease-optional estimator GT7 rejection
+
+Unmodified estimator, seven human nonempty positive masks: macro IoU 0.4913, coverage 7/10, false pad regions in extra samples. Approval false. No ambiguous/non-target annotation exists in this set; those branches are tested only synthetically. No downstream transform/matcher. [Detailed GT7 result](../results/distal_pad_GT7_summary.md).
