@@ -78,3 +78,12 @@ Use `scripts/protect_fingerprint.py --input /path/to/image --output /path/to/new
 [PHOTO pad refinement 학습 준비](docs/PAD_REFINEMENT_TRAINING.md): 지정된 10개 annotation을 검증하고 coarse-guided crop 27개와 source 단위 5-fold 학습 코드를 준비했습니다. 공식 pretrained encoder 다운로드가 DNS 오류로 막혀 실제 학습·GT7 최종 평가는 아직 실행하지 않았습니다. GT7은 one-shot final test로 유지합니다.
 
 [Refinement 최종 학습·GT7 결과](results/pad_refinement_final_summary.md): pretrained encoder 확보 후 고정 5-fold와 최종 13 epoch 학습을 완료했습니다. GT7 macro IoU 0.4149, coverage 3/10으로 coarse baseline보다 나빠져 모델을 채택하지 않았습니다. 보호 변환에는 연결하지 않았으며 GT7을 보고 설정을 바꾸거나 재학습하지 않았습니다.
+
+## Experimental coarse PHOTO integration
+
+The unapproved COLFISPOOF body/distal path can be exercised explicitly with
+`protect_photo_coarse_experimental.py`; it does not replace the default API.
+See [PHOTO_COARSE_EXPERIMENTAL.md](docs/PHOTO_COARSE_EXPERIMENTAL.md) for
+source-bound private semantic caches, native-coordinate compositing, runtime
+preparation and the complete 10-run benchmark. Detector and production approval
+remain false; the rejected refinement model is not used.
