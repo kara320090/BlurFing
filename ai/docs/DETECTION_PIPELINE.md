@@ -64,3 +64,6 @@ FINAL_INDEPENDENT_VALIDATION_COMPLETE=false; PROJECT_COMPLETE=false. General fin
 
 ## Human mask evaluation follow-up
 Four human pad references are now available. [Quantitative evaluation](../results/linux_detection_gt_evaluation.md) still rejects promotion: all approved artifacts are empty, despite a close-up raw proposal with high GT overlap. The remaining blocker is unusable masks and frozen square-scope mismatch, rather than missing positive annotations. Negative/control segmentation evidence remains necessary. The evaluator validates source/mask hashes, EXIF and encoded dimensions; it never authorizes a region.
+
+## Separation follow-up
+[Foreground and per-component evaluation](../results/linux_detection_separation_validation.md) records experimental chroma proposals, seed-connected scanline separation, curved-crease observation and native connectivity validation. All new masks remain unapproved. A square-tile geometry plan is explicitly not a rendering approval; internal seam continuity needs a separate contract. `benchmark_detector_only.py` measures localization without implying an applied-protection benchmark.

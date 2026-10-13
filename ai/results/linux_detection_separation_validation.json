@@ -1,0 +1,268 @@
+{
+  "status": {
+    "AUTOMATIC_FINGERTIP_DETECTION_IMPROVED": true,
+    "VISIBLE_PAD_BOUNDARY_IMPROVED": true,
+    "BACKGROUND_LEAKAGE_REGRESSION_OK": false,
+    "MULTI_FINGER_SEPARATION_OK": false,
+    "ROTATED_FINGER_HANDLING_OK": false,
+    "SMALL_FINGER_HANDLING_OK": false,
+    "DETECTOR_GT_EVALUATION_COMPLETE": true,
+    "DETECTOR_APPROVED_FOR_USE": false,
+    "LINUX_DETECTION_ARTIFACT_READY": true,
+    "ARTIFACT_HASH_VALIDATION_OK": true,
+    "LINUX_PROTECTION_TRANSFORM_OK": false,
+    "BOUNDARY_EXTERIOR_PRESERVED": false,
+    "NBIS_DEVELOPMENT_CHECK": "NOT_RUN_APPROVAL_GATE_FAILED",
+    "SOURCEAFIS_DEVELOPMENT_CHECK": "NOT_RUN_APPROVAL_GATE_FAILED",
+    "LINUX_DETECTION_BENCHMARK_COMPLETE": false,
+    "LINUX_REGRESSION_OK": true,
+    "WINDOWS_FULL_EQUIVALENCE_VERIFIED": false,
+    "FINAL_INDEPENDENT_VALIDATION_COMPLETE": false,
+    "PROJECT_COMPLETE": false
+  },
+  "flag_scope": "Improved flags refer only to unapproved development proposals. Regression covers contract/geometry/determinism and rejected passthrough; full protection and matcher checks were not rerun.",
+  "samples": [
+    {
+      "sample_id": "DET-01",
+      "before_raw": {
+        "iou": 0.0,
+        "precision": null,
+        "recall": 0.0,
+        "leakage_fraction": null,
+        "false_positive_rate": 0.0,
+        "mask_area_ratio": 0.0,
+        "predicted_area": 0,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 295556
+      },
+      "after_raw": {
+        "iou": 0.4476799455635276,
+        "precision": 0.9693551066396066,
+        "recall": 0.45410683592957,
+        "leakage_fraction": 0.03064489336039348,
+        "false_positive_rate": 0.00036251188010297627,
+        "mask_area_ratio": 0.4684628293792039,
+        "predicted_area": 138457,
+        "false_positive_pixels": 4243,
+        "false_negative_pixels": 161342
+      },
+      "approved_iou": 0.0,
+      "approved_regions": 0,
+      "gt_components": 2,
+      "predicted_components": 1,
+      "matched_nonzero_overlap": 1,
+      "per_component": [
+        {
+          "gt_component_id": 1,
+          "prediction_component_id": 1,
+          "iou": 0.9284567918315393,
+          "precision": 0.9693551066396066,
+          "recall": 0.9565328943148532
+        },
+        {
+          "gt_component_id": 2,
+          "prediction_component_id": null,
+          "iou": 0.0,
+          "precision": null,
+          "recall": 0.0
+        }
+      ],
+      "reasons": [
+        "boundary_review_required",
+        "boundary_quality_low"
+      ]
+    },
+    {
+      "sample_id": "DET-03",
+      "before_raw": {
+        "iou": 0.9667715199868646,
+        "precision": 0.9821307088688583,
+        "recall": 0.9840813532569329,
+        "leakage_fraction": 0.01786929113114168,
+        "false_positive_rate": 0.02210186606863888,
+        "mask_area_ratio": 1.0019861352164838,
+        "predicted_area": 6642625,
+        "false_positive_pixels": 118699,
+        "false_negative_pixels": 105532
+      },
+      "after_raw": {
+        "iou": 0.9667715199868646,
+        "precision": 0.9821307088688583,
+        "recall": 0.9840813532569329,
+        "leakage_fraction": 0.01786929113114168,
+        "false_positive_rate": 0.02210186606863888,
+        "mask_area_ratio": 1.0019861352164838,
+        "predicted_area": 6642625,
+        "false_positive_pixels": 118699,
+        "false_negative_pixels": 105532
+      },
+      "approved_iou": 0.0,
+      "approved_regions": 0,
+      "gt_components": 1,
+      "predicted_components": 1,
+      "matched_nonzero_overlap": 1,
+      "per_component": [
+        {
+          "gt_component_id": 1,
+          "prediction_component_id": 1,
+          "iou": 0.9667715199868646,
+          "precision": 0.9821307088688583,
+          "recall": 0.9840813532569329
+        }
+      ],
+      "reasons": [
+        "frozen_square_scope_incompatible"
+      ]
+    },
+    {
+      "sample_id": "DET-04",
+      "before_raw": {
+        "iou": 0.0,
+        "precision": null,
+        "recall": 0.0,
+        "leakage_fraction": null,
+        "false_positive_rate": 0.0,
+        "mask_area_ratio": 0.0,
+        "predicted_area": 0,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 1019360
+      },
+      "after_raw": {
+        "iou": 0.5555960313732078,
+        "precision": 0.9920291282959842,
+        "recall": 0.5580874274054308,
+        "leakage_fraction": 0.007970871704015777,
+        "false_positive_rate": 0.0004162781040085095,
+        "mask_area_ratio": 0.5625716135614504,
+        "predicted_area": 573463,
+        "false_positive_pixels": 4571,
+        "false_negative_pixels": 450468
+      },
+      "approved_iou": 0.0,
+      "approved_regions": 0,
+      "gt_components": 3,
+      "predicted_components": 2,
+      "matched_nonzero_overlap": 2,
+      "per_component": [
+        {
+          "gt_component_id": 1,
+          "prediction_component_id": null,
+          "iou": 0.0,
+          "precision": null,
+          "recall": 0.0
+        },
+        {
+          "gt_component_id": 2,
+          "prediction_component_id": 1,
+          "iou": 0.92238607738405,
+          "precision": 0.9908293064362904,
+          "recall": 0.9303284891303297
+        },
+        {
+          "gt_component_id": 3,
+          "prediction_component_id": 2,
+          "iou": 0.8873285858710706,
+          "precision": 0.9932702336438651,
+          "recall": 0.89269544700931
+        }
+      ],
+      "reasons": [
+        "boundary_review_required",
+        "boundary_review_required",
+        "neighbor_finger_connected",
+        "background_connected"
+      ]
+    },
+    {
+      "sample_id": "DET-05",
+      "before_raw": {
+        "iou": 0.0,
+        "precision": null,
+        "recall": 0.0,
+        "leakage_fraction": null,
+        "false_positive_rate": 0.0,
+        "mask_area_ratio": 0.0,
+        "predicted_area": 0,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 760401
+      },
+      "after_raw": {
+        "iou": 0.6273428743072478,
+        "precision": 0.9824204153693586,
+        "recall": 0.6344652361056864,
+        "leakage_fraction": 0.01757958463064138,
+        "false_positive_rate": 0.0007680879006448539,
+        "mask_area_ratio": 0.6458184563144972,
+        "predicted_area": 491081,
+        "false_positive_pixels": 8633,
+        "false_negative_pixels": 277953
+      },
+      "approved_iou": 0.0,
+      "approved_regions": 0,
+      "gt_components": 1,
+      "predicted_components": 1,
+      "matched_nonzero_overlap": 1,
+      "per_component": [
+        {
+          "gt_component_id": 1,
+          "prediction_component_id": 1,
+          "iou": 0.6273428743072478,
+          "precision": 0.9824204153693586,
+          "recall": 0.6344652361056864
+        }
+      ],
+      "reasons": [
+        "boundary_review_required"
+      ]
+    }
+  ],
+  "raw_macro_iou_before": 0.24169287999671615,
+  "raw_macro_iou_after": 0.6493475928077119,
+  "approved_regions_before": 0,
+  "approved_regions_after": 0,
+  "benchmark_detector_only": {
+    "detection": {
+      "mean": 0.4746444568969309,
+      "median": 0.47110547503689304,
+      "min": 0.4673474171431735,
+      "max": 0.4930063880747184,
+      "std": 0.00819943799524565,
+      "p95": 0.4895967946737073
+    },
+    "boundary": {
+      "mean": 1.6723504999070429,
+      "median": 1.6728612930164672,
+      "min": 1.6655236509395763,
+      "max": 1.6786311911419034,
+      "std": 0.004234401634736864,
+      "p95": 1.6782804314396345
+    },
+    "detector_total": {
+      "mean": 2.1472139875986613,
+      "median": 2.1446234614704736,
+      "min": 2.1361816650023684,
+      "max": 2.169901559012942,
+      "std": 0.0106089775297974,
+      "p95": 2.167375353508396
+    }
+  },
+  "warmup": 1,
+  "measured_runs": 10,
+  "full_protection_benchmark": false,
+  "deterministic": true,
+  "tests_passed": 28,
+  "syntax_files": 47,
+  "legacy_boundary_pixel_identical": true,
+  "DET03_foreground_byte_identical": true,
+  "geometry_tile_cover_without_missing_pixels": true,
+  "non_target_scope": "five provisional non-target development photos; no reviewed negative GT",
+  "non_target_pad_regions": 0,
+  "approval_blockers": [
+    "Two annotated fingers remain missed",
+    "Lower crease termination is insufficiently reliable in the single-finger proposal",
+    "Long pad cannot be connected as overlapping masks under frozen consumer contract; disjoint tiling requires unverified internal seam/phase continuity"
+  ],
+  "GT_used_by_detector": false,
+  "thresholds_relaxed": false,
+  "new_dependencies": false
+}

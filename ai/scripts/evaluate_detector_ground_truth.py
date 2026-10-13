@@ -40,6 +40,27 @@ def metrics(pred,gt):
         bbox_delta=[a-b for a,b in zip(pb,gb)] if pb else None)
 
 
+
+def component_matching(pred,gt):
+    """Evaluation-only one-to-one overlap matching; never selects render input."""
+    from scipy.ndimage import label
+    from scipy.optimize import linear_sum_assignment
+    pl,pn=label(pred);gl,gn=label(gt);scores=np.zeros((gn,pn),float)
+    for i in range(gn):
+        g=gl==i+1
+        for j in range(pn):
+            p=pl==j+1;intersection=int((p&g).sum())
+            scores[i,j]=intersection/int((p|g).sum())
+    match={}
+    if gn and pn:
+        gi,pi=linear_sum_assignment(-scores)
+        match={int(i):int(j) for i,j in zip(gi,pi) if scores[i,j]>0}
+    rows=[]
+    for i in range(gn):
+        j=match.get(i);p=pl==j+1 if j is not None else np.zeros_like(pred)
+        rows.append(dict(gt_component_id=i+1,prediction_component_id=j+1 if j is not None else None,metrics=metrics(p,gl==i+1)))
+    return dict(gt_component_count=gn,predicted_component_count=pn,matched_nonzero_overlap=len(match),components=rows,ground_truth_is_connected_regions_not_confirmed_finger_identity=True)
+
 def overlay(source,gt,pred,path):
     rgb=np.asarray(source.convert('RGB')).copy();tp=gt&pred;fp=pred&~gt;fn=gt&~pred
     for m,col in [(tp,[0,255,0]),(fp,[255,0,0]),(fn,[0,120,255])]:
@@ -98,7 +119,7 @@ def run(gt_root,input_root,output,samples):
         for i,r in enumerate(result['regions']):
             regions.append(dict(region_id=i,status=r['status'],reject_reason=r['reject_reason'],scope_upright=r['scope'],pitch_native=r['pitch_native'],metrics=metrics(encoded(r['mask'],orientation),gt)))
         reason=[r['reject_reason'] for r in result['regions'] if r['reject_reason']]+[r.get('reject_reason') for r in result['rejected']]
-        row=dict(sample_id=sid,status=data['status'],proposal_count=result['proposal_count'],approved_regions=len(data['regions']),gt_polygon_count=meta['polygon_count'],detection_seconds=elapsed,metrics=metrics(pred,gt),raw_union_metrics=metrics(encoded(raw_union,orientation),gt),raw_proposals=diagnostics,regions=regions,reject_reasons=reason or ['no_fingertip'],selection='All approved regions union; no GT-based finger selection. Raw proposals are separately reported and never consumed.',source_sha256=meta['source_sha256'],ground_truth_sha256=gt_hash)
+        row=dict(sample_id=sid,status=data['status'],proposal_count=result['proposal_count'],approved_regions=len(data['regions']),gt_polygon_count=meta['polygon_count'],detection_seconds=elapsed,metrics=metrics(pred,gt),raw_union_metrics=metrics(encoded(raw_union,orientation),gt),component_matching=component_matching(pred,gt),raw_component_matching=component_matching(encoded(raw_union,orientation),gt),raw_proposals=diagnostics,regions=regions,reject_reasons=reason or ['no_fingertip'],selection='All approved regions union; no GT-based finger selection. Raw proposals are separately reported and never consumed.',source_sha256=meta['source_sha256'],ground_truth_sha256=gt_hash)
         (folder/'metrics.private.json').write_text(json.dumps(row,indent=2))
         if artifact.digest(source)!=meta['source_sha256'] or artifact.digest(gt_root/sid/'ground_truth_mask.png')!=gt_hash:raise ValueError('input_changed')
         rows.append(row);print(sid,data['status'],row['metrics']['iou'],row['reject_reasons'],flush=True)
