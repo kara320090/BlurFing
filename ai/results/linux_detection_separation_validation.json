@@ -260,9 +260,15 @@
   "approval_blockers": [
     "Two annotated fingers remain missed",
     "Lower crease termination is insufficiently reliable in the single-finger proposal",
-    "Long pad cannot be connected as overlapping masks under frozen consumer contract; disjoint tiling requires unverified internal seam/phase continuity"
+    "Long pad cannot be connected as overlapping masks under frozen consumer contract; disjoint tiling requires unverified internal seam/phase continuity",
+    "Close-up observed seed pitch 52.2299 exceeds frozen 2..50 native-pixel range; no clamping or seed selection to bypass policy"
   ],
   "GT_used_by_detector": false,
   "thresholds_relaxed": false,
-  "new_dependencies": false
+  "new_dependencies": false,
+  "DET03_observed_seed_pitch_native": 52.22992649627122,
+  "frozen_pitch_range": [
+    2,
+    50
+  ]
 }

@@ -61,3 +61,6 @@ python ai/scripts/test_detection_artifact.py
 Private artifacts retain encoded masks, source/GT hashes, bboxes, scopes, component assignments and overlays. Public results contain anonymous numerical summaries only. No source image, GT mask, overlay, runtime or personal path is included.
 
 FINAL_INDEPENDENT_VALIDATION_COMPLETE=false; PROJECT_COMPLETE=false. General fingerprint protection has not been demonstrated.
+
+## Additional frozen pitch blocker
+A read-only observation of the close-up automatic seed gives pitch_native=52.22992649627122. The frozen renderer and artifact validation require 2..50. Thus square coverage alone does not make this input transformable. The value was not clamped, the pitch guard was not widened, and no seed search was performed to force a passing measurement. Accepting this observation requires a separately authorized and validated frozen rendering-contract change; NBIS/SourceAFIS calculations remain untouched.
