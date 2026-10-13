@@ -45,3 +45,9 @@ Validation measures full-source masks restored through crop/letterbox geometry a
 Do not run GT7 until all folds and final training complete with a hash-bound checkpoint. Freeze architecture, threshold, epoch count and transforms first. Apply that single model version to all seven test images, restore native masks, clip to finger body and report the unchanged metrics/matching rule. No GT7-based re-training or threshold/epoch changes are allowed. The current task did not consume this final test because no pretrained encoder/final checkpoint is available.
 
 A PHOTO protection adapter remains disabled until quantitative and private visual safety gates pass. Existing frozen PHOTO renderer and scanner are unchanged. Model weights, photos, human GT, crops and overlays must never be committed.
+
+## Resumed run outcome
+
+The encoder was subsequently acquired and verified. The unchanged protocol completed all five folds and final training for median 13 epochs. The one-shot GT7 model was rejected: macro IoU 0.4149, coverage 3/10. See [final report](../results/pad_refinement_final_summary.md). Earlier blocked status is retained as a historical preparation record.
+
+`prepare_pad_refinement_inference.py` creates GT-free inference crops from source-identity inputs and verified semantic masks. `infer_pad_refinement.py --one-shot-GT7` requires a completed, hash-bound final model and creates an exclusive test ledger before prediction; no threshold override is provided. `evaluate_pad_refinement_final.py` scores already frozen prediction files and creates private overlays. These are experiment/evaluation tools, not an approved PHOTO protection route.

@@ -1,0 +1,477 @@
+{
+  "PRETRAINED_ENCODER_LOADED": true,
+  "CROSS_VALIDATION_COMPLETE": true,
+  "CV_MEAN_IOU": 0.6116355312208132,
+  "CV_MEAN_DICE": 0.7463230739057198,
+  "FINAL_EPOCH": 13,
+  "FINAL_MODEL_TRAINED": true,
+  "FINAL_MODEL_SHA256": "383ee3c4965305d14996368790d1384ba58bb768e5dc9bd1b26f3fe3cc0ed298",
+  "GT7_REFINEMENT_EVALUATED": true,
+  "GT7_BASELINE_MACRO_IOU": 0.7528758881298758,
+  "GT7_REFINED_MACRO_IOU": 0.4149162896847261,
+  "GT7_COMPONENT_COVERAGE": {
+    "matched": 3,
+    "total": 10,
+    "ratio": 0.3
+  },
+  "DET03_REFINED_IOU": 0.18531665786252813,
+  "CAP016_REFINED_IOU": 0.4725495541890077,
+  "CAP016_REFINED_LEAKAGE": 0.21121205481299196,
+  "FINGER_BODY_EXTERIOR_PRESERVED": true,
+  "DETERMINISTIC_INFERENCE_OK": true,
+  "PHOTO_REFINEMENT_APPROVED": false,
+  "PHOTO_PROTECTION_TRANSFORM_OK": "NOT_RUN_GATE_FAILED",
+  "BOUNDARY_EXTERIOR_PRESERVED": "NOT_RUN_PHOTO",
+  "NBIS_DEVELOPMENT_CHECK": "NOT_RUN_GATE_FAILED",
+  "SOURCEAFIS_DEVELOPMENT_CHECK": "NOT_RUN_GATE_FAILED",
+  "BENCHMARK_COMPLETE": false,
+  "benchmark_scope": "detector-only warmup1 measured10 complete; protection end-to-end NOT_RUN",
+  "SCANNER_REGRESSION_OK": true,
+  "LINUX_REGRESSION_OK": true,
+  "WINDOWS_FULL_EQUIVALENCE_VERIFIED": false,
+  "FINAL_INDEPENDENT_VALIDATION_COMPLETE": false,
+  "PROJECT_COMPLETE": false,
+  "GT7_train_overlap": 0,
+  "GT7_one_shot_consumed": true,
+  "threshold": 0.5,
+  "encoder_sha256": "047dcff4addef86ea5bc2eff13c9614dc11f47ab1160d0a71a25e7db994f4e1f",
+  "folds": [
+    {
+      "fold": 1,
+      "best_epoch": 3,
+      "validation": {
+        "rows": [
+          {
+            "source_id": "TRN-006",
+            "iou": 0.47178287378991196,
+            "dice": 0.6411039049191384,
+            "precision": 0.6910194564283624,
+            "recall": 0.5979138077501144,
+            "leakage": 0.3089805435716376
+          },
+          {
+            "source_id": "TRN-014",
+            "iou": 0.5587577271420356,
+            "dice": 0.7169269700000288,
+            "precision": 0.8960928550328897,
+            "recall": 0.5974684152375462,
+            "leakage": 0.10390714496711025
+          }
+        ],
+        "mean": {
+          "iou": 0.5152703004659738,
+          "dice": 0.6790154374595836,
+          "precision": 0.7935561557306261,
+          "recall": 0.5976911114938304,
+          "leakage": 0.20644384426937393
+        }
+      },
+      "split": {
+        "train": [
+          "TRN-022",
+          "TRN-004",
+          "TRN-016",
+          "TRN-003",
+          "TRN-001",
+          "TRN-010",
+          "TRN-002",
+          "TRN-020"
+        ],
+        "validation": [
+          "TRN-006",
+          "TRN-014"
+        ]
+      }
+    },
+    {
+      "fold": 2,
+      "best_epoch": 13,
+      "validation": {
+        "rows": [
+          {
+            "source_id": "TRN-022",
+            "iou": 0.5384672804180144,
+            "dice": 0.7000048519351134,
+            "precision": 0.8934993084370678,
+            "recall": 0.5753978277342763,
+            "leakage": 0.10650069156293222
+          },
+          {
+            "source_id": "TRN-004",
+            "iou": 0.8684946087056579,
+            "dice": 0.9296196035666174,
+            "precision": 0.885268173488088,
+            "recall": 0.9786493787142085,
+            "leakage": 0.11473182651191204
+          }
+        ],
+        "mean": {
+          "iou": 0.7034809445618362,
+          "dice": 0.8148122277508654,
+          "precision": 0.8893837409625779,
+          "recall": 0.7770236032242424,
+          "leakage": 0.11061625903742213
+        }
+      },
+      "split": {
+        "train": [
+          "TRN-006",
+          "TRN-014",
+          "TRN-016",
+          "TRN-003",
+          "TRN-001",
+          "TRN-010",
+          "TRN-002",
+          "TRN-020"
+        ],
+        "validation": [
+          "TRN-022",
+          "TRN-004"
+        ]
+      }
+    },
+    {
+      "fold": 3,
+      "best_epoch": 3,
+      "validation": {
+        "rows": [
+          {
+            "source_id": "TRN-016",
+            "iou": 0.420370572769611,
+            "dice": 0.5919167586666082,
+            "precision": 0.5321827130220215,
+            "recall": 0.6667557520248861,
+            "leakage": 0.4678172869779786
+          },
+          {
+            "source_id": "TRN-003",
+            "iou": 0.8773384261469682,
+            "dice": 0.9346619809488579,
+            "precision": 0.9716293647131211,
+            "recall": 0.9004044759630805,
+            "leakage": 0.028370635286878942
+          }
+        ],
+        "mean": {
+          "iou": 0.6488544994582897,
+          "dice": 0.763289369807733,
+          "precision": 0.7519060388675713,
+          "recall": 0.7835801139939833,
+          "leakage": 0.24809396113242876
+        }
+      },
+      "split": {
+        "train": [
+          "TRN-006",
+          "TRN-014",
+          "TRN-022",
+          "TRN-004",
+          "TRN-001",
+          "TRN-010",
+          "TRN-002",
+          "TRN-020"
+        ],
+        "validation": [
+          "TRN-016",
+          "TRN-003"
+        ]
+      }
+    },
+    {
+      "fold": 4,
+      "best_epoch": 16,
+      "validation": {
+        "rows": [
+          {
+            "source_id": "TRN-001",
+            "iou": 0.6530546901319435,
+            "dice": 0.7901186742706231,
+            "precision": 0.7981061070052945,
+            "recall": 0.7822895335418932,
+            "leakage": 0.20189389299470553
+          },
+          {
+            "source_id": "TRN-010",
+            "iou": 0.42048385022021034,
+            "dice": 0.5920290472222193,
+            "precision": 0.4378933099433857,
+            "recall": 0.9136163543985386,
+            "leakage": 0.5621066900566143
+          }
+        ],
+        "mean": {
+          "iou": 0.5367692701760769,
+          "dice": 0.6910738607464212,
+          "precision": 0.61799970847434,
+          "recall": 0.8479529439702159,
+          "leakage": 0.3820002915256599
+        }
+      },
+      "split": {
+        "train": [
+          "TRN-006",
+          "TRN-014",
+          "TRN-022",
+          "TRN-004",
+          "TRN-016",
+          "TRN-003",
+          "TRN-002",
+          "TRN-020"
+        ],
+        "validation": [
+          "TRN-001",
+          "TRN-010"
+        ]
+      }
+    },
+    {
+      "fold": 5,
+      "best_epoch": 30,
+      "validation": {
+        "rows": [
+          {
+            "source_id": "TRN-002",
+            "iou": 0.5262102107397937,
+            "dice": 0.6895645266122625,
+            "precision": 0.7077922077922078,
+            "recall": 0.6722521051001155,
+            "leakage": 0.2922077922077922
+          },
+          {
+            "source_id": "TRN-020",
+            "iou": 0.7813950721439851,
+            "dice": 0.8772844209157296,
+            "precision": 0.9437435907484699,
+            "recall": 0.8195696763156343,
+            "leakage": 0.056256409251530054
+          }
+        ],
+        "mean": {
+          "iou": 0.6538026414418894,
+          "dice": 0.783424473763996,
+          "precision": 0.8257678992703388,
+          "recall": 0.7459108907078749,
+          "leakage": 0.1742321007296611
+        }
+      },
+      "split": {
+        "train": [
+          "TRN-006",
+          "TRN-014",
+          "TRN-022",
+          "TRN-004",
+          "TRN-016",
+          "TRN-003",
+          "TRN-001",
+          "TRN-010"
+        ],
+        "validation": [
+          "TRN-002",
+          "TRN-020"
+        ]
+      }
+    }
+  ],
+  "GT7": [
+    {
+      "sample_id": "DET-01",
+      "annotation_status": "valid_positive",
+      "raw_metrics": {
+        "iou": 0.6668144108053973,
+        "dice": 0.8001063663508831,
+        "precision": 1.0,
+        "recall": 0.6668144108053973,
+        "predicted_outside_GT_ratio": 0.0,
+        "predicted_pixels": 197081,
+        "GT_pixels": 295556,
+        "true_positive_pixels": 197081,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 98475,
+        "predicted_component_count": 2,
+        "GT_component_count": 2,
+        "matched_components": 2,
+        "component_coverage": 1.0,
+        "false_positive_components": 0,
+        "missed_components": 0
+      },
+      "body_exterior_pixels": 0
+    },
+    {
+      "sample_id": "DET-03",
+      "annotation_status": "valid_positive",
+      "raw_metrics": {
+        "iou": 0.18531665786252813,
+        "dice": 0.3126871737324744,
+        "precision": 1.0,
+        "recall": 0.18531665786252813,
+        "predicted_outside_GT_ratio": 0.0,
+        "predicted_pixels": 1228549,
+        "GT_pixels": 6629458,
+        "true_positive_pixels": 1228549,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 5400909,
+        "predicted_component_count": 1,
+        "GT_component_count": 1,
+        "matched_components": 0,
+        "component_coverage": 0.0,
+        "false_positive_components": 1,
+        "missed_components": 1
+      },
+      "body_exterior_pixels": 0
+    },
+    {
+      "sample_id": "DET-04",
+      "annotation_status": "valid_positive",
+      "raw_metrics": {
+        "iou": 0.3072221786218804,
+        "dice": 0.47003819801430363,
+        "precision": 1.0,
+        "recall": 0.3072221786218804,
+        "predicted_outside_GT_ratio": 0.0,
+        "predicted_pixels": 313170,
+        "GT_pixels": 1019360,
+        "true_positive_pixels": 313170,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 706190,
+        "predicted_component_count": 6,
+        "GT_component_count": 3,
+        "matched_components": 0,
+        "component_coverage": 0.0,
+        "false_positive_components": 6,
+        "missed_components": 3
+      },
+      "body_exterior_pixels": 0
+    },
+    {
+      "sample_id": "DET-05",
+      "annotation_status": "valid_positive",
+      "raw_metrics": {
+        "iou": 0.21783506334157898,
+        "dice": 0.35774148716636267,
+        "precision": 1.0,
+        "recall": 0.21783506334157898,
+        "predicted_outside_GT_ratio": 0.0,
+        "predicted_pixels": 165642,
+        "GT_pixels": 760401,
+        "true_positive_pixels": 165642,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 594759,
+        "predicted_component_count": 5,
+        "GT_component_count": 1,
+        "matched_components": 0,
+        "component_coverage": 0.0,
+        "false_positive_components": 5,
+        "missed_components": 1
+      },
+      "body_exterior_pixels": 0
+    },
+    {
+      "sample_id": "CAP-016",
+      "annotation_status": "valid_positive",
+      "raw_metrics": {
+        "iou": 0.4725495541890077,
+        "dice": 0.6418114118397323,
+        "precision": 0.788787945187008,
+        "recall": 0.5410048322582137,
+        "predicted_outside_GT_ratio": 0.21121205481299196,
+        "predicted_pixels": 59329,
+        "GT_pixels": 86502,
+        "true_positive_pixels": 46798,
+        "false_positive_pixels": 12531,
+        "false_negative_pixels": 39704,
+        "predicted_component_count": 1,
+        "GT_component_count": 1,
+        "matched_components": 0,
+        "component_coverage": 0.0,
+        "false_positive_components": 1,
+        "missed_components": 1
+      },
+      "body_exterior_pixels": 0
+    },
+    {
+      "sample_id": "CAP-042",
+      "annotation_status": "valid_positive",
+      "raw_metrics": {
+        "iou": 0.4491371324664631,
+        "dice": 0.6198683649794025,
+        "precision": 1.0,
+        "recall": 0.4491371324664631,
+        "predicted_outside_GT_ratio": 0.0,
+        "predicted_pixels": 117819,
+        "GT_pixels": 262323,
+        "true_positive_pixels": 117819,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 144504,
+        "predicted_component_count": 1,
+        "GT_component_count": 1,
+        "matched_components": 0,
+        "component_coverage": 0.0,
+        "false_positive_components": 1,
+        "missed_components": 1
+      },
+      "body_exterior_pixels": 0
+    },
+    {
+      "sample_id": "CAP-054",
+      "annotation_status": "valid_positive",
+      "raw_metrics": {
+        "iou": 0.6055390305062268,
+        "dice": 0.7543124383781568,
+        "precision": 0.9999460230558661,
+        "recall": 0.6055588243534785,
+        "predicted_outside_GT_ratio": 5.397694413386282e-05,
+        "predicted_pixels": 129685,
+        "GT_pixels": 214146,
+        "true_positive_pixels": 129678,
+        "false_positive_pixels": 7,
+        "false_negative_pixels": 84468,
+        "predicted_component_count": 1,
+        "GT_component_count": 1,
+        "matched_components": 1,
+        "component_coverage": 1.0,
+        "false_positive_components": 0,
+        "missed_components": 0
+      },
+      "body_exterior_pixels": 0
+    }
+  ],
+  "benchmark": {
+    "device": "CPU",
+    "warmup": 1,
+    "measured": 10,
+    "deterministic": true,
+    "stats_seconds": {
+      "COLFISPOOF": {
+        "mean": 2.1086029774975033,
+        "median": 2.0732346205040812,
+        "p95": 2.3704521142004524
+      },
+      "coarse_and_crop": {
+        "mean": 0.15763564561493695,
+        "median": 0.15620458347257227,
+        "p95": 0.16350753983133473
+      },
+      "refinement": {
+        "mean": 0.04392568279290572,
+        "median": 0.04420893301721662,
+        "p95": 0.04751985349575989
+      },
+      "detector_staged_total": {
+        "mean": 2.310164305905346,
+        "median": 2.2734366490039974,
+        "p95": 2.5690698498743587
+      }
+    },
+    "scope": "staged sum of isolated runtimes; excludes graph/model load and source decode; crop serialization included; protection NOT_RUN"
+  },
+  "false_positive_components": 14,
+  "missed_components": 7,
+  "approval_blockers": [
+    "macro IoU below 0.85",
+    "coverage below 90 percent",
+    "serious DET-01/04/05 regressions and fragmentary masks",
+    "CAP-016 lower leakage trades away much of true pad recall"
+  ],
+  "model_settings_changed_after_GT7": false,
+  "coarse_frontend_preserved": true
+}
