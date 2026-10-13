@@ -51,3 +51,12 @@ detection_result/
 # Human annotation and GT evaluation are private
 ground_truth/
 *.private.json
+
+# External model weights stay outside public source
+model_weights/
+*.h5
+*.hdf5
+*.keras
+*.onnx
+*.pt
+*.pth

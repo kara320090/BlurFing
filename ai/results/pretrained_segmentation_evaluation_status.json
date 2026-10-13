@@ -1,0 +1,289 @@
+{
+  "status": {
+    "PRETRAINED_MODEL_EVALUATION_COMPLETE": false,
+    "MOBIOFP_AVAILABLE": "BLOCKED_NETWORK",
+    "MOBIOFP_EVALUATED": false,
+    "TRANSRESUNET_PRETRAINED_AVAILABLE": "UNVERIFIED",
+    "TRANSRESUNET_EVALUATED": false,
+    "BEST_MODEL": null,
+    "MODEL_DETECTOR_IMPROVED": false,
+    "MODEL_DETECTOR_APPROVED_FOR_DEVELOPMENT": false,
+    "COMPONENT_RECALL_IMPROVED": false,
+    "BACKGROUND_LEAKAGE_OK": false,
+    "ARTIFACT_CONTRACT_OK": false,
+    "DETERMINISTIC_INFERENCE_OK": false,
+    "MODEL_BENCHMARK_COMPLETE": false,
+    "PROTECTION_RENDERER_BLOCKED": true,
+    "NBIS_DEVELOPMENT_CHECK": "NOT_RUN",
+    "SOURCEAFIS_DEVELOPMENT_CHECK": "NOT_RUN",
+    "LINUX_REGRESSION_OK": true,
+    "WINDOWS_FULL_EQUIVALENCE_VERIFIED": false,
+    "FINAL_INDEPENDENT_VALIDATION_COMPLETE": false,
+    "PROJECT_COMPLETE": false
+  },
+  "models": [
+    {
+      "model": "mobiofp",
+      "repository": "https://github.com/rotiroti/mobiofp",
+      "software_license": "MIT",
+      "license_source": "https://github.com/rotiroti/mobiofp/blob/main/LICENSE.md",
+      "weight_filename_advertised": "fingertip-seg-amd64.h5",
+      "weight_download_url": null,
+      "weight_download_verified": false,
+      "weight_sha256": null,
+      "weight_license_verified": false,
+      "architecture": "U-Net",
+      "input_shape": [
+        256,
+        256,
+        3
+      ],
+      "output_shape": [
+        256,
+        256,
+        1
+      ],
+      "training_rgb": true,
+      "predict_channel_conversion": false,
+      "input_resize": "cv2 INTER_AREA",
+      "input_scaling": "divide by 255",
+      "threshold": 0.5,
+      "upstream_output_order": "threshold native model mask before resizing; then upstream morphology",
+      "upstream_morphology": "dilate/median/erode/median/dilate/median",
+      "framework": "Keras / TensorFlow",
+      "framework_version": null,
+      "requirements_version_pinned": false,
+      "implementation_source": "https://raw.githubusercontent.com/rotiroti/mobiofp/main/mobiofp/segmentation.py",
+      "requirements_source": "https://github.com/rotiroti/mobiofp/blob/main/requirements.txt",
+      "upstream_commit_verified": null,
+      "local_cache_found": false,
+      "status": "BLOCKED_NETWORK",
+      "load_api": "Segment.model.load_weights; full-model H5 format not assumed"
+    },
+    {
+      "model": "TransResUNet",
+      "repository": "https://github.com/Kaplesh12/Fingerprint-Segmentation-",
+      "software_license": null,
+      "weight_filename": null,
+      "weight_sha256": null,
+      "pretrained_available": null,
+      "architecture": "Transformer-based residual UNet (README description)",
+      "framework": "Keras / TensorFlow (README description)",
+      "framework_version": null,
+      "input_shape": null,
+      "output_shape": null,
+      "preprocessing_verified": false,
+      "inference_code_verified": false,
+      "notebook_source": "https://github.com/Kaplesh12/Fingerprint-Segmentation-/blob/main/CFSeg%20TransResUNet.ipynb",
+      "notebook_listed_size": "52 MB",
+      "extensionless_file_source": "https://github.com/Kaplesh12/Fingerprint-Segmentation-/blob/main/Transresunet",
+      "extensionless_file_contents_unverified": true,
+      "status": "SOURCE_AND_CHECKPOINT_VERIFICATION_BLOCKED"
+    }
+  ],
+  "network": {
+    "github.com": {
+      "exit_code": 2,
+      "resolved": false
+    },
+    "raw.githubusercontent.com": {
+      "exit_code": 2,
+      "resolved": false
+    },
+    "objects.githubusercontent.com": {
+      "exit_code": 2,
+      "resolved": false
+    }
+  },
+  "GPU_usable": false,
+  "GPU_reason": "nvidia-smi cannot communicate with driver; hardware presence not inferred",
+  "isolated_environment_created": true,
+  "model_dependencies_installed": false,
+  "package_download_failed": true,
+  "pip_no_index_enabled": false,
+  "existing_project_environment_changed": false,
+  "training_performed": false,
+  "threshold_optimization_performed": false,
+  "model_adapter_connected": false,
+  "model_artifact_generated": false,
+  "tests": {
+    "synthetic_pass": 36,
+    "GT_contract_samples": 4,
+    "model_inference_tests": 0,
+    "python_syntax_files": 49
+  },
+  "comparison": {
+    "samples": [
+      {
+        "sample_id": "DET-01",
+        "baseline_metrics": {
+          "iou": 0.4476799455635276,
+          "precision": 0.9693551066396066,
+          "recall": 0.45410683592957,
+          "false_positive_rate": 0.00036251188010297627,
+          "leakage_fraction": 0.03064489336039348,
+          "mask_area_ratio": 0.4684628293792039,
+          "predicted_area": 138457,
+          "gt_area": 295556,
+          "true_positive_pixels": 134214,
+          "false_positive_pixels": 4243,
+          "false_negative_pixels": 161342,
+          "dice": 0.6184791699787794,
+          "gt_missed_pixel_ratio": 0.54589316407043,
+          "gt_component_count": 2,
+          "predicted_component_count": 1,
+          "matched_gt_components": 1,
+          "missed_gt_components": 1,
+          "false_components": 0,
+          "component_recall": 0.5
+        },
+        "component_metrics": [
+          {
+            "gt_component_id": 1,
+            "prediction_component_id": 1,
+            "iou": 0.9284567918315393,
+            "recall": 0.9565328943148532
+          },
+          {
+            "gt_component_id": 2,
+            "prediction_component_id": null,
+            "iou": 0.0,
+            "recall": 0.0
+          }
+        ],
+        "mobiofp_metrics": null,
+        "transresunet_metrics": null,
+        "model_status": "NOT_RUN_BLOCKED_NETWORK"
+      },
+      {
+        "sample_id": "DET-03",
+        "baseline_metrics": {
+          "iou": 0.9667715199868646,
+          "precision": 0.9821307088688583,
+          "recall": 0.9840813532569329,
+          "false_positive_rate": 0.02210186606863888,
+          "leakage_fraction": 0.01786929113114168,
+          "mask_area_ratio": 1.0019861352164838,
+          "predicted_area": 6642625,
+          "gt_area": 6629458,
+          "true_positive_pixels": 6523926,
+          "false_positive_pixels": 118699,
+          "false_negative_pixels": 105532,
+          "dice": 0.9831050634629094,
+          "gt_missed_pixel_ratio": 0.01591864674306708,
+          "gt_component_count": 1,
+          "predicted_component_count": 1,
+          "matched_gt_components": 1,
+          "missed_gt_components": 0,
+          "false_components": 0,
+          "component_recall": 1.0
+        },
+        "component_metrics": [
+          {
+            "gt_component_id": 1,
+            "prediction_component_id": 1,
+            "iou": 0.9667715199868646,
+            "recall": 0.9840813532569329
+          }
+        ],
+        "mobiofp_metrics": null,
+        "transresunet_metrics": null,
+        "model_status": "NOT_RUN_BLOCKED_NETWORK"
+      },
+      {
+        "sample_id": "DET-04",
+        "baseline_metrics": {
+          "iou": 0.5555960313732078,
+          "precision": 0.9920291282959842,
+          "recall": 0.5580874274054308,
+          "false_positive_rate": 0.0004162781040085095,
+          "leakage_fraction": 0.007970871704015777,
+          "mask_area_ratio": 0.5625716135614504,
+          "predicted_area": 573463,
+          "gt_area": 1019360,
+          "true_positive_pixels": 568892,
+          "false_positive_pixels": 4571,
+          "false_negative_pixels": 450468,
+          "dice": 0.7143191679175903,
+          "gt_missed_pixel_ratio": 0.4419125725945691,
+          "gt_component_count": 3,
+          "predicted_component_count": 2,
+          "matched_gt_components": 2,
+          "missed_gt_components": 1,
+          "false_components": 0,
+          "component_recall": 0.6666666666666666
+        },
+        "component_metrics": [
+          {
+            "gt_component_id": 1,
+            "prediction_component_id": null,
+            "iou": 0.0,
+            "recall": 0.0
+          },
+          {
+            "gt_component_id": 2,
+            "prediction_component_id": 1,
+            "iou": 0.92238607738405,
+            "recall": 0.9303284891303297
+          },
+          {
+            "gt_component_id": 3,
+            "prediction_component_id": 2,
+            "iou": 0.8873285858710706,
+            "recall": 0.89269544700931
+          }
+        ],
+        "mobiofp_metrics": null,
+        "transresunet_metrics": null,
+        "model_status": "NOT_RUN_BLOCKED_NETWORK"
+      },
+      {
+        "sample_id": "DET-05",
+        "baseline_metrics": {
+          "iou": 0.6273428743072478,
+          "precision": 0.9824204153693586,
+          "recall": 0.6344652361056864,
+          "false_positive_rate": 0.0007680879006448539,
+          "leakage_fraction": 0.01757958463064138,
+          "mask_area_ratio": 0.6458184563144972,
+          "predicted_area": 491081,
+          "gt_area": 760401,
+          "true_positive_pixels": 482448,
+          "false_positive_pixels": 8633,
+          "false_negative_pixels": 277953,
+          "dice": 0.7710026991998287,
+          "gt_missed_pixel_ratio": 0.36553476389431366,
+          "gt_component_count": 1,
+          "predicted_component_count": 1,
+          "matched_gt_components": 1,
+          "missed_gt_components": 0,
+          "false_components": 0,
+          "component_recall": 1.0
+        },
+        "component_metrics": [
+          {
+            "gt_component_id": 1,
+            "prediction_component_id": 1,
+            "iou": 0.6273428743072478,
+            "recall": 0.6344652361056864
+          }
+        ],
+        "mobiofp_metrics": null,
+        "transresunet_metrics": null,
+        "model_status": "NOT_RUN_BLOCKED_NETWORK"
+      }
+    ],
+    "baseline_kind": "unapproved rule-based foreground proposals, not accepted protection masks",
+    "baseline_macro_iou": 0.6493475928077119,
+    "baseline_macro_dice": 0.7717265251397769,
+    "baseline_macro_recall": 0.6576852131744051,
+    "baseline_pooled_component_recall": 0.7142857142857143,
+    "model_comparison_performed": false
+  },
+  "limitations": [
+    "No pretrained weight acquired; model metrics are null, never zero",
+    "Cached upstream pages are research evidence, not a verified local checkout or runtime",
+    "TransResUNet checkpoint absence cannot be asserted from an incomplete repository inspection",
+    "Frozen renderer remains unchanged and blocked independently for long pads/pitch above 50"
+  ]
+}
