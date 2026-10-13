@@ -32,3 +32,7 @@ Roster is a JSON list of `{sample_id, source, manifest}`. GT source.json and bin
 ## Acceptance and limitations
 
 Gate values and outcomes are documented in ../results/sam_pad_evaluation_summary.md and sam_pad_status.json. A measured gate failure blocks all downstream execution. Macro improvements cannot override sample-specific leakage. Four development images cannot establish generalization, non-target robustness or independent protection efficacy. Current detector is not approved; DET-03 needs better foreground rejection, and DET-05 boundary excess needs investigation without GT-based threshold optimization. Square scope and pitch compatibility remain a separate frozen-renderer blocker.
+
+## Foreground follow-up
+
+The v2 review extractor detects near-full-frame SAM contamination using frame occupancy and image-edge proximity, then performs RGB-only Otsu red-minus-green chroma separation before axis estimation. Uncertain partitions stay unchanged. It remains review-gated; missing crease is explicitly reported. See [foreground follow-up](../results/sam_pad_foreground_refinement_summary.md) for four-sample results, residual proximal leakage and approval status. Existing CLI commands are unchanged.

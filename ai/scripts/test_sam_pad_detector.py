@@ -50,3 +50,26 @@ class PadTests(unittest.TestCase):
         m=finger();r=extract_pad_candidates(np.full((*m.shape,3),160,np.uint8),[m]);x,y=r['regions'][0]['tip_xy'];self.assertTrue(0<=x<m.shape[1] and 0<=y<m.shape[0])
 
 if __name__=='__main__':unittest.main()
+
+class ForegroundRefinementTests(unittest.TestCase):
+    def test_contaminated_frame_refined_to_rgb_foreground(self):
+        from sam_pad_detector import refine_edge_connected_foreground
+        rgb=np.full((240,320,3),100,np.uint8);rgb[30:210,25:290]=[180,110,90]
+        mask=np.ones((240,320),bool)
+        refined,meta=refine_edge_connected_foreground(rgb,mask)
+        self.assertTrue(meta['applied']);self.assertFalse((refined&~mask).any())
+        self.assertTrue(refined[100,100]);self.assertFalse(refined[2,2])
+        repeat,other=refine_edge_connected_foreground(rgb,mask)
+        np.testing.assert_array_equal(refined,repeat);self.assertEqual(meta,other)
+
+    def test_localized_foreground_left_unchanged(self):
+        from sam_pad_detector import refine_edge_connected_foreground
+        mask=finger();rgb=np.full((*mask.shape,3),100,np.uint8)
+        refined,meta=refine_edge_connected_foreground(rgb,mask)
+        np.testing.assert_array_equal(refined,mask);self.assertFalse(meta['applied'])
+
+    def test_uniform_full_frame_does_not_invent_skin(self):
+        from sam_pad_detector import refine_edge_connected_foreground
+        rgb=np.full((100,100,3),100,np.uint8);mask=np.ones((100,100),bool)
+        refined,meta=refine_edge_connected_foreground(rgb,mask)
+        np.testing.assert_array_equal(refined,mask);self.assertFalse(meta['applied'])

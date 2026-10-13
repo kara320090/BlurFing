@@ -10,7 +10,7 @@ import time
 import cv2
 import numpy as np
 
-VERSION='sam_pad_axis_v1_review'
+VERSION='sam_pad_axis_v2_foreground_review'
 
 
 def digest(path):
@@ -35,6 +35,28 @@ def clean_mask(mask):
     return clean,dict(largest_component_fraction=fraction,discarded_pixels=int(mask.sum()-clean.sum()))
 
 
+def refine_edge_connected_foreground(rgb, mask):
+    """RGB-only conservative refinement of near-full-frame SAM leakage.
+
+    Three image edges plus large occupancy indicate insufficient background
+    separation, not a sample identity. Otsu selects the chroma partition from
+    the image, without GT or a tuned per-image cutoff. Never expands SAM support.
+    """
+    margin=max(1,round(.01*min(mask.shape)))
+    edges=sum(bool(v.any()) for v in (mask[:margin],mask[-margin:],mask[:,:margin],mask[:,-margin:]))
+    meta=dict(method='edge_connected_RGB_chroma_otsu',applied=False,edge_contacts=edges)
+    if edges<3 or mask.mean()<.75:return mask,meta
+    small_rgb=cv2.resize(rgb,(max(1,rgb.shape[1]//4),max(1,rgb.shape[0]//4)),interpolation=cv2.INTER_AREA)
+    chroma=np.clip(small_rgb[:,:,0].astype(np.int16)-small_rgb[:,:,1].astype(np.int16),0,255).astype(np.uint8)
+    threshold,_=cv2.threshold(chroma,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+    support=chroma>threshold
+    support=cv2.morphologyEx(support.astype(np.uint8),cv2.MORPH_CLOSE,cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)))
+    support=cv2.resize(support,(mask.shape[1],mask.shape[0]),interpolation=cv2.INTER_NEAREST)>0
+    refined,q=clean_mask(mask&support)
+    if refined is None or refined.sum()<.35*mask.sum():return mask,meta|dict(reason='uncertain_chroma_partition')
+    return refined,meta|dict(applied=True,otsu_threshold=float(threshold),removed_pixels=int(mask.sum()-refined.sum()))
+
+
 def extract_one(rgb,finger,prepared_quality=None,tip_hint=None):
     from scipy.ndimage import gaussian_filter1d
     from scipy.signal import find_peaks
@@ -43,6 +65,7 @@ def extract_one(rgb,finger,prepared_quality=None,tip_hint=None):
     else:clean,quality=finger,prepared_quality
     if quality.get("reject_reason"):clean=None
     if clean is None:return dict(mask=np.zeros_like(finger),status='rejected',quality=quality)
+    clean,foreground=refine_edge_connected_foreground(rgb,clean);quality=quality|dict(foreground_refinement=foreground)
     bb=bbox(clean);a,b,c,d=bb;scale=min(1.,720/max(d-b,c-a));small=cv2.resize(clean[b:d,a:c].astype(np.uint8),(max(1,round((c-a)*scale)),max(1,round((d-b)*scale))),interpolation=cv2.INTER_NEAREST)>0
     image=cv2.resize(rgb[b:d,a:c],(small.shape[1],small.shape[0]),interpolation=cv2.INTER_AREA)
     y,x=np.where(small)
