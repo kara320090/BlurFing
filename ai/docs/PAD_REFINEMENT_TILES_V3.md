@@ -14,7 +14,7 @@ Official SHA-verified MobileNetV3-small ImageNet weights are mandatory. The hist
 
 Overlapping tile probabilities are restored with explicit bilinear interpolation, summed and divided by actual native overlap counts. Threshold 0.5 is applied after averaging. Endpoint anchoring can create more than four overlaps; the implementation counts actual windows. Manifest snapshots, code hashes, runtime versions, official weights and model checkpoint SHA are recorded. Changed inputs/code prevent publication of a completed training or inference report. A failed run leaves diagnostic artifacts without a success report.
 
-The standalone checkpoint loader applies the same eight-thread deterministic CPU settings before prediction. A synthetic audit found that fresh process defaults (16 threads on the audited machine) could change logits by about `3.6e-6` and flip a deliberately boundary-centered synthetic pixel. The incomplete initial training record was retained; the completed experiment is restarted under the corrected code hashes. This is a runtime reproducibility fix, with no threshold or protection-math change.
+The standalone checkpoint loader applies the same eight-thread deterministic CPU settings before prediction. A synthetic audit found that fresh process defaults (16 threads on the audited machine) could change logits by about `3.6e-6` and flip a deliberately boundary-centered synthetic pixel. The incomplete initial training record was retained; a new run completed under the corrected code hashes. This is a runtime reproducibility fix, with no threshold or protection-math change.
 
 ## Commands
 
@@ -37,3 +37,36 @@ The existing candidate-body width observer and unchanged pitch/feature/structure
 ```text
 python ai/scripts/photo_learned_pad_pipeline_v1.py --model PRIVATE_TRAINING --inputs PRIVATE_DATASET --output PRIVATE_PROTECTION
 ```
+
+### Body-local allocation V2
+
+`photo_learned_pad_pipeline_v2.py` retains the complete uniquely associated body owner and crops real source pixels around its bounding box. The context halo is an engineering geometry rule, `max(2 native pixels, ceil(2 working pixels / normalization scale))`: cubic interpolation neighbors and exterior body samples must come from the source. Original-frame clipping is recorded. No new body evidence is created outside the frame and no width/pitch/feature gate is relaxed. Tiny fragments can still exceed the allocation budget even with a local body crop.
+
+Global estimator working-to-native axis conversion occurs before cropping. Integer translation preserves that native direction; EXIF and actual rounded local resize ratios are applied by the shared geometry helper. The virtual crop has a separate hash identity bound to parent source, native bbox, RGB/body/mask pixels and EXIF. ROI metadata explicitly distinguishes virtual-crop coordinates and maps the bbox back to original encoded coordinates. Local output is checked before compositing only learned native pixels into original RGB. Full-photo and cropped interpolation/seed inputs can differ; numerical or protection equivalence is not claimed. Frozen renderer/width functions themselves remain unchanged.
+
+```text
+python ai/scripts/photo_learned_pad_pipeline_v2.py --model PRIVATE_TRAINING --inputs PRIVATE_DATASET --output PRIVATE_PROTECTION
+```
+
+## Completed developmental experiment (2026-10-15)
+
+Ten GT10 sources produced 295 body tiles (85 with positive labels, 210 without). Two acquisition groups were held out; best epochs were 20 and 6, so the final full-training fit used 13 epochs. The final checkpoint SHA-256 is `b168c8af175018d83ae796a97af7fad34ba16c28ec19332976057a373fbc143c`. Weights and every source/target/prediction remain private.
+
+The comparison below uses the SAME native GT10 masks for coarse and saved group-heldout V3 predictions. It is developmental model selection, with no independent final-test claim.
+
+| Native source metric | Existing coarse | V3 group-heldout |
+|---|---:|---:|
+| Source macro IoU | 0.351117 | 0.427477 |
+| Source macro Dice | 0.478698 | 0.582013 |
+| Precision | 0.384515 | 0.615640 |
+| Recall | 0.815136 | 0.616467 |
+| GT pixel miss fraction | 0.184864 | 0.383533 |
+| Group macro IoU (equal two-group weight) | 0.370426 | 0.415707 |
+
+IoU improved on eight sources and declined on two. Improved precision comes with more missed GT pixels. Predicted connected components increased from 21 to 145. One-to-one nonzero-IoU matching against 38 GT components matched 16 then 33, but unmatched components increased from 5 to 112. Of the V3 unmatched components, 85 have zero GT overlap and 27 are additional fragments overlapping GT. These counts do not identify anatomical fingers. Body clipping has a GT recall ceiling of about 0.946 source macro, but it does not explain the full V3 recall loss.
+
+Protection was exercised on those saved group-heldout masks, preserving original/rejected/exterior pixels and every PNG RGB roundtrip. Both full-photo V1 and body-local V2 transformed **0/10 sources**. V1 rejected 142/145 components for memory, two for pitch and one for crossing an owner. V2 outcomes: 95 memory, 17 pitch, 24 crossing owners, seven ambiguous owners and two unavailable widths. Of the 142 original memory rejections, only 17 reached bounded local quality checks (15 pitch, two width); 30 were rejected earlier by ownership checks. No component was filtered and no gate was weakened.
+
+Both heldout checkpoint replay probes matched saved OOF masks exactly with zero GT reader calls. The completed final checkpoint ran twice on all ten training-source input bundles, again with zero GT reader calls and exact mask/file hashes. That final-fit check verifies operation, not generalization. All 354 AI tests passed, including six local-scope tests for allocation, actual-source context, EXIF axes, coordinate mapping and exterior preservation. An independent code review found no mandatory unresolved implementation defect in the examined paths.
+
+The experiment is **not adopted**. Remaining observed limitations include pad-pixel misses, excessive fragments, uncertain body association and pitch/width evidence. New development annotations from additional acquisition groups and a genuinely fresh final validation set are required before production decisions. Consumed GT7 and old holdout were not rerun or tuned.

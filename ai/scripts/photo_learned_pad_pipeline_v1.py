@@ -53,7 +53,7 @@ def associate_learned_body_axis(native,contexts):
     return association,context['body']
 
 
-def evaluate_learned_mask(source,mask,expected_pixel_sha256,*,detect_only=False):
+def evaluate_learned_mask(source,mask,expected_pixel_sha256,*,detect_only=False,_scope_adapter=None,_version=VERSION):
     """Source is an inference-manifest record; mask is hash-bound native bool."""
     start=time.perf_counter()
     if any(k.startswith('GT') for k in source):raise ValueError('GT_fields_forbidden_in_learned_protection')
@@ -76,17 +76,23 @@ def evaluate_learned_mask(source,mask,expected_pixel_sha256,*,detect_only=False)
             row=dict(region_id=plan['component'],mask_pixels=int(native.sum()),mask_pixel_sha256=pixel_hash(native),
                      scale_plan=plan,status='rejected',quality_status='REJECT_OTHER',reason=plan['reject_reason'])
             try:
-                if plan['status']=='planned':
+                if plan['status']=='planned' or _scope_adapter is not None:
                     association,owner=associate_learned_body_axis(native,contexts);row['association']=association
-                    artifact,geometry=shared.prepare_region(rgb,gray,native,owner,orientation,source['source_sha256'],plan,association)
+                    scoped_render=None
+                    if _scope_adapter is None:
+                        artifact,geometry=shared.prepare_region(rgb,gray,native,owner,orientation,source['source_sha256'],plan,association)
+                    else:
+                        artifact,geometry,scoped_plan,scoped_render=_scope_adapter(rgb,gray,native,owner,orientation,source['source_sha256'],plan,association)
+                        row['full_source_scale_plan']=plan;row['scale_plan']=scoped_plan
                     row.update(geometry=geometry,reason=geometry['reject_reason'])
                     if artifact is not None:
-                        roi=artifact['regions'][0]['roi'];roi.detector_name=VERSION;roi.detector_version=VERSION
-                        roi.validate(rgb,source['source_sha256'])
-                        row['detector_provenance']=VERSION
+                        roi=artifact['regions'][0]['roi'];roi.detector_name=_version;roi.detector_version=_version
+                        if scoped_render is None:roi.validate(rgb,source['source_sha256'])
+                        row['detector_provenance']=_version
                         if detect_only:row['reason']='detect_only'
                         else:
-                            candidate,details=render_candidate_region(rgb,artifact,geometry['axis_working_yx'])
+                            candidate,details=(render_candidate_region(rgb,artifact,geometry['axis_working_yx'])
+                                if scoped_render is None else scoped_render(geometry['axis_working_yx']))
                             row['renderer_details']=details
                             if len(details['regions'])!=1 or details['regions'][0].get('candidate_id')!=f"coarse-{plan['component']}":
                                 raise ValueError('region_renderer_identity_contract_mismatch')
@@ -113,7 +119,7 @@ def evaluate_learned_mask(source,mask,expected_pixel_sha256,*,detect_only=False)
     verify_source(source,'inference')
     if (not np.array_equal(returned[~mask],rgb[~mask]) or pixel_hash(rgb)!=source['source_RGB_sha256'] or
             pixel_hash(mask)!=expected_pixel_sha256):raise RuntimeError('source_or_exterior_changed')
-    report=summarize(regions)|dict(version=VERSION,source_sha256=source['source_sha256'],source_id=source['source_id'],
+    report=summarize(regions)|dict(version=_version,source_sha256=source['source_sha256'],source_id=source['source_id'],
         prediction_pixel_sha256=expected_pixel_sha256,coordinate_system='encoded_original_pixels',source_exif_orientation=orientation,
         predicted_component_count=count,processed_region_count=len(regions),
         default_pipeline_enabled=False,approved_for_protection=False,independent_validation_complete=False,PHOTO_FAIL_CLOSED_PIPELINE_READY=False,
@@ -132,7 +138,7 @@ def save_result(output,returned,report):
     (output/'result.private.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
 
 
-def protect_bundle(folder,root,output,detect_only=False):
+def protect_bundle(folder,root,output,detect_only=False,*,_mask_evaluator=None,_version=VERSION):
     from infer_pad_refinement_tiles_v3 import run
     if output.exists():raise FileExistsError('fresh_protection_output_required')
     # Full input/checkpoint preflight happens inside run before forward/output.
@@ -144,11 +150,11 @@ def protect_bundle(folder,root,output,detect_only=False):
     for source in manifest['sources']:
         sid=source['source_id'];path=output/'predictions'/(sid+'.png')
         mask=read_mask(path,indexed[sid]['prediction_sha256'],native_shape(source))
-        returned,report=evaluate_learned_mask(source,mask,pixel_hash(mask),detect_only=detect_only)
+        returned,report=(_mask_evaluator or evaluate_learned_mask)(source,mask,pixel_hash(mask),detect_only=detect_only)
         report['model_sha256']=predictions['model_sha256'];save_result(output/sid,returned,report);rows.append(report)
     unchanged(root/'manifest.input.private.json',sha)
     check_tiles(root,manifest,'inference')
-    result=dict(version=VERSION,rows=rows,model_sha256=predictions['model_sha256'],default_pipeline_enabled=False,approved_for_protection=False)
+    result=dict(version=_version,rows=rows,model_sha256=predictions['model_sha256'],default_pipeline_enabled=False,approved_for_protection=False)
     (output/'protection.private.json').write_text(json.dumps(result,indent=2),encoding='utf-8');return result
 
 
