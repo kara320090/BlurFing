@@ -73,6 +73,8 @@ See [SAM_PAD_PIPELINE.md](docs/SAM_PAD_PIPELINE.md) for native-coordinate privat
 
 ## Unified photo/scanner front-end (experimental)
 
+[원본·다중 해상도 능선 진단](docs/PHOTO_RIDGE_DIAGNOSTIC_V1.md)은 후보별 window/pitch와 선택적 인간 GT 평가를 분리한다. 관측 전용이며 보호 mask/gate를 변경하지 않는다. core238 PASS/3 SKIP, GUI9 PASS, 기존 기본10-case exact를 확인했다.
+
 [후보 ID와 전체 body 보존 실험](docs/PHOTO_CANDIDATE_CONTEXT_V1.md)은 opt-in region v3다. union 후 부모 정보 손실을 피하고 후보별 pad/body/scale/합성을 검증했다. core227 PASS/3 SKIP, GUI9 PASS, 기본10-case exact이며 보호 범위와 독립 성능은 아직 승인하지 않았다.
 
 [Body-associated width 실험](docs/PHOTO_BODY_WIDTH_V1.md)은 별도 `photo_region_pipeline_v2.py`로 구현했다. 기존 region v1의 a 폭 관측 실패는 해소됐지만 default a와 반환 RGB가 같고 b는 거절이 유지됐다. core209 PASS/3 SKIP와 기본10-case cached 회귀를 확인했으며 기본 경로에는 채택하지 않았다.
