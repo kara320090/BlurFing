@@ -283,7 +283,7 @@ if __name__ == "__main__":
                                     "count": res["extracted_count"], "reason": res["reason"]})
                 print(f"[{idx:03d}/{len(image_files):03d}] {res['file']} -> {res['status']} ({res['extracted_count']}개)")
 
-            # CSV 리포트 자동 생성
+            # CSV 리포트 자동 생성.
             csv_path = os.path.join(batch_output_dir, "pipeline_evaluation_report.csv")
             with open(csv_path, mode="w", newline="", encoding="utf-8-sig") as f:
                 writer = csv.DictWriter(f, fieldnames=["file", "status", "count", "reason"])
