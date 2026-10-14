@@ -98,3 +98,7 @@ natural_auto_04/boundaryblend_02 baseline. Production approval remains false.
 [현재 구조·quality gate·독립 평가 준비·GUI·완료 제한](docs/FAIL_CLOSED_SYSTEM.md)을 참고하세요.
 `protect_image()`와 공통 CLI는 자동 routing 후 success/partial_success/rejected를 반환합니다.
 독립 촬영본 검증과 실제 Windows equivalence는 미완료이며 PROJECT_COMPLETE=false입니다.
+
+### PHOTO adapter memory safety
+
+The unified PHOTO path now uses `photo_coarse_adapter_v2` with deterministic pre-allocation bounds. Pathological working-image requests return unchanged RGB and `adapter_memory_limit_exceeded`; no detector/pitch/feature threshold or frozen renderer formula is changed. Historical independent reports stay frozen. See [memory safety contract](docs/PHOTO_ADAPTER_MEMORY_SAFETY.md) and [post-holdout operational validation](results/post_holdout_adapter_safety_summary.md). This safety fix does not approve PHOTO detection or production protection.

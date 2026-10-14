@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 from scipy import ndimage
-from photo_coarse_adapter import adapt
+from photo_coarse_adapter_v2 import adapt
 from photo_coarse_renderer_adapter_v1 import transform
 
 STATES=('TRANSFORMED','REJECT_WIDTH_UNAVAILABLE','REJECT_PITCH_UNOBSERVED','REJECT_PITCH_UNSTABLE','REJECT_INSUFFICIENT_FEATURES','REJECT_RENDERER_CONTRACT','REJECT_OTHER')
@@ -38,6 +38,7 @@ def evaluate(source,semantics=None,detect_only=False):
         subprocess.run(cmd,check=True,timeout=300,shell=False,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE);inference=time.perf_counter()-start;semantics=folder
     start=time.perf_counter();rgb,a=adapt(source,semantics);adapter=time.perf_counter()-start;labels,n=ndimage.label(a['coarse_mask']);before=a['coarse_mask'].copy()
     if detect_only:returned=rgb.copy();details=dict(regions=[],transformed_pad_count=0,exterior_preserved=True)
+    elif a.get('working_shape') is None:returned=rgb.copy();details=dict(regions=[],transformed_pad_count=0,exterior_preserved=True)
     else:returned,details=transform(rgb,a)
     statuses={int(r['candidate_id'].split('-')[-1]):r for r in details['regions']};rejected={r['component']:r for r in a['rejected']};regions=[]
     for i in range(1,n+1):
@@ -47,4 +48,4 @@ def evaluate(source,semantics=None,detect_only=False):
         if not applied and not np.array_equal(returned[native],rgb[native]):raise RuntimeError('rejected_pad_pixels_changed')
         regions.append(dict(region_id=i,status='transformed' if applied else 'rejected',quality_status=quality,reason=None if applied else reason,feature_evidence=r.get('structure_check',{}).get('minutiae'),observed_pitch_working=r.get('primary_observation',{}).get('pitch_native'),pitch_evidence_summary=[dict(method=z.get('preprocessing'),status=z.get('measurement',{}).get('status'),patch_count=z.get('measurement',{}).get('count')) for z in evidence.get('attempts',[])],mask_pixels=int(native.sum()),mask_pixel_sha256=hashlib.sha256(native.tobytes()).hexdigest()))
     if not np.array_equal(before,a['coarse_mask']) or not np.array_equal(returned[~before],rgb[~before]):raise RuntimeError('mask_exterior_changed')
-    return returned,summarize(regions)|dict(exterior_preserved=True,changed_pixels=int(np.any(returned!=rgb,axis=2).sum()),returned_RGB_sha256=hashlib.sha256(returned.tobytes()).hexdigest(),detector='COLFISPOOF_class1+2_finger_body_distal_v2',renderer='frozen natural_auto_04 + boundaryblend_02 through existing experimental adapter',coarse_mask=before,timing=dict(COLFISPOOF=inference,coarse_and_canonical=adapter,renderer_and_structure=details.get('renderer_and_structure_seconds',0.),total=time.perf_counter()-tick))
+    return returned,summarize(regions)|dict(exterior_preserved=True,changed_pixels=int(np.any(returned!=rgb,axis=2).sum()),returned_RGB_sha256=hashlib.sha256(returned.tobytes()).hexdigest(),detector='COLFISPOOF_class1+2_finger_body_distal_v2',renderer='frozen natural_auto_04 + boundaryblend_02 through existing experimental adapter',coarse_mask=before,adapter_version=a.get('adapter_version'),resize_audit=a.get('resize_audit'),timing=dict(COLFISPOOF=inference,coarse_and_canonical=adapter,renderer_and_structure=details.get('renderer_and_structure_seconds',0.),total=time.perf_counter()-tick))
