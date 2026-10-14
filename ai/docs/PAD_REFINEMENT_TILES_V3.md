@@ -25,3 +25,13 @@ python ai/scripts/infer_pad_refinement_tiles_v3.py --model PRIVATE_TRAINING --in
 ```
 
 Standalone inputs use `--purpose inference` and omit GT fields. Group-heldout OOF predictions are developmental results; final-fit predictions on training sources verify operation only. A fresh independent acquisition set and human pad masks remain required before any adoption. Consumed GT7/holdout and user examples must not be reused to tune this experiment. Lower matcher scores/extraction failures are not general privacy or security proof.
+
+## Experimental protection connection
+
+`photo_learned_pad_pipeline_v1.py` explicitly connects V3 predictions to the existing per-component scale plan, pitch observer and frozen renderer. Each full learned component must belong to exactly one validated observed finger-body owner with an observed estimator axis. Invalid owners still participate in ambiguity checks. Crossing owners, unavailable axes and more than 256 predicted components are rejected; masks are never filtered, split or assigned by largest overlap. Rounded estimator resize ratios, EXIF direction and actual renderer ratios are preserved. A learned pad may extend beyond the old coarse pad while remaining wholly inside its unique body owner.
+
+The existing candidate-body width observer and unchanged pitch/feature/structure gates determine whether protection can run. Rejected pixels and every pixel outside the learned mask remain identical. Renderer `applied` must be a boolean and structure guard must be explicitly true. Saved PNG RGB is checked by decoding it again. This remains an opt-in developmental path without algorithm or privacy approval.
+
+```text
+python ai/scripts/photo_learned_pad_pipeline_v1.py --model PRIVATE_TRAINING --inputs PRIVATE_DATASET --output PRIVATE_PROTECTION
+```
