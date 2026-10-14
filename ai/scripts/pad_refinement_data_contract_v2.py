@@ -247,6 +247,12 @@ def check_dataset(root, manifest, purpose):
             manifest.get('crop_policy') != 'coarse_guided_v1' or
             manifest.get('GT_present') is not (purpose == 'training')):
         raise ValueError('refinement_V2_dataset_required; regenerate without overwriting V1')
+    return check_assets(root, manifest, purpose)
+
+
+def check_assets(root, manifest, purpose):
+    """Version-neutral bounded primitives; callers must validate their schema."""
+    if purpose not in ['training','inference']:raise ValueError('asset_purpose_contract')
     if (not isinstance(manifest.get('sources'), list) or not manifest['sources'] or
             not isinstance(manifest.get('crops'), list)):
         raise ValueError('source_and_crop_lists_required')
