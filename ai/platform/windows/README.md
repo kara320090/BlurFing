@@ -7,11 +7,12 @@ WINDOWS_NBIS_NATIVE_BUILD_SUCCESS=true
 WINDOWS_NBIS_FIXTURE_VALIDATED=true
 WINDOWS_SOURCEAFIS_RUNTIME_VALIDATED=true
 WINDOWS_RUNTIME_VALIDATED=true
-windows_full_equivalence_verified=false
+windows_full_equivalence_verified=true
+WINDOWS_EQUIVALENCE_SCOPE=provided_10_case_unified_matrix_and_actual_GUI_smoke
 WINDOWS_CROSS_BUILD_SUCCESS=false
 LINUX_REGRESSION_OK=true
 FINAL_INDEPENDENT_VALIDATION_COMPLETE=false
 PROJECT_COMPLETE=false
 ```
 
-실행 환경 검증은 Windows/Linux 전체 변환·평가 파이프라인 동등성 검증과 구분합니다. 전체 동등성과 독립 검증용 보류 자료(holdout)의 보호 성능은 미검증입니다. Linux 회귀 검사는 구문·가져오기·설정·호출 분기 및 소스 보존 검사이며 네이티브 실행을 재검증하지 않았습니다. Windows 네이티브 빌드는 Linux에서 Windows용으로 수행하는 교차 빌드 성공을 의미하지 않습니다.
+실행 환경 검증은 Windows/Linux 전체 변환·평가 파이프라인 동등성 검증과 구분합니다. 제공된 10-case unified matrix의 outcome·region·native RGB와 실제 GUI smoke는 exact PASS입니다. 임의 입력과 matcher score 동등성, 최종 독립 보호 성능은 이 결과로 입증하지 않습니다. [현재 parity 기록](../../docs/WINDOWS_PARITY_COMPATIBILITY.md)을 따르세요. Linux 회귀 검사는 구문·가져오기·설정·호출 분기 및 소스 보존 검사이며 네이티브 실행을 재검증하지 않았습니다. Windows 네이티브 빌드는 Linux에서 Windows용으로 수행하는 교차 빌드 성공을 의미하지 않습니다.

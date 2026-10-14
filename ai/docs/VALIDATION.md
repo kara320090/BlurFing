@@ -73,3 +73,9 @@ Unmodified estimator, seven human nonempty positive masks: macro IoU 0.4913, cov
 ### Unified scanner/photo front-end
 
 Scanner: 21/21 known fixture routes and ridge ROIs, one structure-guarded transform and matcher/benchmark validation. Photo: new adapter runtime unavailable; no new GT7 metric or approval. Existing legacy GT results are preserved. [Unified validation](../results/unified_frontend_validation.md).
+
+## Windows unified parity (2026-10-14)
+
+제공된 holdout 8장, development_success, scanner_reference의 10-case unified matrix가 outcome/counts, region signatures, returned native RGB에서 모두 exact PASS이며 최대 픽셀 오차는 0입니다. 통합 main 사본에서도 전체 matrix를 재실행해 같은 결과를 확인했습니다. 실제 Windows GUI의 PHOTO rejected/success와 scanner success, 미리보기 및 저장을 확인했고 저장본은 Linux reference와 pixel-identical입니다. partial_success 표시는 합성 UI fixture로만 검증했습니다.
+
+[상세 범위·호환성 원인](WINDOWS_PARITY_COMPATIBILITY.md)과 [공개 집계](../results/windows_unified_parity_summary.json)를 따르세요. 원시 tensor별 Linux 비교와 matcher score 동등성은 이 결과에 포함하지 않습니다. 이전 날짜의 보고서와 결과 JSON은 역사적 검증 범위를 보존하며 새 결과로 덮어쓰지 않았습니다. PHOTO detector/production 승인, 최종 독립 보호 성능 및 프로젝트 완료는 false를 유지합니다. 이미지·마스크·개인 manifest·private JSON·모델·JAR는 공개 결과에 포함하지 않습니다.

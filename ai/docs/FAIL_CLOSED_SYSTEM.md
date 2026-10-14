@@ -117,8 +117,9 @@ previous GUI source was available in the working clone, so existing external use
 GUI files were not overwritten. Features: select/process, type and counts/reasons,
 private preview/save, read-only runtime check and 1+10 CLI benchmark. It never
 duplicates detector/renderer calculations and refuses saving over the source.
-Actual Windows runtime/full-equivalence testing remains pending. Linux syntax or
-platform dispatch tests are not Windows execution evidence.
+Actual Windows runtime and the supplied 10-case unified exact-parity matrix plus
+GUI smoke passed on 2026-10-14. See WINDOWS_PARITY_COMPATIBILITY.md for scope.
+Linux syntax/platform dispatch tests alone are not Windows execution evidence.
 
 See WINDOWS_SETUP.md. Python with Tcl/Tk, Java, external SourceAFIS/NBIS runtimes
 and isolated COLFISPOOF runtime are required. Use configured Windows paths; no
@@ -148,9 +149,9 @@ with measured times is not expected to be byte-identical.
 ## Completion criteria
 
 Linux development flow can be mechanically ready while PHOTO production approval
-is false. Global functional completion still requires actual Windows integration
-regression/equivalence, and project completion additionally requires independent
-captures and sufficient reviewed evidence. Neither missing requirement is waived.
+is false. The supplied Windows integration matrix is verified in its declared scope.
+Project completion still requires independent captures and sufficient reviewed
+protection evidence; PHOTO detector/production approval remains false.
 Score reduction is not universal privacy/security proof; feature extraction failure
 is not success. Synthetic ridge regularity, seams, domain mismatch, router errors
 and small reused development sets remain limitations.

@@ -1,6 +1,6 @@
 # Windows 설치 및 실행
 
-Windows 실행 환경 검증을 완료했습니다. NBIS 네이티브 빌드, 공식 NBIS 브리지 검증용 자료 확인 및 실제 SourceAFIS Windows 실행이 통과했습니다. WINDOWS_RUNTIME_VALIDATED=true이며, Windows/Linux 전체 파이프라인 동등성은 아직 검증하지 않아 windows_full_equivalence_verified=false를 유지합니다. 고정한 파라미터나 임계값을 조정하지 마세요. 실제 검사 범위는 [검증 기록](VALIDATION.md)을 확인하세요.
+Windows 실행 환경 검증을 완료했습니다. NBIS 네이티브 빌드, 공식 NBIS 브리지 검증용 자료 확인 및 실제 SourceAFIS Windows 실행이 통과했습니다. WINDOWS_RUNTIME_VALIDATED=true이며, 제공된 10-case unified PHOTO/scanner matrix와 실제 GUI smoke는 exact parity 검증을 완료했습니다. windows_full_equivalence_verified=true의 범위는 해당 입력·설정 runtime이며 일반 입력이나 matcher score 동등성을 뜻하지 않습니다. [현재 parity 범위](WINDOWS_PARITY_COMPATIBILITY.md)를 확인하세요. 고정한 파라미터나 임계값을 조정하지 마세요. 실제 검사 범위는 [검증 기록](VALIDATION.md)을 확인하세요.
 
 ## 1. Python 및 가상 환경
 Python >=3.10을 설치하고 PATH에서 python을 실행할 수 있도록 설정합니다. 저장소 최상위 디렉터리에서 PowerShell로 실행합니다.
@@ -96,3 +96,7 @@ signatures and returned pixels. It reports only CASE_EQUIVALENCE_PASS; one case
 cannot set WINDOWS_FULL_EQUIVALENCE_VERIFIED=true. Use PHOTO success/partial/
 rejected, UNKNOWN and scanner cases, including Unicode/space paths, and actual GUI
 runtime operation before full equivalence claims. On Linux it reports NOT_RUN.
+
+## 검증된 unified 실행 환경
+
+공통 core는 `ai/requirements.txt`로 설치한 `ai/.venv`를 사용하고 모델 worker는 별도 Python 3.10 환경의 `platform/windows/requirements_colfispoof.txt`를 사용합니다. external source는 COLFISPOOF root 또는 `pre-processing`을 지정할 수 있습니다. 모델·upstream source는 수정하거나 bundle하지 않습니다. 경로를 환경변수로 설정한 뒤 `platform/windows/run_unified.ps1 -Gui`로 공통 CLI 기반 GUI를 실행합니다. [경로·의존성·검증 범위](WINDOWS_PARITY_COMPATIBILITY.md)를 확인하세요.

@@ -12,12 +12,12 @@ BlurFing 지문 변환 알고리즘 및 NBIS / SourceAFIS 기반 검증 파트.
 ## 플랫폼 상태
 | 구성 요소 | Linux | Windows |
 |---|---|---|
-| 핵심 변환 | 개발용 기준 구성 검증 완료 | 공통 구현, 실행 검증 대기 |
+| 핵심 변환 | 개발용 기준 구성 검증 완료 | 제공된 unified matrix의 성공·거절 경로 검증 완료 |
 | natural_auto_04 | 검증 완료 | 동일한 공통 핵심 구현 사용 |
 | boundaryblend_02 | 검증 완료 | 동일한 공통 핵심 구현 사용 |
 | NBIS 어댑터 | 검증 완료 | 네이티브 빌드 및 공식 브리지 검증용 자료 확인 완료 |
 | SourceAFIS | 검증 완료 | Windows 실제 실행 검증 완료 |
-| 전체 파이프라인 | 개발용 파이프라인 검증 완료 | 실행 환경 검증 완료; Windows/Linux 전체 파이프라인 동등성 미검증 |
+| 전체 파이프라인 | 개발용 파이프라인 검증 완료 | 제공된 10-case unified matrix exact PASS 및 실제 GUI smoke 완료 |
 
 ```text
 TECHNICAL_PIPELINE_COMPLETE=true
@@ -29,7 +29,8 @@ WINDOWS_NBIS_NATIVE_BUILD_SUCCESS=true
 WINDOWS_NBIS_FIXTURE_VALIDATED=true
 WINDOWS_SOURCEAFIS_RUNTIME_VALIDATED=true
 WINDOWS_RUNTIME_VALIDATED=true
-windows_full_equivalence_verified=false
+windows_full_equivalence_verified=true
+WINDOWS_EQUIVALENCE_SCOPE=provided_10_case_unified_matrix_and_actual_GUI_smoke
 LINUX_REGRESSION_OK=true
 FINAL_INDEPENDENT_VALIDATION_COMPLETE=false
 PROJECT_COMPLETE=false
@@ -56,10 +57,10 @@ from sourceafis_matcher import run_matcher_job
 scripts를 Python 모듈 검색 경로에 두거나 문서의 명령줄 명령을 사용합니다. 공통 인터페이스는 운영체제를 자동 선택하며 지원하지 않는 운영체제에서는 오류를 냅니다. 평가 점수·임계값과 특징점 가지치기 설정은 바꾸지 않았습니다.
 
 ## 데이터 및 검증
-실제 지문·손 사진, 개인 자료 목록, 체크포인트, 압축 자료, 데이터셋은 공개하지 않습니다. [검증 기록](docs/VALIDATION.md)은 기존 Linux 개발용 결과와 Windows 실행 환경 검증 범위를 구분합니다. Linux의 개발용 관심 영역 3개에서 두 매칭 엔진 모두 원본→변환본 점수가 동일 지문 매칭 점수보다 크게 낮았습니다. 이 수치를 Windows 결과로 승격하지 않습니다. 독립 검증용 보류 자료(holdout)의 결과는 없으며 B/D 자료를 독립 검증 자료로 승격하지 않습니다.
+실제 지문·손 사진, 개인 자료 목록, 체크포인트, 압축 자료, 데이터셋은 공개하지 않습니다. [검증 기록](docs/VALIDATION.md)은 기존 Linux 개발용 결과와 Windows 실행 환경 검증 범위를 구분합니다. Linux의 개발용 관심 영역 3개에서 두 매칭 엔진 모두 원본→변환본 점수가 동일 지문 매칭 점수보다 크게 낮았습니다. 이 수치를 Windows 결과로 승격하지 않습니다. 기존 holdout 운영 검증과 protocol-amended 재실행 결과는 각 역사적 보고서를 따릅니다. Windows parity는 해당 입력의 플랫폼 재현성 검증이며 새 독립 보호 성능 평가가 아닙니다. B/D 자료를 독립 검증 자료로 승격하지 않습니다.
 
 ## 제한사항
-일반적 보호 효과나 완전한 자연스러움을 입증하지 않습니다. 합성 지문 능선의 규칙성과 일부 질감 경계가 남고 Windows 전체 동등성도 미검증입니다. 특징점 추출 실패를 보호 성공으로 계산하지 않습니다. NBIS와 SourceAFIS의 점수 척도는 다르므로 직접 비교하지 않습니다.
+일반적 보호 효과나 완전한 자연스러움을 입증하지 않습니다. 합성 지문 능선의 규칙성과 일부 질감 경계가 남습니다. Windows parity는 제공된 matrix와 설정된 runtime에 한정하며 임의 입력, raw TensorFlow tensor별 동등성, matcher score 동등성은 입증하지 않습니다. 특징점 추출 실패를 보호 성공으로 계산하지 않습니다. NBIS와 SourceAFIS의 점수 척도는 다르므로 직접 비교하지 않습니다.
 
 ## Experimental automatic detection artifact
 The new automatic boundary prototype is **not ready for unattended protection**. The 20-image baseline reproduced 17 candidates and one accepted boundary; new graph-cut masks are review-gated. [Detection contract, CLI, tests and limitations](docs/DETECTION_PIPELINE.md) and [results](results/linux_detection_validation_summary.md) distinguish the 20-image diagnostics from the successful existing-baseline artifact control.
@@ -102,7 +103,7 @@ natural_auto_04/boundaryblend_02 baseline. Production approval remains false.
 
 [현재 구조·quality gate·독립 평가 준비·GUI·완료 제한](docs/FAIL_CLOSED_SYSTEM.md)을 참고하세요.
 `protect_image()`와 공통 CLI는 자동 routing 후 success/partial_success/rejected를 반환합니다.
-독립 촬영본 검증과 실제 Windows equivalence는 미완료이며 PROJECT_COMPLETE=false입니다.
+제공된 Windows matrix와 GUI smoke는 검증됐으며 [Windows parity 기록](docs/WINDOWS_PARITY_COMPATIBILITY.md)을 따릅니다. PHOTO detector/production 승인과 최종 독립 보호 성능 완료는 별도이며 PROJECT_COMPLETE=false입니다.
 
 ### PHOTO adapter memory safety
 

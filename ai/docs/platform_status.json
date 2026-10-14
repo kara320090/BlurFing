@@ -8,8 +8,15 @@
   "WINDOWS_NBIS_FIXTURE_VALIDATED": true,
   "WINDOWS_SOURCEAFIS_RUNTIME_VALIDATED": true,
   "WINDOWS_RUNTIME_VALIDATED": true,
-  "windows_full_equivalence_verified": false,
+  "windows_full_equivalence_verified": true,
   "LINUX_REGRESSION_OK": true,
   "FINAL_INDEPENDENT_VALIDATION_COMPLETE": false,
-  "PROJECT_COMPLETE": false
+  "PROJECT_COMPLETE": false,
+  "WINDOWS_FULL_EQUIVALENCE_VERIFIED": true,
+  "WINDOWS_EQUIVALENCE_SCOPE": "provided eight protocol-amended holdouts, development_success, scanner_reference; unified outcomes, region signatures and native RGB; actual Windows GUI smoke",
+  "WINDOWS_PHOTO_RUNTIME_CONFIGURED": true,
+  "WINDOWS_GUI_RUNTIME_VALIDATED": true,
+  "WINDOWS_UNIFIED_EXACT_CASES": 10,
+  "PHOTO_DETECTOR_APPROVED": false,
+  "PHOTO_PROTECTION_PRODUCTION_READY": false
 }
