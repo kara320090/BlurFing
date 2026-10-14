@@ -41,3 +41,7 @@ NBIS/SourceAFIS 공통 API로 `images={'original': original_frame, 'transformed'
 
 ## 공개 검증용 자료
 사용자가 별도 제공한 a011p_03.wsq를 **임시 사본**으로 복사한 다음 공식 dwsq raw fixture.wsq -raw_out 명령으로 디코딩합니다. 336x512·8비트·172032바이트를 확인하고 bridge raw RAW 336 512 500 output.xyt → 87, bridge match output.xyt output.xyt → 499 87 87을 확인합니다. 공개 참조 XYT와 바이트 일치 여부를 비교합니다. 이미지 파일은 공개 저장소에 넣지 않습니다.
+
+## Unified routing
+
+Use the environment configuration and full CLI/API in [FAIL_CLOSED_SYSTEM.md](FAIL_CLOSED_SYSTEM.md). PHOTO missing runtime rejects without pixel changes; quality rejection is normal. The isolated COLFISPOOF environment must not replace the scientific/core environment.

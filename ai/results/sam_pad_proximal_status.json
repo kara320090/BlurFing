@@ -1,0 +1,172 @@
+{
+  "PROXIMAL_BOUNDARY_OBSERVED": false,
+  "PROXIMAL_BOUNDARY_CONFIDENCE": 0.0,
+  "confidence_semantics": "no accepted cue agreement; not a calibrated probability",
+  "PAD_MACRO_IOU": 0.9051211895312632,
+  "PAD_COMPONENT_COVERAGE": "7/7",
+  "BACKGROUND_LEAKAGE_OK": false,
+  "DETECTOR_APPROVED_FOR_USE": false,
+  "ARTIFACT_CONTRACT_OK": true,
+  "RENDERER_CONTRACT_BLOCKED": true,
+  "LINUX_PROTECTION_TRANSFORM_OK": "NOT_RUN",
+  "BOUNDARY_EXTERIOR_PRESERVED": "NOT_RUN",
+  "NBIS_DEVELOPMENT_CHECK": "NOT_RUN",
+  "SOURCEAFIS_DEVELOPMENT_CHECK": "NOT_RUN",
+  "LINUX_REGRESSION_OK": true,
+  "WINDOWS_FULL_EQUIVALENCE_VERIFIED": false,
+  "FINAL_INDEPENDENT_VALIDATION_COMPLETE": false,
+  "PROJECT_COMPLETE": false,
+  "samples": [
+    {
+      "sample_id": "DET-01",
+      "iou": 0.9318176601932516,
+      "dice": 0.9647056028052214,
+      "precision": 0.9678678341183322,
+      "recall": 0.9615639675729811,
+      "leakage_fraction": 0.032132165881667805,
+      "matched_gt_components_iou_0_5": 2,
+      "gt_component_count": 2,
+      "proximal_boundary_sources": [
+        "legacy_observed_crease",
+        "legacy_observed_crease"
+      ],
+      "proximal_boundary_confidence": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "sample_id": "DET-03",
+      "iou": 0.8462438901565003,
+      "dice": 0.9167195024106667,
+      "precision": 0.8584254115459989,
+      "recall": 0.9835077015345749,
+      "leakage_fraction": 0.14157458845400106,
+      "matched_gt_components_iou_0_5": 1,
+      "gt_component_count": 1,
+      "proximal_boundary_sources": [
+        "geometry_fallback_diagnostic_only"
+      ],
+      "proximal_boundary_confidence": [
+        0.0
+      ]
+    },
+    {
+      "sample_id": "DET-04",
+      "iou": 0.9251067241885573,
+      "dice": 0.9610965590268713,
+      "precision": 0.9579093441022213,
+      "recall": 0.9643050541516246,
+      "leakage_fraction": 0.042090655897778724,
+      "matched_gt_components_iou_0_5": 3,
+      "gt_component_count": 3,
+      "proximal_boundary_sources": [
+        "legacy_observed_crease",
+        "legacy_observed_crease",
+        "legacy_observed_crease"
+      ],
+      "proximal_boundary_confidence": [
+        0.6666666666666666,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "sample_id": "DET-05",
+      "iou": 0.9173164835867434,
+      "dice": 0.9568753947921109,
+      "precision": 0.9337829989836839,
+      "recall": 0.9811388990808797,
+      "leakage_fraction": 0.06621700101631613,
+      "matched_gt_components_iou_0_5": 1,
+      "gt_component_count": 1,
+      "proximal_boundary_sources": [
+        "legacy_observed_crease"
+      ],
+      "proximal_boundary_confidence": [
+        0.6666666666666666
+      ]
+    }
+  ],
+  "benchmark": {
+    "warmup": 1,
+    "measured": 10,
+    "deterministic": true,
+    "scope": "fixed saved SAM finger masks -> pad; excludes SAM model generation",
+    "stats": {
+      "SAM_mask_loading_postprocess": {
+        "mean": 0.10798013921594247,
+        "median": 0.10809172503650188,
+        "min": 0.10026649001520127,
+        "max": 0.11994571692775935,
+        "std": 0.0051182765871381755,
+        "p95": 0.11619475412298924
+      },
+      "axis_pad_boundary": {
+        "mean": 0.511036466085352,
+        "median": 0.5068009429378435,
+        "min": 0.4997231629677117,
+        "max": 0.548477680888027,
+        "std": 0.013452655217033437,
+        "p95": 0.5334712636016774
+      },
+      "total_detector": {
+        "mean": 0.6190284520853311,
+        "median": 0.6120869239675812,
+        "min": 0.6038489940110594,
+        "max": 0.6565368319861591,
+        "std": 0.015551859051133047,
+        "p95": 0.6468856585794128
+      }
+    }
+  },
+  "tests_passed": 56,
+  "other_sample_masks_byte_identical": true,
+  "finger_exterior_pixels": 0,
+  "reject_reason": "proximal_boundary_unobserved",
+  "geometry_fallback_used_for_diagnostics_only": true,
+  "decision_gate": {
+    "component_coverage_7_of_7": true,
+    "macro_iou_ge_0_85": true,
+    "no_severe_leakage_certified": false,
+    "exterior_zero": true,
+    "deterministic": true,
+    "DET03_image_observed_boundary": false,
+    "regression": true
+  },
+  "DET03_diagnostic_peak_rows": {
+    "width_derivative": [
+      724,
+      645,
+      538
+    ],
+    "distance_width_derivative": [
+      620,
+      572,
+      687
+    ],
+    "gray_gradient": [
+      577,
+      652
+    ],
+    "dark_valley": [
+      758,
+      490
+    ],
+    "texture_energy_derivative": [
+      743,
+      502,
+      667
+    ],
+    "coherence_derivative": [
+      744,
+      548,
+      599
+    ],
+    "frequency_derivative": [
+      542,
+      755,
+      482
+    ]
+  }
+}

@@ -1,0 +1,1746 @@
+{
+  "COLFISPOOF_MODEL_RUNTIME_OK": true,
+  "COLFISPOOF_RAW_GT7_EVALUATED": true,
+  "ROTATION_CONSENSUS_IMPLEMENTED": true,
+  "ORIGINAL_COORDINATE_MAPPING_OK": true,
+  "DETERMINISTIC_INFERENCE_OK": true,
+  "COLFISPOOF_GT7_MACRO_IOU": 0.4973471687610349,
+  "COLFISPOOF_GT7_COMPONENT_COVERAGE": {
+    "matched": 7,
+    "total": 10,
+    "ratio": 0.7
+  },
+  "COLFISPOOF_GT7_FALSE_POSITIVES": 2,
+  "COLFISPOOF_GT7_MISSES": 3,
+  "LEGACY_GT7_MACRO_IOU": 0.4912548052974346,
+  "LEGACY_GT7_COMPONENT_COVERAGE": {
+    "matched": 7,
+    "total": 10,
+    "ratio": 0.7
+  },
+  "DET01_VISIBLE_FINGERTIPS_OK": true,
+  "DET03_RECOVERED": false,
+  "CAP016_WRIST_FP_REMOVED": true,
+  "CAP042_KEYBOARD_FP_REMOVED": true,
+  "CAP042_TRUE_FINGERTIP_FOUND": true,
+  "CAP054_BACKGROUND_FP_REMOVED": true,
+  "RIDGE_VALIDATED_GT7_MACRO_IOU": 0.062282915495148646,
+  "RIDGE_VALIDATED_COMPONENT_COVERAGE": {
+    "matched": 0,
+    "total": 10,
+    "ratio": 0.0
+  },
+  "COLFISPOOF_RAW_FRONTEND_PROMISING": false,
+  "PHOTO_EXTERNAL_FRONTEND_INTEGRATED": false,
+  "PHOTO_DETECTOR_APPROVED": false,
+  "SCANNER_REGRESSION_OK": true,
+  "LINUX_REGRESSION_OK": true,
+  "WINDOWS_FULL_EQUIVALENCE_VERIFIED": false,
+  "FINAL_INDEPENDENT_VALIDATION_COMPLETE": false,
+  "PROJECT_COMPLETE": false,
+  "primary_policy": {
+    "fingertip_class": 2,
+    "rotation_cw": [
+      0,
+      90,
+      180,
+      270
+    ],
+    "minimum_votes": 2,
+    "component_cleanup": "none",
+    "coordinate_system": "encoded_original_pixels",
+    "exif_orientation_applied": false,
+    "GT_used_for_inference": false,
+    "GT_used_to_select_rotation": false,
+    "GT_used_to_select_threshold": false
+  },
+  "framework": {
+    "TensorFlow": "2.10.0",
+    "OpenCV": "4.6.0",
+    "NumPy": "1.21.6",
+    "Pillow": "9.3.0",
+    "device": "CPU",
+    "intra_op_threads": 8,
+    "inter_op_threads": 1,
+    "oneDNN": "default enabled"
+  },
+  "model": {
+    "sha256": "f58d510ac9e83c4b5398f580446aef6028890993da052cacab048f434888b60f",
+    "size_bytes": 461852540,
+    "repository": "https://github.com/dasec/COLFISPOOF",
+    "archive_relative_path": "pre-processing/Segmentation/model/deeplab_model.tar.gz",
+    "upstream_DeepLabModel_source_sha256": "fa78f7c51f4ba8bbc9e1fb06d154dc448422823c1ad5a4e037b850aca70ffefd"
+  },
+  "raw_aggregate": {
+    "macro_iou": 0.4973471687610349,
+    "median_iou": 0.7128840760836432,
+    "min_iou": 0.0,
+    "max_iou": 0.8631173368598064,
+    "component_coverage": {
+      "matched": 7,
+      "total": 10,
+      "ratio": 0.7
+    },
+    "false_positive_components": 2,
+    "missed_components": 3
+  },
+  "ridge_aggregate": {
+    "macro_iou": 0.062282915495148646,
+    "median_iou": 0.02304502535653246,
+    "min_iou": 0.0,
+    "max_iou": 0.264121393755095,
+    "component_coverage": {
+      "matched": 0,
+      "total": 10,
+      "ratio": 0.0
+    },
+    "false_positive_components": 15,
+    "missed_components": 10
+  },
+  "benchmark": {
+    "device": "CPU",
+    "sample_id": "DET-01",
+    "warmup": 1,
+    "measured": 10,
+    "deterministic": true,
+    "stats_seconds": {
+      "preprocessing": {
+        "mean": 0.12229879444930702,
+        "median": 0.11854259285610169,
+        "p95": 0.1392446307581849
+      },
+      "one_rotation_inference": {
+        "mean": 0.3896553464175668,
+        "median": 0.39636579899524804,
+        "p95": 0.43123898223275314
+      },
+      "four_rotation_inference": {
+        "mean": 1.558621385670267,
+        "median": 1.5854631959809922,
+        "p95": 1.7249559289310126
+      },
+      "inverse_mapping": {
+        "mean": 0.06469510124297813,
+        "median": 0.07057051797164604,
+        "p95": 0.08267574536730535
+      },
+      "consensus": {
+        "mean": 0.04419925138354301,
+        "median": 0.04318374703871086,
+        "p95": 0.04874312744941561
+      },
+      "total": {
+        "mean": 2.2532444345764815,
+        "median": 2.268147314491216,
+        "p95": 2.4294027533673215
+      }
+    },
+    "one_rotation_semantics": "mean of the four actually timed rotations within each run",
+    "total_scope": "RGB already loaded; excludes graph load, source decode and output PNG writes"
+  },
+  "legacy_macro_iou_delta": 0.006092363463600314,
+  "legacy_coverage_delta": 0.0,
+  "tests_passed": 102,
+  "matching_policy": "4-connected components, Hungarian one-to-one assignment, component IoU >= 0.5; same as legacy",
+  "unmatched_prediction_semantics": "FP components counts unmatched predictions, including real fingertip subregions with insufficient GT overlap; not synonymous with background false positives",
+  "ridge_semantics": "unchanged shared validator per raw connected-component crop; mask-only result, no protection or matcher evaluation",
+  "structural_evidence": "private overlays inspected: no severe wrist, keyboard or background selection in consensus",
+  "approval_blockers": [
+    "macro IoU below 0.85",
+    "coverage below 90 percent and not above legacy 70 percent",
+    "DET-03 class 2 absent in all four rotations; class 1 finger body is present",
+    "DET-05 and CAP-016 pad undercoverage"
+  ],
+  "inference_repetitions": 3,
+  "benchmark_complete": true,
+  "rows": [
+    {
+      "sample_id": "DET-01",
+      "annotation_status": "valid_positive",
+      "primary_policy": "class 2; votes >=2/4; no component cleanup",
+      "raw_rotation_components": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "consensus_components": 2,
+      "raw_metrics": {
+        "iou": 0.8631173368598064,
+        "dice": 0.9265303046501072,
+        "precision": 0.9610992135489196,
+        "recall": 0.8943618129897549,
+        "predicted_outside_GT_ratio": 0.038900786451080416,
+        "predicted_pixels": 275033,
+        "GT_pixels": 295556,
+        "true_positive_pixels": 264334,
+        "false_positive_pixels": 10699,
+        "false_negative_pixels": 31222,
+        "predicted_component_count": 2,
+        "GT_component_count": 2,
+        "matched_components": 2,
+        "component_coverage": 1.0,
+        "false_positive_components": 0,
+        "missed_components": 0
+      },
+      "ridge_metrics": {
+        "iou": 0.264121393755095,
+        "dice": 0.4178734654122382,
+        "precision": 0.9990148413510748,
+        "recall": 0.2641902042252568,
+        "predicted_outside_GT_ratio": 0.0009851586489252814,
+        "predicted_pixels": 78160,
+        "GT_pixels": 295556,
+        "true_positive_pixels": 78083,
+        "false_positive_pixels": 77,
+        "false_negative_pixels": 217473,
+        "predicted_component_count": 8,
+        "GT_component_count": 2,
+        "matched_components": 0,
+        "component_coverage": 0.0,
+        "false_positive_components": 8,
+        "missed_components": 2
+      },
+      "rotation_pairwise_iou": [
+        {
+          "a": 0,
+          "b": 1,
+          "iou": 0.8825294028460655
+        },
+        {
+          "a": 0,
+          "b": 2,
+          "iou": 0.8635857708917679
+        },
+        {
+          "a": 0,
+          "b": 3,
+          "iou": 0.7791172154335423
+        },
+        {
+          "a": 1,
+          "b": 2,
+          "iou": 0.8595744091995696
+        },
+        {
+          "a": 1,
+          "b": 3,
+          "iou": 0.7843332068141732
+        },
+        {
+          "a": 2,
+          "b": 3,
+          "iou": 0.7583940557934654
+        }
+      ],
+      "diagnostic_vote_metrics": {
+        "1": {
+          "iou": 0.8453426462753943,
+          "dice": 0.9161904408177185,
+          "precision": 0.9143088198129896,
+          "recall": 0.9180798224363572,
+          "predicted_outside_GT_ratio": 0.08569118018701036,
+          "predicted_pixels": 296775,
+          "GT_pixels": 295556,
+          "true_positive_pixels": 271344,
+          "false_positive_pixels": 25431,
+          "false_negative_pixels": 24212,
+          "predicted_component_count": 2,
+          "GT_component_count": 2,
+          "matched_components": 2,
+          "component_coverage": 1.0,
+          "false_positive_components": 0,
+          "missed_components": 0
+        },
+        "3": {
+          "iou": 0.8262776828469347,
+          "dice": 0.9048762853618983,
+          "precision": 0.9976921038145528,
+          "recall": 0.827860033293183,
+          "predicted_outside_GT_ratio": 0.002307896185447206,
+          "predicted_pixels": 245245,
+          "GT_pixels": 295556,
+          "true_positive_pixels": 244679,
+          "false_positive_pixels": 566,
+          "false_negative_pixels": 50877,
+          "predicted_component_count": 2,
+          "GT_component_count": 2,
+          "matched_components": 2,
+          "component_coverage": 1.0,
+          "false_positive_components": 0,
+          "missed_components": 0
+        },
+        "4": {
+          "iou": 0.6983151045365692,
+          "dice": 0.8223622373388986,
+          "precision": 0.9993708013087332,
+          "recall": 0.6986222577108907,
+          "predicted_outside_GT_ratio": 0.0006291986912667221,
+          "predicted_pixels": 206612,
+          "GT_pixels": 295556,
+          "true_positive_pixels": 206482,
+          "false_positive_pixels": 130,
+          "false_negative_pixels": 89074,
+          "predicted_component_count": 2,
+          "GT_component_count": 2,
+          "matched_components": 2,
+          "component_coverage": 1.0,
+          "false_positive_components": 0,
+          "missed_components": 0
+        }
+      },
+      "deterministic": true,
+      "repeat_metrics": [
+        {
+          "iou": 0.8631173368598064,
+          "dice": 0.9265303046501072,
+          "precision": 0.9610992135489196,
+          "recall": 0.8943618129897549,
+          "predicted_outside_GT_ratio": 0.038900786451080416,
+          "predicted_pixels": 275033,
+          "GT_pixels": 295556,
+          "true_positive_pixels": 264334,
+          "false_positive_pixels": 10699,
+          "false_negative_pixels": 31222,
+          "predicted_component_count": 2,
+          "GT_component_count": 2,
+          "matched_components": 2,
+          "component_coverage": 1.0,
+          "false_positive_components": 0,
+          "missed_components": 0
+        },
+        {
+          "iou": 0.8631173368598064,
+          "dice": 0.9265303046501072,
+          "precision": 0.9610992135489196,
+          "recall": 0.8943618129897549,
+          "predicted_outside_GT_ratio": 0.038900786451080416,
+          "predicted_pixels": 275033,
+          "GT_pixels": 295556,
+          "true_positive_pixels": 264334,
+          "false_positive_pixels": 10699,
+          "false_negative_pixels": 31222,
+          "predicted_component_count": 2,
+          "GT_component_count": 2,
+          "matched_components": 2,
+          "component_coverage": 1.0,
+          "false_positive_components": 0,
+          "missed_components": 0
+        },
+        {
+          "iou": 0.8631173368598064,
+          "dice": 0.9265303046501072,
+          "precision": 0.9610992135489196,
+          "recall": 0.8943618129897549,
+          "predicted_outside_GT_ratio": 0.038900786451080416,
+          "predicted_pixels": 275033,
+          "GT_pixels": 295556,
+          "true_positive_pixels": 264334,
+          "false_positive_pixels": 10699,
+          "false_negative_pixels": 31222,
+          "predicted_component_count": 2,
+          "GT_component_count": 2,
+          "matched_components": 2,
+          "component_coverage": 1.0,
+          "false_positive_components": 0,
+          "missed_components": 0
+        }
+      ],
+      "mask_hashes": [
+        "a7a146c673cd022c8ccabef71b131588fe174f35b3d8b9755bbcf88b6a12ebed",
+        "a7a146c673cd022c8ccabef71b131588fe174f35b3d8b9755bbcf88b6a12ebed",
+        "a7a146c673cd022c8ccabef71b131588fe174f35b3d8b9755bbcf88b6a12ebed"
+      ],
+      "ridge_quality": [
+        {
+          "component": 1,
+          "bbox": [
+            1605,
+            1097,
+            2117,
+            1516
+          ],
+          "area": 146343,
+          "quality": {
+            "credible_windows": 68,
+            "eligible_windows": 521,
+            "credible_fraction": 0.13051823416506717,
+            "pitch_native": 5.65685424949238,
+            "orientation": -0.9467236995697021,
+            "working_ratio": 1.0,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        },
+        {
+          "component": 2,
+          "bbox": [
+            1566,
+            1835,
+            2032,
+            2179
+          ],
+          "area": 128690,
+          "quality": {
+            "credible_windows": 81,
+            "eligible_windows": 452,
+            "credible_fraction": 0.17920353982300885,
+            "pitch_native": 6.4,
+            "orientation": 0.7123690843582153,
+            "working_ratio": 1.0,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        }
+      ]
+    },
+    {
+      "sample_id": "DET-03",
+      "annotation_status": "valid_positive",
+      "primary_policy": "class 2; votes >=2/4; no component cleanup",
+      "raw_rotation_components": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "consensus_components": 0,
+      "raw_metrics": {
+        "iou": 0.0,
+        "dice": 0.0,
+        "precision": null,
+        "recall": 0.0,
+        "predicted_outside_GT_ratio": null,
+        "predicted_pixels": 0,
+        "GT_pixels": 6629458,
+        "true_positive_pixels": 0,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 6629458,
+        "predicted_component_count": 0,
+        "GT_component_count": 1,
+        "matched_components": 0,
+        "component_coverage": 0.0,
+        "false_positive_components": 0,
+        "missed_components": 1
+      },
+      "ridge_metrics": {
+        "iou": 0.0,
+        "dice": 0.0,
+        "precision": null,
+        "recall": 0.0,
+        "predicted_outside_GT_ratio": null,
+        "predicted_pixels": 0,
+        "GT_pixels": 6629458,
+        "true_positive_pixels": 0,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 6629458,
+        "predicted_component_count": 0,
+        "GT_component_count": 1,
+        "matched_components": 0,
+        "component_coverage": 0.0,
+        "false_positive_components": 0,
+        "missed_components": 1
+      },
+      "rotation_pairwise_iou": [
+        {
+          "a": 0,
+          "b": 1,
+          "iou": 0.0
+        },
+        {
+          "a": 0,
+          "b": 2,
+          "iou": 0.0
+        },
+        {
+          "a": 0,
+          "b": 3,
+          "iou": 0.0
+        },
+        {
+          "a": 1,
+          "b": 2,
+          "iou": 0.0
+        },
+        {
+          "a": 1,
+          "b": 3,
+          "iou": 0.0
+        },
+        {
+          "a": 2,
+          "b": 3,
+          "iou": 0.0
+        }
+      ],
+      "diagnostic_vote_metrics": {
+        "1": {
+          "iou": 0.0,
+          "dice": 0.0,
+          "precision": null,
+          "recall": 0.0,
+          "predicted_outside_GT_ratio": null,
+          "predicted_pixels": 0,
+          "GT_pixels": 6629458,
+          "true_positive_pixels": 0,
+          "false_positive_pixels": 0,
+          "false_negative_pixels": 6629458,
+          "predicted_component_count": 0,
+          "GT_component_count": 1,
+          "matched_components": 0,
+          "component_coverage": 0.0,
+          "false_positive_components": 0,
+          "missed_components": 1
+        },
+        "3": {
+          "iou": 0.0,
+          "dice": 0.0,
+          "precision": null,
+          "recall": 0.0,
+          "predicted_outside_GT_ratio": null,
+          "predicted_pixels": 0,
+          "GT_pixels": 6629458,
+          "true_positive_pixels": 0,
+          "false_positive_pixels": 0,
+          "false_negative_pixels": 6629458,
+          "predicted_component_count": 0,
+          "GT_component_count": 1,
+          "matched_components": 0,
+          "component_coverage": 0.0,
+          "false_positive_components": 0,
+          "missed_components": 1
+        },
+        "4": {
+          "iou": 0.0,
+          "dice": 0.0,
+          "precision": null,
+          "recall": 0.0,
+          "predicted_outside_GT_ratio": null,
+          "predicted_pixels": 0,
+          "GT_pixels": 6629458,
+          "true_positive_pixels": 0,
+          "false_positive_pixels": 0,
+          "false_negative_pixels": 6629458,
+          "predicted_component_count": 0,
+          "GT_component_count": 1,
+          "matched_components": 0,
+          "component_coverage": 0.0,
+          "false_positive_components": 0,
+          "missed_components": 1
+        }
+      },
+      "deterministic": true,
+      "repeat_metrics": [
+        {
+          "iou": 0.0,
+          "dice": 0.0,
+          "precision": null,
+          "recall": 0.0,
+          "predicted_outside_GT_ratio": null,
+          "predicted_pixels": 0,
+          "GT_pixels": 6629458,
+          "true_positive_pixels": 0,
+          "false_positive_pixels": 0,
+          "false_negative_pixels": 6629458,
+          "predicted_component_count": 0,
+          "GT_component_count": 1,
+          "matched_components": 0,
+          "component_coverage": 0.0,
+          "false_positive_components": 0,
+          "missed_components": 1
+        },
+        {
+          "iou": 0.0,
+          "dice": 0.0,
+          "precision": null,
+          "recall": 0.0,
+          "predicted_outside_GT_ratio": null,
+          "predicted_pixels": 0,
+          "GT_pixels": 6629458,
+          "true_positive_pixels": 0,
+          "false_positive_pixels": 0,
+          "false_negative_pixels": 6629458,
+          "predicted_component_count": 0,
+          "GT_component_count": 1,
+          "matched_components": 0,
+          "component_coverage": 0.0,
+          "false_positive_components": 0,
+          "missed_components": 1
+        },
+        {
+          "iou": 0.0,
+          "dice": 0.0,
+          "precision": null,
+          "recall": 0.0,
+          "predicted_outside_GT_ratio": null,
+          "predicted_pixels": 0,
+          "GT_pixels": 6629458,
+          "true_positive_pixels": 0,
+          "false_positive_pixels": 0,
+          "false_negative_pixels": 6629458,
+          "predicted_component_count": 0,
+          "GT_component_count": 1,
+          "matched_components": 0,
+          "component_coverage": 0.0,
+          "false_positive_components": 0,
+          "missed_components": 1
+        }
+      ],
+      "mask_hashes": [
+        "790c7f6a905819fa49d5883ebb98cd79f4ecf9935d7d81b47e0fe24821406ca5",
+        "790c7f6a905819fa49d5883ebb98cd79f4ecf9935d7d81b47e0fe24821406ca5",
+        "790c7f6a905819fa49d5883ebb98cd79f4ecf9935d7d81b47e0fe24821406ca5"
+      ],
+      "ridge_quality": []
+    },
+    {
+      "sample_id": "DET-04",
+      "annotation_status": "valid_positive",
+      "primary_policy": "class 2; votes >=2/4; no component cleanup",
+      "raw_rotation_components": [
+        3,
+        3,
+        3,
+        3
+      ],
+      "consensus_components": 3,
+      "raw_metrics": {
+        "iou": 0.7495141091740687,
+        "dice": 0.8568254525571196,
+        "precision": 0.9961144173445962,
+        "recall": 0.75171185842097,
+        "predicted_outside_GT_ratio": 0.003885582655403807,
+        "predicted_pixels": 769254,
+        "GT_pixels": 1019360,
+        "true_positive_pixels": 766265,
+        "false_positive_pixels": 2989,
+        "false_negative_pixels": 253095,
+        "predicted_component_count": 3,
+        "GT_component_count": 3,
+        "matched_components": 3,
+        "component_coverage": 1.0,
+        "false_positive_components": 0,
+        "missed_components": 0
+      },
+      "ridge_metrics": {
+        "iou": 0.006897465076126197,
+        "dice": 0.013700431901682693,
+        "precision": 1.0,
+        "recall": 0.006897465076126197,
+        "predicted_outside_GT_ratio": 0.0,
+        "predicted_pixels": 7031,
+        "GT_pixels": 1019360,
+        "true_positive_pixels": 7031,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 1012329,
+        "predicted_component_count": 1,
+        "GT_component_count": 3,
+        "matched_components": 0,
+        "component_coverage": 0.0,
+        "false_positive_components": 1,
+        "missed_components": 3
+      },
+      "rotation_pairwise_iou": [
+        {
+          "a": 0,
+          "b": 1,
+          "iou": 0.7564583198940071
+        },
+        {
+          "a": 0,
+          "b": 2,
+          "iou": 0.7196329941388229
+        },
+        {
+          "a": 0,
+          "b": 3,
+          "iou": 0.7219191427179737
+        },
+        {
+          "a": 1,
+          "b": 2,
+          "iou": 0.8542166537282222
+        },
+        {
+          "a": 1,
+          "b": 3,
+          "iou": 0.8119465189140278
+        },
+        {
+          "a": 2,
+          "b": 3,
+          "iou": 0.8384813308823433
+        }
+      ],
+      "diagnostic_vote_metrics": {
+        "1": {
+          "iou": 0.8078364039778937,
+          "dice": 0.89370520717512,
+          "precision": 0.9870333936955302,
+          "recall": 0.8165015303719981,
+          "predicted_outside_GT_ratio": 0.012966606304469767,
+          "predicted_pixels": 843243,
+          "GT_pixels": 1019360,
+          "true_positive_pixels": 832309,
+          "false_positive_pixels": 10934,
+          "false_negative_pixels": 187051,
+          "predicted_component_count": 3,
+          "GT_component_count": 3,
+          "matched_components": 3,
+          "component_coverage": 1.0,
+          "false_positive_components": 0,
+          "missed_components": 0
+        },
+        "3": {
+          "iou": 0.6549140240620873,
+          "dice": 0.7914780037389023,
+          "precision": 0.9988771537417245,
+          "recall": 0.6553965233087428,
+          "predicted_outside_GT_ratio": 0.0011228462582755713,
+          "predicted_pixels": 668836,
+          "GT_pixels": 1019360,
+          "true_positive_pixels": 668085,
+          "false_positive_pixels": 751,
+          "false_negative_pixels": 351275,
+          "predicted_component_count": 3,
+          "GT_component_count": 3,
+          "matched_components": 3,
+          "component_coverage": 1.0,
+          "false_positive_components": 0,
+          "missed_components": 0
+        },
+        "4": {
+          "iou": 0.5251913997140039,
+          "dice": 0.6886891701756056,
+          "precision": 0.9995632013977556,
+          "recall": 0.5253119604457699,
+          "predicted_outside_GT_ratio": 0.00043679860224447284,
+          "predicted_pixels": 535716,
+          "GT_pixels": 1019360,
+          "true_positive_pixels": 535482,
+          "false_positive_pixels": 234,
+          "false_negative_pixels": 483878,
+          "predicted_component_count": 3,
+          "GT_component_count": 3,
+          "matched_components": 2,
+          "component_coverage": 0.6666666666666666,
+          "false_positive_components": 1,
+          "missed_components": 1
+        }
+      },
+      "deterministic": true,
+      "repeat_metrics": [
+        {
+          "iou": 0.7495141091740687,
+          "dice": 0.8568254525571196,
+          "precision": 0.9961144173445962,
+          "recall": 0.75171185842097,
+          "predicted_outside_GT_ratio": 0.003885582655403807,
+          "predicted_pixels": 769254,
+          "GT_pixels": 1019360,
+          "true_positive_pixels": 766265,
+          "false_positive_pixels": 2989,
+          "false_negative_pixels": 253095,
+          "predicted_component_count": 3,
+          "GT_component_count": 3,
+          "matched_components": 3,
+          "component_coverage": 1.0,
+          "false_positive_components": 0,
+          "missed_components": 0
+        },
+        {
+          "iou": 0.7495141091740687,
+          "dice": 0.8568254525571196,
+          "precision": 0.9961144173445962,
+          "recall": 0.75171185842097,
+          "predicted_outside_GT_ratio": 0.003885582655403807,
+          "predicted_pixels": 769254,
+          "GT_pixels": 1019360,
+          "true_positive_pixels": 766265,
+          "false_positive_pixels": 2989,
+          "false_negative_pixels": 253095,
+          "predicted_component_count": 3,
+          "GT_component_count": 3,
+          "matched_components": 3,
+          "component_coverage": 1.0,
+          "false_positive_components": 0,
+          "missed_components": 0
+        },
+        {
+          "iou": 0.7495141091740687,
+          "dice": 0.8568254525571196,
+          "precision": 0.9961144173445962,
+          "recall": 0.75171185842097,
+          "predicted_outside_GT_ratio": 0.003885582655403807,
+          "predicted_pixels": 769254,
+          "GT_pixels": 1019360,
+          "true_positive_pixels": 766265,
+          "false_positive_pixels": 2989,
+          "false_negative_pixels": 253095,
+          "predicted_component_count": 3,
+          "GT_component_count": 3,
+          "matched_components": 3,
+          "component_coverage": 1.0,
+          "false_positive_components": 0,
+          "missed_components": 0
+        }
+      ],
+      "mask_hashes": [
+        "6dfac3062b39122c8cc75ebef518cb90bfa9c5b64be91f0dbe34c32abfdf8b34",
+        "6dfac3062b39122c8cc75ebef518cb90bfa9c5b64be91f0dbe34c32abfdf8b34",
+        "6dfac3062b39122c8cc75ebef518cb90bfa9c5b64be91f0dbe34c32abfdf8b34"
+      ],
+      "ridge_quality": [
+        {
+          "component": 1,
+          "bbox": [
+            2179,
+            214,
+            2833,
+            777
+          ],
+          "area": 271678,
+          "quality": {
+            "credible_windows": 0,
+            "eligible_windows": 601,
+            "credible_fraction": 0.0,
+            "pitch_native": null,
+            "orientation": null,
+            "working_ratio": 0.7828746177370031,
+            "status": "ridge_evidence_insufficient",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        },
+        {
+          "component": 2,
+          "bbox": [
+            1558,
+            1321,
+            2172,
+            1804
+          ],
+          "area": 241943,
+          "quality": {
+            "credible_windows": 10,
+            "eligible_windows": 605,
+            "credible_fraction": 0.01652892561983471,
+            "pitch_native": 8.94410773721236,
+            "orientation": -1.1284390687942505,
+            "working_ratio": 0.8338762214983714,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        },
+        {
+          "component": 3,
+          "bbox": [
+            1636,
+            2179,
+            2286,
+            2656
+          ],
+          "area": 255633,
+          "quality": {
+            "credible_windows": 3,
+            "eligible_windows": 564,
+            "credible_fraction": 0.005319148936170213,
+            "pitch_native": 11.267347735824966,
+            "orientation": -1.1333000659942627,
+            "working_ratio": 0.7876923076923077,
+            "status": "ridge_evidence_insufficient",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        }
+      ]
+    },
+    {
+      "sample_id": "DET-05",
+      "annotation_status": "valid_positive",
+      "primary_policy": "class 2; votes >=2/4; no component cleanup",
+      "raw_rotation_components": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "consensus_components": 1,
+      "raw_metrics": {
+        "iou": 0.2872536990351144,
+        "dice": 0.44630471716714565,
+        "precision": 1.0,
+        "recall": 0.2872536990351144,
+        "predicted_outside_GT_ratio": 0.0,
+        "predicted_pixels": 218428,
+        "GT_pixels": 760401,
+        "true_positive_pixels": 218428,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 541973,
+        "predicted_component_count": 1,
+        "GT_component_count": 1,
+        "matched_components": 0,
+        "component_coverage": 0.0,
+        "false_positive_components": 1,
+        "missed_components": 1
+      },
+      "ridge_metrics": {
+        "iou": 0.051261110913846775,
+        "dice": 0.09752308038730016,
+        "precision": 1.0,
+        "recall": 0.051261110913846775,
+        "predicted_outside_GT_ratio": 0.0,
+        "predicted_pixels": 38979,
+        "GT_pixels": 760401,
+        "true_positive_pixels": 38979,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 721422,
+        "predicted_component_count": 1,
+        "GT_component_count": 1,
+        "matched_components": 0,
+        "component_coverage": 0.0,
+        "false_positive_components": 1,
+        "missed_components": 1
+      },
+      "rotation_pairwise_iou": [
+        {
+          "a": 0,
+          "b": 1,
+          "iou": 0.6576316567817058
+        },
+        {
+          "a": 0,
+          "b": 2,
+          "iou": 0.508668504177611
+        },
+        {
+          "a": 0,
+          "b": 3,
+          "iou": 0.33310254037841763
+        },
+        {
+          "a": 1,
+          "b": 2,
+          "iou": 0.71287328853272
+        },
+        {
+          "a": 1,
+          "b": 3,
+          "iou": 0.4963692994281995
+        },
+        {
+          "a": 2,
+          "b": 3,
+          "iou": 0.5995412685820716
+        }
+      ],
+      "diagnostic_vote_metrics": {
+        "1": {
+          "iou": 0.42941900463912647,
+          "dice": 0.600830132026317,
+          "precision": 0.9997336639573863,
+          "recall": 0.42946813589145727,
+          "predicted_outside_GT_ratio": 0.00026633604261376684,
+          "predicted_pixels": 326655,
+          "GT_pixels": 760401,
+          "true_positive_pixels": 326568,
+          "false_positive_pixels": 87,
+          "false_negative_pixels": 433833,
+          "predicted_component_count": 1,
+          "GT_component_count": 1,
+          "matched_components": 0,
+          "component_coverage": 0.0,
+          "false_positive_components": 1,
+          "missed_components": 1
+        },
+        "3": {
+          "iou": 0.21320987215955792,
+          "dice": 0.35148060867661185,
+          "precision": 1.0,
+          "recall": 0.21320987215955792,
+          "predicted_outside_GT_ratio": 0.0,
+          "predicted_pixels": 162125,
+          "GT_pixels": 760401,
+          "true_positive_pixels": 162125,
+          "false_positive_pixels": 0,
+          "false_negative_pixels": 598276,
+          "predicted_component_count": 1,
+          "GT_component_count": 1,
+          "matched_components": 0,
+          "component_coverage": 0.0,
+          "false_positive_components": 1,
+          "missed_components": 1
+        },
+        "4": {
+          "iou": 0.136070310270502,
+          "dice": 0.23954557924870554,
+          "precision": 1.0,
+          "recall": 0.136070310270502,
+          "predicted_outside_GT_ratio": 0.0,
+          "predicted_pixels": 103468,
+          "GT_pixels": 760401,
+          "true_positive_pixels": 103468,
+          "false_positive_pixels": 0,
+          "false_negative_pixels": 656933,
+          "predicted_component_count": 1,
+          "GT_component_count": 1,
+          "matched_components": 0,
+          "component_coverage": 0.0,
+          "false_positive_components": 1,
+          "missed_components": 1
+        }
+      },
+      "deterministic": true,
+      "repeat_metrics": [
+        {
+          "iou": 0.2872536990351144,
+          "dice": 0.44630471716714565,
+          "precision": 1.0,
+          "recall": 0.2872536990351144,
+          "predicted_outside_GT_ratio": 0.0,
+          "predicted_pixels": 218428,
+          "GT_pixels": 760401,
+          "true_positive_pixels": 218428,
+          "false_positive_pixels": 0,
+          "false_negative_pixels": 541973,
+          "predicted_component_count": 1,
+          "GT_component_count": 1,
+          "matched_components": 0,
+          "component_coverage": 0.0,
+          "false_positive_components": 1,
+          "missed_components": 1
+        },
+        {
+          "iou": 0.2872536990351144,
+          "dice": 0.44630471716714565,
+          "precision": 1.0,
+          "recall": 0.2872536990351144,
+          "predicted_outside_GT_ratio": 0.0,
+          "predicted_pixels": 218428,
+          "GT_pixels": 760401,
+          "true_positive_pixels": 218428,
+          "false_positive_pixels": 0,
+          "false_negative_pixels": 541973,
+          "predicted_component_count": 1,
+          "GT_component_count": 1,
+          "matched_components": 0,
+          "component_coverage": 0.0,
+          "false_positive_components": 1,
+          "missed_components": 1
+        },
+        {
+          "iou": 0.2872536990351144,
+          "dice": 0.44630471716714565,
+          "precision": 1.0,
+          "recall": 0.2872536990351144,
+          "predicted_outside_GT_ratio": 0.0,
+          "predicted_pixels": 218428,
+          "GT_pixels": 760401,
+          "true_positive_pixels": 218428,
+          "false_positive_pixels": 0,
+          "false_negative_pixels": 541973,
+          "predicted_component_count": 1,
+          "GT_component_count": 1,
+          "matched_components": 0,
+          "component_coverage": 0.0,
+          "false_positive_components": 1,
+          "missed_components": 1
+        }
+      ],
+      "mask_hashes": [
+        "46b1c2e21e65ecb49f2a3cc62a785f9a7008d9bdf5c1b4c5d650a96b2e59025b",
+        "46b1c2e21e65ecb49f2a3cc62a785f9a7008d9bdf5c1b4c5d650a96b2e59025b",
+        "46b1c2e21e65ecb49f2a3cc62a785f9a7008d9bdf5c1b4c5d650a96b2e59025b"
+      ],
+      "ridge_quality": [
+        {
+          "component": 1,
+          "bbox": [
+            1844,
+            1500,
+            2340,
+            2062
+          ],
+          "area": 218428,
+          "quality": {
+            "credible_windows": 77,
+            "eligible_windows": 650,
+            "credible_fraction": 0.11846153846153847,
+            "pitch_native": 15.708377541936024,
+            "orientation": -0.8544740676879883,
+            "working_ratio": 0.9110320284697508,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        }
+      ]
+    },
+    {
+      "sample_id": "CAP-016",
+      "annotation_status": "valid_positive",
+      "primary_policy": "class 2; votes >=2/4; no component cleanup",
+      "raw_rotation_components": [
+        1,
+        2,
+        1,
+        0
+      ],
+      "consensus_components": 1,
+      "raw_metrics": {
+        "iou": 0.04897270563220782,
+        "dice": 0.09337269762932934,
+        "precision": 0.9915769770706598,
+        "recall": 0.048993086865043584,
+        "predicted_outside_GT_ratio": 0.008423022929340197,
+        "predicted_pixels": 4274,
+        "GT_pixels": 86502,
+        "true_positive_pixels": 4238,
+        "false_positive_pixels": 36,
+        "false_negative_pixels": 82264,
+        "predicted_component_count": 1,
+        "GT_component_count": 1,
+        "matched_components": 0,
+        "component_coverage": 0.0,
+        "false_positive_components": 1,
+        "missed_components": 1
+      },
+      "ridge_metrics": {
+        "iou": 0.0,
+        "dice": 0.0,
+        "precision": null,
+        "recall": 0.0,
+        "predicted_outside_GT_ratio": null,
+        "predicted_pixels": 0,
+        "GT_pixels": 86502,
+        "true_positive_pixels": 0,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 86502,
+        "predicted_component_count": 0,
+        "GT_component_count": 1,
+        "matched_components": 0,
+        "component_coverage": 0.0,
+        "false_positive_components": 0,
+        "missed_components": 1
+      },
+      "rotation_pairwise_iou": [
+        {
+          "a": 0,
+          "b": 1,
+          "iou": 0.0
+        },
+        {
+          "a": 0,
+          "b": 2,
+          "iou": 0.119729949295459
+        },
+        {
+          "a": 0,
+          "b": 3,
+          "iou": 0.0
+        },
+        {
+          "a": 1,
+          "b": 2,
+          "iou": 0.0
+        },
+        {
+          "a": 1,
+          "b": 3,
+          "iou": 0.0
+        },
+        {
+          "a": 2,
+          "b": 3,
+          "iou": 0.0
+        }
+      ],
+      "diagnostic_vote_metrics": {
+        "1": {
+          "iou": 0.2243650650984823,
+          "dice": 0.3665002726624439,
+          "precision": 0.46364890681383997,
+          "recall": 0.3030103350211556,
+          "predicted_outside_GT_ratio": 0.53635109318616,
+          "predicted_pixels": 56532,
+          "GT_pixels": 86502,
+          "true_positive_pixels": 26211,
+          "false_positive_pixels": 30321,
+          "false_negative_pixels": 60291,
+          "predicted_component_count": 3,
+          "GT_component_count": 1,
+          "matched_components": 0,
+          "component_coverage": 0.0,
+          "false_positive_components": 3,
+          "missed_components": 1
+        },
+        "3": {
+          "iou": 0.0,
+          "dice": 0.0,
+          "precision": null,
+          "recall": 0.0,
+          "predicted_outside_GT_ratio": null,
+          "predicted_pixels": 0,
+          "GT_pixels": 86502,
+          "true_positive_pixels": 0,
+          "false_positive_pixels": 0,
+          "false_negative_pixels": 86502,
+          "predicted_component_count": 0,
+          "GT_component_count": 1,
+          "matched_components": 0,
+          "component_coverage": 0.0,
+          "false_positive_components": 0,
+          "missed_components": 1
+        },
+        "4": {
+          "iou": 0.0,
+          "dice": 0.0,
+          "precision": null,
+          "recall": 0.0,
+          "predicted_outside_GT_ratio": null,
+          "predicted_pixels": 0,
+          "GT_pixels": 86502,
+          "true_positive_pixels": 0,
+          "false_positive_pixels": 0,
+          "false_negative_pixels": 86502,
+          "predicted_component_count": 0,
+          "GT_component_count": 1,
+          "matched_components": 0,
+          "component_coverage": 0.0,
+          "false_positive_components": 0,
+          "missed_components": 1
+        }
+      },
+      "deterministic": true,
+      "repeat_metrics": [
+        {
+          "iou": 0.04897270563220782,
+          "dice": 0.09337269762932934,
+          "precision": 0.9915769770706598,
+          "recall": 0.048993086865043584,
+          "predicted_outside_GT_ratio": 0.008423022929340197,
+          "predicted_pixels": 4274,
+          "GT_pixels": 86502,
+          "true_positive_pixels": 4238,
+          "false_positive_pixels": 36,
+          "false_negative_pixels": 82264,
+          "predicted_component_count": 1,
+          "GT_component_count": 1,
+          "matched_components": 0,
+          "component_coverage": 0.0,
+          "false_positive_components": 1,
+          "missed_components": 1
+        },
+        {
+          "iou": 0.04897270563220782,
+          "dice": 0.09337269762932934,
+          "precision": 0.9915769770706598,
+          "recall": 0.048993086865043584,
+          "predicted_outside_GT_ratio": 0.008423022929340197,
+          "predicted_pixels": 4274,
+          "GT_pixels": 86502,
+          "true_positive_pixels": 4238,
+          "false_positive_pixels": 36,
+          "false_negative_pixels": 82264,
+          "predicted_component_count": 1,
+          "GT_component_count": 1,
+          "matched_components": 0,
+          "component_coverage": 0.0,
+          "false_positive_components": 1,
+          "missed_components": 1
+        },
+        {
+          "iou": 0.04897270563220782,
+          "dice": 0.09337269762932934,
+          "precision": 0.9915769770706598,
+          "recall": 0.048993086865043584,
+          "predicted_outside_GT_ratio": 0.008423022929340197,
+          "predicted_pixels": 4274,
+          "GT_pixels": 86502,
+          "true_positive_pixels": 4238,
+          "false_positive_pixels": 36,
+          "false_negative_pixels": 82264,
+          "predicted_component_count": 1,
+          "GT_component_count": 1,
+          "matched_components": 0,
+          "component_coverage": 0.0,
+          "false_positive_components": 1,
+          "missed_components": 1
+        }
+      ],
+      "mask_hashes": [
+        "00528332dc04bb46ccca582c72d1a66118be23868e5c2288bfbc2b52894011a3",
+        "00528332dc04bb46ccca582c72d1a66118be23868e5c2288bfbc2b52894011a3",
+        "00528332dc04bb46ccca582c72d1a66118be23868e5c2288bfbc2b52894011a3"
+      ],
+      "ridge_quality": [
+        {
+          "component": 1,
+          "bbox": [
+            1074,
+            1828,
+            1144,
+            1929
+          ],
+          "area": 4274,
+          "quality": {
+            "credible_windows": 0,
+            "eligible_windows": 7,
+            "credible_fraction": 0.0,
+            "pitch_native": null,
+            "orientation": null,
+            "working_ratio": 1.0,
+            "status": "ridge_evidence_insufficient",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        }
+      ]
+    },
+    {
+      "sample_id": "CAP-042",
+      "annotation_status": "valid_positive",
+      "primary_policy": "class 2; votes >=2/4; no component cleanup",
+      "raw_rotation_components": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "consensus_components": 1,
+      "raw_metrics": {
+        "iou": 0.7128840760836432,
+        "dice": 0.8323786601059298,
+        "precision": 0.999332336288858,
+        "recall": 0.713223773744582,
+        "predicted_outside_GT_ratio": 0.000667663711141972,
+        "predicted_pixels": 187220,
+        "GT_pixels": 262323,
+        "true_positive_pixels": 187095,
+        "false_positive_pixels": 125,
+        "false_negative_pixels": 75228,
+        "predicted_component_count": 1,
+        "GT_component_count": 1,
+        "matched_components": 1,
+        "component_coverage": 1.0,
+        "false_positive_components": 0,
+        "missed_components": 0
+      },
+      "ridge_metrics": {
+        "iou": 0.09065541336444002,
+        "dice": 0.166240248301317,
+        "precision": 1.0,
+        "recall": 0.09065541336444002,
+        "predicted_outside_GT_ratio": 0.0,
+        "predicted_pixels": 23781,
+        "GT_pixels": 262323,
+        "true_positive_pixels": 23781,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 238542,
+        "predicted_component_count": 3,
+        "GT_component_count": 1,
+        "matched_components": 0,
+        "component_coverage": 0.0,
+        "false_positive_components": 3,
+        "missed_components": 1
+      },
+      "rotation_pairwise_iou": [
+        {
+          "a": 0,
+          "b": 1,
+          "iou": 0.6224462722207482
+        },
+        {
+          "a": 0,
+          "b": 2,
+          "iou": 0.6414774210388933
+        },
+        {
+          "a": 0,
+          "b": 3,
+          "iou": 0.49588317607372995
+        },
+        {
+          "a": 1,
+          "b": 2,
+          "iou": 0.8671431462565108
+        },
+        {
+          "a": 1,
+          "b": 3,
+          "iou": 0.7561962547470427
+        },
+        {
+          "a": 2,
+          "b": 3,
+          "iou": 0.7674893520259575
+        }
+      ],
+      "diagnostic_vote_metrics": {
+        "1": {
+          "iou": 0.8612794255763929,
+          "dice": 0.9254703122393089,
+          "precision": 0.9924375651839988,
+          "recall": 0.866969346950134,
+          "predicted_outside_GT_ratio": 0.007562434816001117,
+          "predicted_pixels": 229159,
+          "GT_pixels": 262323,
+          "true_positive_pixels": 227426,
+          "false_positive_pixels": 1733,
+          "false_negative_pixels": 34897,
+          "predicted_component_count": 1,
+          "GT_component_count": 1,
+          "matched_components": 1,
+          "component_coverage": 1.0,
+          "false_positive_components": 0,
+          "missed_components": 0
+        },
+        "3": {
+          "iou": 0.6288316312332506,
+          "dice": 0.772126006365849,
+          "precision": 1.0,
+          "recall": 0.6288316312332506,
+          "predicted_outside_GT_ratio": 0.0,
+          "predicted_pixels": 164957,
+          "GT_pixels": 262323,
+          "true_positive_pixels": 164957,
+          "false_positive_pixels": 0,
+          "false_negative_pixels": 97366,
+          "predicted_component_count": 1,
+          "GT_component_count": 1,
+          "matched_components": 1,
+          "component_coverage": 1.0,
+          "false_positive_components": 0,
+          "missed_components": 0
+        },
+        "4": {
+          "iou": 0.42032913621756385,
+          "dice": 0.5918756793751762,
+          "precision": 1.0,
+          "recall": 0.42032913621756385,
+          "predicted_outside_GT_ratio": 0.0,
+          "predicted_pixels": 110262,
+          "GT_pixels": 262323,
+          "true_positive_pixels": 110262,
+          "false_positive_pixels": 0,
+          "false_negative_pixels": 152061,
+          "predicted_component_count": 1,
+          "GT_component_count": 1,
+          "matched_components": 0,
+          "component_coverage": 0.0,
+          "false_positive_components": 1,
+          "missed_components": 1
+        }
+      },
+      "deterministic": true,
+      "repeat_metrics": [
+        {
+          "iou": 0.7128840760836432,
+          "dice": 0.8323786601059298,
+          "precision": 0.999332336288858,
+          "recall": 0.713223773744582,
+          "predicted_outside_GT_ratio": 0.000667663711141972,
+          "predicted_pixels": 187220,
+          "GT_pixels": 262323,
+          "true_positive_pixels": 187095,
+          "false_positive_pixels": 125,
+          "false_negative_pixels": 75228,
+          "predicted_component_count": 1,
+          "GT_component_count": 1,
+          "matched_components": 1,
+          "component_coverage": 1.0,
+          "false_positive_components": 0,
+          "missed_components": 0
+        },
+        {
+          "iou": 0.7128840760836432,
+          "dice": 0.8323786601059298,
+          "precision": 0.999332336288858,
+          "recall": 0.713223773744582,
+          "predicted_outside_GT_ratio": 0.000667663711141972,
+          "predicted_pixels": 187220,
+          "GT_pixels": 262323,
+          "true_positive_pixels": 187095,
+          "false_positive_pixels": 125,
+          "false_negative_pixels": 75228,
+          "predicted_component_count": 1,
+          "GT_component_count": 1,
+          "matched_components": 1,
+          "component_coverage": 1.0,
+          "false_positive_components": 0,
+          "missed_components": 0
+        },
+        {
+          "iou": 0.7128840760836432,
+          "dice": 0.8323786601059298,
+          "precision": 0.999332336288858,
+          "recall": 0.713223773744582,
+          "predicted_outside_GT_ratio": 0.000667663711141972,
+          "predicted_pixels": 187220,
+          "GT_pixels": 262323,
+          "true_positive_pixels": 187095,
+          "false_positive_pixels": 125,
+          "false_negative_pixels": 75228,
+          "predicted_component_count": 1,
+          "GT_component_count": 1,
+          "matched_components": 1,
+          "component_coverage": 1.0,
+          "false_positive_components": 0,
+          "missed_components": 0
+        }
+      ],
+      "mask_hashes": [
+        "64fbbf967e8afb7b6cc2f40136abea70d19c8eb02d7b29800e87bda88e0dc4df",
+        "64fbbf967e8afb7b6cc2f40136abea70d19c8eb02d7b29800e87bda88e0dc4df",
+        "64fbbf967e8afb7b6cc2f40136abea70d19c8eb02d7b29800e87bda88e0dc4df"
+      ],
+      "ridge_quality": [
+        {
+          "component": 1,
+          "bbox": [
+            1634,
+            1256,
+            2174,
+            1677
+          ],
+          "area": 187220,
+          "quality": {
+            "credible_windows": 42,
+            "eligible_windows": 595,
+            "credible_fraction": 0.07058823529411765,
+            "pitch_native": 10.67268710306828,
+            "orientation": 0.7634075284004211,
+            "working_ratio": 0.9481481481481482,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        }
+      ]
+    },
+    {
+      "sample_id": "CAP-054",
+      "annotation_status": "valid_positive",
+      "primary_policy": "class 2; votes >=2/4; no component cleanup",
+      "raw_rotation_components": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "consensus_components": 1,
+      "raw_metrics": {
+        "iou": 0.8196882545424036,
+        "dice": 0.9009106394969069,
+        "precision": 0.997798444158217,
+        "recall": 0.8211734050600992,
+        "predicted_outside_GT_ratio": 0.0022015558417830335,
+        "predicted_pixels": 176239,
+        "GT_pixels": 214146,
+        "true_positive_pixels": 175851,
+        "false_positive_pixels": 388,
+        "false_negative_pixels": 38295,
+        "predicted_component_count": 1,
+        "GT_component_count": 1,
+        "matched_components": 1,
+        "component_coverage": 1.0,
+        "false_positive_components": 0,
+        "missed_components": 0
+      },
+      "ridge_metrics": {
+        "iou": 0.02304502535653246,
+        "dice": 0.045051830145014855,
+        "precision": 1.0,
+        "recall": 0.02304502535653246,
+        "predicted_outside_GT_ratio": 0.0,
+        "predicted_pixels": 4935,
+        "GT_pixels": 214146,
+        "true_positive_pixels": 4935,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 209211,
+        "predicted_component_count": 2,
+        "GT_component_count": 1,
+        "matched_components": 0,
+        "component_coverage": 0.0,
+        "false_positive_components": 2,
+        "missed_components": 1
+      },
+      "rotation_pairwise_iou": [
+        {
+          "a": 0,
+          "b": 1,
+          "iou": 0.8919806892852353
+        },
+        {
+          "a": 0,
+          "b": 2,
+          "iou": 0.8011247296323
+        },
+        {
+          "a": 0,
+          "b": 3,
+          "iou": 0.8935702009412596
+        },
+        {
+          "a": 1,
+          "b": 2,
+          "iou": 0.7946278614977568
+        },
+        {
+          "a": 1,
+          "b": 3,
+          "iou": 0.8817816352067304
+        },
+        {
+          "a": 2,
+          "b": 3,
+          "iou": 0.7626510309445025
+        }
+      ],
+      "diagnostic_vote_metrics": {
+        "1": {
+          "iou": 0.8648603784720942,
+          "dice": 0.9275336518015211,
+          "precision": 0.9856744968206422,
+          "recall": 0.8758697337330607,
+          "predicted_outside_GT_ratio": 0.014325503179357822,
+          "predicted_pixels": 190290,
+          "GT_pixels": 214146,
+          "true_positive_pixels": 187564,
+          "false_positive_pixels": 2726,
+          "false_negative_pixels": 26582,
+          "predicted_component_count": 1,
+          "GT_component_count": 1,
+          "matched_components": 1,
+          "component_coverage": 1.0,
+          "false_positive_components": 0,
+          "missed_components": 0
+        },
+        "3": {
+          "iou": 0.7608237892250013,
+          "dice": 0.864168003500073,
+          "precision": 0.9997852615820699,
+          "recall": 0.7609481381860973,
+          "predicted_outside_GT_ratio": 0.00021473841793004435,
+          "predicted_pixels": 162989,
+          "GT_pixels": 214146,
+          "true_positive_pixels": 162954,
+          "false_positive_pixels": 35,
+          "false_negative_pixels": 51192,
+          "predicted_component_count": 1,
+          "GT_component_count": 1,
+          "matched_components": 1,
+          "component_coverage": 1.0,
+          "false_positive_components": 0,
+          "missed_components": 0
+        },
+        "4": {
+          "iou": 0.635804976908601,
+          "dice": 0.7773603649380827,
+          "precision": 0.9999779670975323,
+          "recall": 0.635813883985692,
+          "predicted_outside_GT_ratio": 2.2032902467685077e-05,
+          "predicted_pixels": 136160,
+          "GT_pixels": 214146,
+          "true_positive_pixels": 136157,
+          "false_positive_pixels": 3,
+          "false_negative_pixels": 77989,
+          "predicted_component_count": 1,
+          "GT_component_count": 1,
+          "matched_components": 1,
+          "component_coverage": 1.0,
+          "false_positive_components": 0,
+          "missed_components": 0
+        }
+      },
+      "deterministic": true,
+      "repeat_metrics": [
+        {
+          "iou": 0.8196882545424036,
+          "dice": 0.9009106394969069,
+          "precision": 0.997798444158217,
+          "recall": 0.8211734050600992,
+          "predicted_outside_GT_ratio": 0.0022015558417830335,
+          "predicted_pixels": 176239,
+          "GT_pixels": 214146,
+          "true_positive_pixels": 175851,
+          "false_positive_pixels": 388,
+          "false_negative_pixels": 38295,
+          "predicted_component_count": 1,
+          "GT_component_count": 1,
+          "matched_components": 1,
+          "component_coverage": 1.0,
+          "false_positive_components": 0,
+          "missed_components": 0
+        },
+        {
+          "iou": 0.8196882545424036,
+          "dice": 0.9009106394969069,
+          "precision": 0.997798444158217,
+          "recall": 0.8211734050600992,
+          "predicted_outside_GT_ratio": 0.0022015558417830335,
+          "predicted_pixels": 176239,
+          "GT_pixels": 214146,
+          "true_positive_pixels": 175851,
+          "false_positive_pixels": 388,
+          "false_negative_pixels": 38295,
+          "predicted_component_count": 1,
+          "GT_component_count": 1,
+          "matched_components": 1,
+          "component_coverage": 1.0,
+          "false_positive_components": 0,
+          "missed_components": 0
+        },
+        {
+          "iou": 0.8196882545424036,
+          "dice": 0.9009106394969069,
+          "precision": 0.997798444158217,
+          "recall": 0.8211734050600992,
+          "predicted_outside_GT_ratio": 0.0022015558417830335,
+          "predicted_pixels": 176239,
+          "GT_pixels": 214146,
+          "true_positive_pixels": 175851,
+          "false_positive_pixels": 388,
+          "false_negative_pixels": 38295,
+          "predicted_component_count": 1,
+          "GT_component_count": 1,
+          "matched_components": 1,
+          "component_coverage": 1.0,
+          "false_positive_components": 0,
+          "missed_components": 0
+        }
+      ],
+      "mask_hashes": [
+        "a67265e0a81fa5bac655bd6e9544d22dd0143c5da76b2dc0fb1f75e0b4c596b4",
+        "a67265e0a81fa5bac655bd6e9544d22dd0143c5da76b2dc0fb1f75e0b4c596b4",
+        "a67265e0a81fa5bac655bd6e9544d22dd0143c5da76b2dc0fb1f75e0b4c596b4"
+      ],
+      "ridge_quality": [
+        {
+          "component": 1,
+          "bbox": [
+            1728,
+            1307,
+            2291,
+            1709
+          ],
+          "area": 176239,
+          "quality": {
+            "credible_windows": 6,
+            "eligible_windows": 518,
+            "credible_fraction": 0.011583011583011582,
+            "pitch_native": 9.026514932502419,
+            "orientation": 0.8301957249641418,
+            "working_ratio": 0.9094138543516874,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        }
+      ]
+    }
+  ]
+}

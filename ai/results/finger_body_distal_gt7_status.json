@@ -1,0 +1,2682 @@
+{
+  "FINGER_BODY_DISTAL_ESTIMATOR_IMPLEMENTED": true,
+  "DET03_RECOVERED": true,
+  "DET05_UNDERCOVERAGE_IMPROVED": true,
+  "CAP016_UNDERCOVERAGE_IMPROVED": true,
+  "CAP042_KEYBOARD_FP_REMOVED": true,
+  "CAP054_BACKGROUND_FP_REMOVED": true,
+  "GT7_MACRO_IOU": 0.7528758881298758,
+  "GT7_COMPONENT_COVERAGE": {
+    "matched": 10,
+    "total": 10,
+    "ratio": 1.0
+  },
+  "FALSE_POSITIVES": 0,
+  "MISSES": 0,
+  "PHOTO_DETECTOR_APPROVED": false,
+  "legacy_class_2_only": {
+    "macro_iou": 0.4973471687610349,
+    "median_iou": 0.7128840760836432,
+    "min_iou": 0.0,
+    "max_iou": 0.8631173368598064,
+    "component_coverage": {
+      "matched": 7,
+      "total": 10,
+      "ratio": 0.7
+    },
+    "false_positive_components": 2,
+    "missed_components": 3
+  },
+  "body_distal": {
+    "macro_iou": 0.7528758881298758,
+    "median_iou": 0.7804072186335451,
+    "min_iou": 0.5946162496401136,
+    "max_iou": 0.8988711563461526,
+    "component_coverage": {
+      "matched": 10,
+      "total": 10,
+      "ratio": 1.0
+    },
+    "false_positive_components": 0,
+    "missed_components": 0
+  },
+  "ridge_diagnostic": {
+    "macro_iou": 0.09915004403537275,
+    "median_iou": 0.08303884905250397,
+    "min_iou": 0.0,
+    "max_iou": 0.2704075421676969,
+    "component_coverage": {
+      "matched": 0,
+      "total": 10,
+      "ratio": 0.0
+    },
+    "false_positive_components": 20,
+    "missed_components": 10
+  },
+  "body_exterior_pixels": 0,
+  "deterministic": true,
+  "GT_used_for_inference": false,
+  "policy": {
+    "pad_width_multiplier": 1.35,
+    "palm_widening_ratio": 1.45,
+    "working_side": 512,
+    "source_classes": [
+      1,
+      2
+    ],
+    "tip_auxiliary_class": 2,
+    "consensus_votes": 2,
+    "GT_threshold_search": false
+  },
+  "version": "finger_body_distal_v2_experimental",
+  "approval_blockers": [
+    "macro IoU below 0.85",
+    "CAP-016 precision 0.7108 and leakage 28.92 percent",
+    "DET-03 only partial recovery; recall 0.5957"
+  ],
+  "severe_wrist_keyboard_background_components": 0,
+  "structural_evidence": "private overlays reviewed; CAP-016 overextension is on finger proximal area, not wrist",
+  "tests_passed": 107,
+  "downstream": "NOT_RUN",
+  "WINDOWS_FULL_EQUIVALENCE_VERIFIED": false,
+  "FINAL_INDEPENDENT_VALIDATION_COMPLETE": false,
+  "PROJECT_COMPLETE": false,
+  "rows": [
+    {
+      "sample_id": "DET-01",
+      "annotation_status": "valid_positive",
+      "raw_metrics": {
+        "iou": 0.8988711563461526,
+        "dice": 0.946742651118867,
+        "precision": 0.9629169567971,
+        "recall": 0.9311027351838569,
+        "predicted_outside_GT_ratio": 0.03708304320290002,
+        "predicted_pixels": 285791,
+        "GT_pixels": 295556,
+        "true_positive_pixels": 275193,
+        "false_positive_pixels": 10598,
+        "false_negative_pixels": 20363,
+        "predicted_component_count": 2,
+        "GT_component_count": 2,
+        "matched_components": 2,
+        "component_coverage": 1.0,
+        "false_positive_components": 0,
+        "missed_components": 0
+      },
+      "ridge_metrics": {
+        "iou": 0.2704075421676969,
+        "dice": 0.42570204157683195,
+        "precision": 0.9979035116180398,
+        "recall": 0.27056124727631986,
+        "predicted_outside_GT_ratio": 0.0020964883819602166,
+        "predicted_pixels": 80134,
+        "GT_pixels": 295556,
+        "true_positive_pixels": 79966,
+        "false_positive_pixels": 168,
+        "false_negative_pixels": 215590,
+        "predicted_component_count": 9,
+        "GT_component_count": 2,
+        "matched_components": 0,
+        "component_coverage": 0.0,
+        "false_positive_components": 9,
+        "missed_components": 2
+      },
+      "body_exterior_pixels": 0,
+      "deterministic": true,
+      "mask_sha256": "e1f931a94ab4d4ea4f8907b7bf4f177313536b50e01d0b68d3481a8a762f6f60",
+      "regions": [
+        {
+          "proximal_boundary_source": "multi_cue_distal_geometry_candidate",
+          "distal_endpoint_source": "semantic_class_2_and_major_axis_centerline",
+          "confidence": 0.75,
+          "confidence_semantics": "fixed engineering evidence score; not probability",
+          "major_axis_yx": [
+            0.4832411976675664,
+            0.8754872614017956
+          ],
+          "major_axis_anisotropy": 2.8826954987235536,
+          "skeleton_endpoints_yx": [
+            [
+              154,
+              223
+            ],
+            [
+              199,
+              268
+            ]
+          ],
+          "distal_endpoint_yx": [
+            154,
+            223
+          ],
+          "skeleton_length": 73.01219330881972,
+          "finger_axis_length": 77.65777796282117,
+          "reference_width": 33.30575266789151,
+          "distal_extent": 65.27436647021109,
+          "width_profile": [
+            {
+              "longitudinal": 0.5,
+              "scanline_width": 7.4974246161530225,
+              "distance_transform_width": 2.0
+            },
+            {
+              "longitudinal": 2.5,
+              "scanline_width": 17.234462026989227,
+              "distance_transform_width": 5.599999904632568
+            },
+            {
+              "longitudinal": 4.5,
+              "scanline_width": 24.513862145307158,
+              "distance_transform_width": 8.787599563598633
+            },
+            {
+              "longitudinal": 7.5,
+              "scanline_width": 28.90525764990267,
+              "distance_transform_width": 15.593799591064453
+            },
+            {
+              "longitudinal": 9.5,
+              "scanline_width": 30.43453380455572,
+              "distance_transform_width": 19.181400299072266
+            },
+            {
+              "longitudinal": 12.5,
+              "scanline_width": 32.44532795297977,
+              "distance_transform_width": 25.968997955322266
+            },
+            {
+              "longitudinal": 14.5,
+              "scanline_width": 32.44532795297977,
+              "distance_transform_width": 27.968997955322266
+            },
+            {
+              "longitudinal": 17.5,
+              "scanline_width": 34.45612210140381,
+              "distance_transform_width": 34.756595611572266
+            },
+            {
+              "longitudinal": 19.5,
+              "scanline_width": 36.423141886757755,
+              "distance_transform_width": 37.150394439697266
+            },
+            {
+              "longitudinal": 22.5,
+              "scanline_width": 36.46691624982785,
+              "distance_transform_width": 39.150394439697266
+            },
+            {
+              "longitudinal": 24.5,
+              "scanline_width": 35.479718202402495,
+              "distance_transform_width": 37.150394439697266
+            },
+            {
+              "longitudinal": 27.5,
+              "scanline_width": 37.71393392287365,
+              "distance_transform_width": 39.150394439697266
+            },
+            {
+              "longitudinal": 29.5,
+              "scanline_width": 36.46691624982785,
+              "distance_transform_width": 38.756595611572266
+            },
+            {
+              "longitudinal": 32.5,
+              "scanline_width": 36.355205463804296,
+              "distance_transform_width": 40.36279296875
+            },
+            {
+              "longitudinal": 34.5,
+              "scanline_width": 36.46691624982785,
+              "distance_transform_width": 39.150394439697266
+            },
+            {
+              "longitudinal": 37.5,
+              "scanline_width": 37.23069272520609,
+              "distance_transform_width": 39.150394439697266
+            },
+            {
+              "longitudinal": 39.5,
+              "scanline_width": 37.23069272520608,
+              "distance_transform_width": 40.36279296875
+            },
+            {
+              "longitudinal": 42.5,
+              "scanline_width": 37.71393392287365,
+              "distance_transform_width": 40.75039291381836
+            },
+            {
+              "longitudinal": 44.5,
+              "scanline_width": 37.60222313685009,
+              "distance_transform_width": 40.36279296875
+            },
+            {
+              "longitudinal": 47.5,
+              "scanline_width": 39.289810993396884,
+              "distance_transform_width": 40.0
+            },
+            {
+              "longitudinal": 49.5,
+              "scanline_width": 38.36599961222833,
+              "distance_transform_width": 38.0
+            },
+            {
+              "longitudinal": 52.5,
+              "scanline_width": 37.57806107696672,
+              "distance_transform_width": 30.0
+            },
+            {
+              "longitudinal": 54.5,
+              "scanline_width": 36.46691624982785,
+              "distance_transform_width": 26.0
+            },
+            {
+              "longitudinal": 57.5,
+              "scanline_width": 37.57806107696672,
+              "distance_transform_width": 21.575199127197266
+            },
+            {
+              "longitudinal": 59.5,
+              "scanline_width": 34.45612210140381,
+              "distance_transform_width": 18.393798828125
+            },
+            {
+              "longitudinal": 62.5,
+              "scanline_width": 29.99820345025487,
+              "distance_transform_width": 16.0
+            },
+            {
+              "longitudinal": 64.5,
+              "scanline_width": 26.331359814664168,
+              "distance_transform_width": 12.0
+            },
+            {
+              "longitudinal": 67.5,
+              "scanline_width": 20.120743436815065,
+              "distance_transform_width": 10.0
+            },
+            {
+              "longitudinal": 69.5,
+              "scanline_width": 14.363243163653435,
+              "distance_transform_width": 10.0
+            },
+            {
+              "longitudinal": 72.5,
+              "scanline_width": 10.178483480718413,
+              "distance_transform_width": 6.0
+            },
+            {
+              "longitudinal": 74.5,
+              "scanline_width": 7.0898060784322166,
+              "distance_transform_width": 6.0
+            },
+            {
+              "longitudinal": 77.5,
+              "scanline_width": 1.7879385352616168,
+              "distance_transform_width": 2.0
+            }
+          ],
+          "contributing_cues": [
+            "major_axis",
+            "skeleton_geodesic_endpoints",
+            "scanline_width",
+            "distance_transform_width_diagnostic",
+            "proximal_widening",
+            "semantic_class_2"
+          ],
+          "reject_reason": null,
+          "component": 1,
+          "bbox": [
+            1610,
+            1102,
+            2118,
+            1532
+          ],
+          "working_scale": 0.128,
+          "metadata_coordinate_system": "working_image_pixels"
+        },
+        {
+          "proximal_boundary_source": "multi_cue_distal_geometry_candidate",
+          "distal_endpoint_source": "semantic_class_2_and_major_axis_centerline",
+          "confidence": 0.75,
+          "confidence_semantics": "fixed engineering evidence score; not probability",
+          "major_axis_yx": [
+            -0.09547440408725869,
+            0.9954318852458881
+          ],
+          "major_axis_anisotropy": 2.684788682882883,
+          "skeleton_endpoints_yx": [
+            [
+              157,
+              271
+            ],
+            [
+              160,
+              470
+            ],
+            [
+              255,
+              218
+            ],
+            [
+              333,
+              505
+            ]
+          ],
+          "distal_endpoint_yx": [
+            255,
+            218
+          ],
+          "skeleton_length": 395.97770542341425,
+          "finger_axis_length": 320.8046081493944,
+          "reference_width": 41.6968889688075,
+          "distal_extent": 57.351910206533226,
+          "width_profile": [
+            {
+              "longitudinal": 0.5,
+              "scanline_width": 8.16304078933306,
+              "distance_transform_width": 2.0
+            },
+            {
+              "longitudinal": 10.5,
+              "scanline_width": 30.850750204064646,
+              "distance_transform_width": 20.78759765625
+            },
+            {
+              "longitudinal": 20.5,
+              "scanline_width": 36.126539195867856,
+              "distance_transform_width": 37.150394439697266
+            },
+            {
+              "longitudinal": 30.5,
+              "scanline_width": 38.01785977783504,
+              "distance_transform_width": 41.544193267822266
+            },
+            {
+              "longitudinal": 41.5,
+              "scanline_width": 39.71009398275305,
+              "distance_transform_width": 44.0
+            },
+            {
+              "longitudinal": 51.5,
+              "scanline_width": 41.6968889688075,
+              "distance_transform_width": 43.937992095947266
+            },
+            {
+              "longitudinal": 61.5,
+              "scanline_width": 42.59277766552879,
+              "distance_transform_width": 45.5751953125
+            },
+            {
+              "longitudinal": 72.5,
+              "scanline_width": 44.384555058971394,
+              "distance_transform_width": 47.5751953125
+            },
+            {
+              "longitudinal": 82.5,
+              "scanline_width": 118.91392177282711,
+              "distance_transform_width": 4.0
+            },
+            {
+              "longitudinal": 92.5,
+              "scanline_width": 118.41620583020415,
+              "distance_transform_width": 4.0
+            },
+            {
+              "longitudinal": 103.5,
+              "scanline_width": 118.08963887917126,
+              "distance_transform_width": 2.0
+            },
+            {
+              "longitudinal": 113.5,
+              "scanline_width": 116.62442843676156,
+              "distance_transform_width": 2.0
+            },
+            {
+              "longitudinal": 123.5,
+              "scanline_width": 114.73310785479437,
+              "distance_transform_width": 2.0
+            },
+            {
+              "longitudinal": 134.5,
+              "scanline_width": 110.55229393676166,
+              "distance_transform_width": 4.0
+            },
+            {
+              "longitudinal": 144.5,
+              "scanline_width": 107.6696102539859,
+              "distance_transform_width": 2.0
+            },
+            {
+              "longitudinal": 154.5,
+              "scanline_width": 104.8824009752974,
+              "distance_transform_width": 2.0
+            },
+            {
+              "longitudinal": 165.5,
+              "scanline_width": 100.60204386874008,
+              "distance_transform_width": 0.0
+            },
+            {
+              "longitudinal": 175.5,
+              "scanline_width": 98.61524888268565,
+              "distance_transform_width": 23.575199127197266
+            },
+            {
+              "longitudinal": 185.5,
+              "scanline_width": 95.79055477812929,
+              "distance_transform_width": 45.150394439697266
+            },
+            {
+              "longitudinal": 196.5,
+              "scanline_width": 97.78141854862106,
+              "distance_transform_width": 67.150390625
+            },
+            {
+              "longitudinal": 206.5,
+              "scanline_width": 133.83726248264077,
+              "distance_transform_width": 82.694580078125
+            },
+            {
+              "longitudinal": 216.5,
+              "scanline_width": 144.78294443590818,
+              "distance_transform_width": 89.08218383789062
+            },
+            {
+              "longitudinal": 227.5,
+              "scanline_width": 158.21720610229036,
+              "distance_transform_width": 100.75658416748047
+            },
+            {
+              "longitudinal": 237.5,
+              "scanline_width": 163.78755587523,
+              "distance_transform_width": 114.80004119873047
+            },
+            {
+              "longitudinal": 247.5,
+              "scanline_width": 170.8551222604758,
+              "distance_transform_width": 133.15040588378906
+            },
+            {
+              "longitudinal": 258.5,
+              "scanline_width": 188.07202509079235,
+              "distance_transform_width": 141.85116577148438
+            },
+            {
+              "longitudinal": 268.5,
+              "scanline_width": 194.33510839896678,
+              "distance_transform_width": 159.38296508789062
+            },
+            {
+              "longitudinal": 278.5,
+              "scanline_width": 198.01820637437658,
+              "distance_transform_width": 178.570556640625
+            },
+            {
+              "longitudinal": 289.5,
+              "scanline_width": 204.2853584669883,
+              "distance_transform_width": 199.720947265625
+            },
+            {
+              "longitudinal": 299.5,
+              "scanline_width": 199.90952695634377,
+              "distance_transform_width": 203.181396484375
+            },
+            {
+              "longitudinal": 309.5,
+              "scanline_width": 114.03630553512227,
+              "distance_transform_width": 124.0
+            },
+            {
+              "longitudinal": 320.5,
+              "scanline_width": 8.167109573770404,
+              "distance_transform_width": 10.0
+            }
+          ],
+          "contributing_cues": [
+            "major_axis",
+            "skeleton_geodesic_endpoints",
+            "scanline_width",
+            "distance_transform_width_diagnostic",
+            "proximal_widening",
+            "semantic_class_2"
+          ],
+          "reject_reason": null,
+          "component": 1,
+          "bbox": [
+            1571,
+            1836,
+            2040,
+            2208
+          ],
+          "working_scale": 0.128,
+          "metadata_coordinate_system": "working_image_pixels"
+        }
+      ]
+    },
+    {
+      "sample_id": "DET-03",
+      "annotation_status": "valid_positive",
+      "raw_metrics": {
+        "iou": 0.5946162496401136,
+        "dice": 0.7457797445301484,
+        "precision": 0.9970896607204945,
+        "recall": 0.5956500516331803,
+        "predicted_outside_GT_ratio": 0.0029103392795054393,
+        "predicted_pixels": 3960363,
+        "GT_pixels": 6629458,
+        "true_positive_pixels": 3948837,
+        "false_positive_pixels": 11526,
+        "false_negative_pixels": 2680621,
+        "predicted_component_count": 1,
+        "GT_component_count": 1,
+        "matched_components": 1,
+        "component_coverage": 1.0,
+        "false_positive_components": 0,
+        "missed_components": 0
+      },
+      "ridge_metrics": {
+        "iou": 0.17377061593873888,
+        "dice": 0.29608956567678857,
+        "precision": 1.0,
+        "recall": 0.17377061593873888,
+        "predicted_outside_GT_ratio": 0.0,
+        "predicted_pixels": 1152005,
+        "GT_pixels": 6629458,
+        "true_positive_pixels": 1152005,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 5477453,
+        "predicted_component_count": 4,
+        "GT_component_count": 1,
+        "matched_components": 0,
+        "component_coverage": 0.0,
+        "false_positive_components": 4,
+        "missed_components": 1
+      },
+      "body_exterior_pixels": 0,
+      "deterministic": true,
+      "mask_sha256": "d9ae45fde8858d8f78ee62b1218f06b98a2a0957039336b20bcdcb533a36f5e9",
+      "regions": [
+        {
+          "proximal_boundary_source": "multi_cue_distal_geometry_candidate",
+          "distal_endpoint_source": "actual_frame_cut_vs_free_major_axis_endpoint",
+          "confidence": 0.6,
+          "confidence_semantics": "fixed engineering evidence score; not probability",
+          "major_axis_yx": [
+            0.1678542268306246,
+            0.985811827143037
+          ],
+          "major_axis_anisotropy": 2.650830051480536,
+          "skeleton_endpoints_yx": [
+            [
+              61,
+              488
+            ],
+            [
+              90,
+              501
+            ],
+            [
+              90,
+              506
+            ],
+            [
+              106,
+              498
+            ],
+            [
+              164,
+              96
+            ],
+            [
+              267,
+              101
+            ],
+            [
+              278,
+              113
+            ],
+            [
+              340,
+              425
+            ]
+          ],
+          "distal_endpoint_yx": [
+            164,
+            96
+          ],
+          "skeleton_length": 602.6955262170064,
+          "finger_axis_length": 485.28048944825275,
+          "reference_width": 201.434187711589,
+          "distal_extent": 271.93615341064515,
+          "width_profile": [
+            {
+              "longitudinal": 0.5,
+              "scanline_width": 23.655020652612215,
+              "distance_transform_width": 2.0
+            },
+            {
+              "longitudinal": 15.5,
+              "scanline_width": 108.71459212554176,
+              "distance_transform_width": 30.362796783447266
+            },
+            {
+              "longitudinal": 31.5,
+              "scanline_width": 155.20760762333788,
+              "distance_transform_width": 63.513187408447266
+            },
+            {
+              "longitudinal": 46.5,
+              "scanline_width": 167.96454509900136,
+              "distance_transform_width": 92.26978302001953
+            },
+            {
+              "longitudinal": 62.5,
+              "scanline_width": 187.88860077421106,
+              "distance_transform_width": 124.23257446289062
+            },
+            {
+              "longitudinal": 78.5,
+              "scanline_width": 200.59105197725202,
+              "distance_transform_width": 154.6015625
+            },
+            {
+              "longitudinal": 93.5,
+              "scanline_width": 205.3188187429652,
+              "distance_transform_width": 181.35195922851562
+            },
+            {
+              "longitudinal": 109.5,
+              "scanline_width": 220.54028578648632,
+              "distance_transform_width": 208.79393005371094
+            },
+            {
+              "longitudinal": 125.5,
+              "scanline_width": 231.38847859182786,
+              "distance_transform_width": 223.3085479736328
+            },
+            {
+              "longitudinal": 140.5,
+              "scanline_width": 239.72604826803075,
+              "distance_transform_width": 231.7953643798828
+            },
+            {
+              "longitudinal": 156.5,
+              "scanline_width": 242.6038193428127,
+              "distance_transform_width": 248.294677734375
+            },
+            {
+              "longitudinal": 172.5,
+              "scanline_width": 245.2655112760989,
+              "distance_transform_width": 258.446533203125
+            },
+            {
+              "longitudinal": 187.5,
+              "scanline_width": 248.84800469917997,
+              "distance_transform_width": 270.5208740234375
+            },
+            {
+              "longitudinal": 203.5,
+              "scanline_width": 254.67068853947612,
+              "distance_transform_width": 274.0
+            },
+            {
+              "longitudinal": 219.5,
+              "scanline_width": 256.34656864561924,
+              "distance_transform_width": 282.0
+            },
+            {
+              "longitudinal": 234.5,
+              "scanline_width": 259.17611480573606,
+              "distance_transform_width": 286.0
+            },
+            {
+              "longitudinal": 250.5,
+              "scanline_width": 262.82361856616535,
+              "distance_transform_width": 288.11474609375
+            },
+            {
+              "longitudinal": 265.5,
+              "scanline_width": 263.21794329702254,
+              "distance_transform_width": 292.021728515625
+            },
+            {
+              "longitudinal": 281.5,
+              "scanline_width": 263.68780242995354,
+              "distance_transform_width": 293.6279296875
+            },
+            {
+              "longitudinal": 297.5,
+              "scanline_width": 266.2173423351593,
+              "distance_transform_width": 297.751953125
+            },
+            {
+              "longitudinal": 312.5,
+              "scanline_width": 267.1611906055947,
+              "distance_transform_width": 296.331787109375
+            },
+            {
+              "longitudinal": 328.5,
+              "scanline_width": 266.0767975957373,
+              "distance_transform_width": 290.0
+            },
+            {
+              "longitudinal": 344.5,
+              "scanline_width": 266.2446518225679,
+              "distance_transform_width": 258.0
+            },
+            {
+              "longitudinal": 359.5,
+              "scanline_width": 266.2446518225679,
+              "distance_transform_width": 230.0
+            },
+            {
+              "longitudinal": 375.5,
+              "scanline_width": 263.4151056624511,
+              "distance_transform_width": 198.0
+            },
+            {
+              "longitudinal": 391.5,
+              "scanline_width": 262.72503738345097,
+              "distance_transform_width": 166.0
+            },
+            {
+              "longitudinal": 406.5,
+              "scanline_width": 265.33850440207215,
+              "distance_transform_width": 136.0
+            },
+            {
+              "longitudinal": 422.5,
+              "scanline_width": 253.51702248550242,
+              "distance_transform_width": 102.0
+            },
+            {
+              "longitudinal": 438.5,
+              "scanline_width": 219.87952564608412,
+              "distance_transform_width": 74.393798828125
+            },
+            {
+              "longitudinal": 453.5,
+              "scanline_width": 205.3481268815632,
+              "distance_transform_width": 44.0
+            },
+            {
+              "longitudinal": 469.5,
+              "scanline_width": 134.03130471144016,
+              "distance_transform_width": 24.0
+            },
+            {
+              "longitudinal": 485.5,
+              "scanline_width": 6.474452670719984,
+              "distance_transform_width": 2.0
+            }
+          ],
+          "contributing_cues": [
+            "major_axis",
+            "skeleton_geodesic_endpoints",
+            "scanline_width",
+            "distance_transform_width_diagnostic",
+            "proximal_widening",
+            "actual_proximal_frame_intersection"
+          ],
+          "reject_reason": null,
+          "component": 1,
+          "bbox": [
+            313,
+            243,
+            2618,
+            2536
+          ],
+          "working_scale": 0.128,
+          "metadata_coordinate_system": "working_image_pixels"
+        },
+        {
+          "component": 4,
+          "reject_reason": "finger_too_short",
+          "confidence": 0.0
+        }
+      ]
+    },
+    {
+      "sample_id": "DET-04",
+      "annotation_status": "valid_positive",
+      "raw_metrics": {
+        "iou": 0.7938178378215127,
+        "dice": 0.8850595875281942,
+        "precision": 0.9913892643825566,
+        "recall": 0.7993289907392874,
+        "predicted_outside_GT_ratio": 0.008610735617443402,
+        "predicted_pixels": 821881,
+        "GT_pixels": 1019360,
+        "true_positive_pixels": 814804,
+        "false_positive_pixels": 7077,
+        "false_negative_pixels": 204556,
+        "predicted_component_count": 3,
+        "GT_component_count": 3,
+        "matched_components": 3,
+        "component_coverage": 1.0,
+        "false_positive_components": 0,
+        "missed_components": 0
+      },
+      "ridge_metrics": {
+        "iou": 0.007050502275937843,
+        "dice": 0.014002281434751648,
+        "precision": 1.0,
+        "recall": 0.007050502275937843,
+        "predicted_outside_GT_ratio": 0.0,
+        "predicted_pixels": 7187,
+        "GT_pixels": 1019360,
+        "true_positive_pixels": 7187,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 1012173,
+        "predicted_component_count": 2,
+        "GT_component_count": 3,
+        "matched_components": 0,
+        "component_coverage": 0.0,
+        "false_positive_components": 2,
+        "missed_components": 3
+      },
+      "body_exterior_pixels": 0,
+      "deterministic": true,
+      "mask_sha256": "25b91c92df3148b21b84bcebb129832dd48f37542840d6e2adce7999442cba0f",
+      "regions": [
+        {
+          "proximal_boundary_source": "multi_cue_distal_geometry_candidate",
+          "distal_endpoint_source": "semantic_class_2_and_major_axis_centerline",
+          "confidence": 0.75,
+          "confidence_semantics": "fixed engineering evidence score; not probability",
+          "major_axis_yx": [
+            0.4193759639037659,
+            0.9078126463647592
+          ],
+          "major_axis_anisotropy": 12.190702652672208,
+          "skeleton_endpoints_yx": [
+            [
+              60,
+              315
+            ],
+            [
+              166,
+              496
+            ]
+          ],
+          "distal_endpoint_yx": [
+            60,
+            315
+          ],
+          "skeleton_length": 236.27922061357899,
+          "finger_axis_length": 262.8273472889232,
+          "reference_width": 58.04778061899452,
+          "distal_extent": 78.8165585375376,
+          "width_profile": [
+            {
+              "longitudinal": 0.5,
+              "scanline_width": 10.847817672897893,
+              "distance_transform_width": 2.0
+            },
+            {
+              "longitudinal": 8.5,
+              "scanline_width": 40.118926897682165,
+              "distance_transform_width": 17.187599182128906
+            },
+            {
+              "longitudinal": 16.5,
+              "scanline_width": 53.93399709241815,
+              "distance_transform_width": 33.16899490356445
+            },
+            {
+              "longitudinal": 25.5,
+              "scanline_width": 59.20031277184583,
+              "distance_transform_width": 50.74419021606445
+            },
+            {
+              "longitudinal": 33.5,
+              "scanline_width": 59.200312771845816,
+              "distance_transform_width": 62.725589752197266
+            },
+            {
+              "longitudinal": 42.5,
+              "scanline_width": 58.04778061899452,
+              "distance_transform_width": 62.71938705444336
+            },
+            {
+              "longitudinal": 50.5,
+              "scanline_width": 56.83259265418569,
+              "distance_transform_width": 62.331787109375
+            },
+            {
+              "longitudinal": 59.5,
+              "scanline_width": 57.600780367667866,
+              "distance_transform_width": 64.31318664550781
+            },
+            {
+              "longitudinal": 67.5,
+              "scanline_width": 58.04778061899454,
+              "distance_transform_width": 65.119384765625
+            },
+            {
+              "longitudinal": 76.5,
+              "scanline_width": 59.20031277184582,
+              "distance_transform_width": 65.51318359375
+            },
+            {
+              "longitudinal": 84.5,
+              "scanline_width": 58.63440580320376,
+              "distance_transform_width": 64.31318664550781
+            },
+            {
+              "longitudinal": 92.5,
+              "scanline_width": 59.20031277184583,
+              "distance_transform_width": 65.51318359375
+            },
+            {
+              "longitudinal": 101.5,
+              "scanline_width": 60.059281749964484,
+              "distance_transform_width": 65.90699005126953
+            },
+            {
+              "longitudinal": 109.5,
+              "scanline_width": 60.778625795200576,
+              "distance_transform_width": 63.119388580322266
+            },
+            {
+              "longitudinal": 118.5,
+              "scanline_width": 63.01362705183385,
+              "distance_transform_width": 66.7255859375
+            },
+            {
+              "longitudinal": 126.5,
+              "scanline_width": 62.75509540163586,
+              "distance_transform_width": 68.70698547363281
+            },
+            {
+              "longitudinal": 135.5,
+              "scanline_width": 62.74128325792443,
+              "distance_transform_width": 68.31938934326172
+            },
+            {
+              "longitudinal": 143.5,
+              "scanline_width": 63.97053394907273,
+              "distance_transform_width": 67.90699005126953
+            },
+            {
+              "longitudinal": 152.5,
+              "scanline_width": 64.87834659543749,
+              "distance_transform_width": 69.51318359375
+            },
+            {
+              "longitudinal": 160.5,
+              "scanline_width": 65.08087792290563,
+              "distance_transform_width": 71.51318359375
+            },
+            {
+              "longitudinal": 169.5,
+              "scanline_width": 67.5744108297369,
+              "distance_transform_width": 70.30078887939453
+            },
+            {
+              "longitudinal": 177.5,
+              "scanline_width": 68.78959879454574,
+              "distance_transform_width": 74.69458770751953
+            },
+            {
+              "longitudinal": 185.5,
+              "scanline_width": 68.23084848038742,
+              "distance_transform_width": 74.30078125
+            },
+            {
+              "longitudinal": 194.5,
+              "scanline_width": 67.65828602251766,
+              "distance_transform_width": 70.30078887939453
+            },
+            {
+              "longitudinal": 202.5,
+              "scanline_width": 67.72094183447518,
+              "distance_transform_width": 72.3255844116211
+            },
+            {
+              "longitudinal": 211.5,
+              "scanline_width": 68.51725500063631,
+              "distance_transform_width": 74.30078125
+            },
+            {
+              "longitudinal": 219.5,
+              "scanline_width": 66.6663476007441,
+              "distance_transform_width": 68.70698547363281
+            },
+            {
+              "longitudinal": 228.5,
+              "scanline_width": 65.88409716092248,
+              "distance_transform_width": 69.906982421875
+            },
+            {
+              "longitudinal": 236.5,
+              "scanline_width": 60.9044385843717,
+              "distance_transform_width": 63.92558670043945
+            },
+            {
+              "longitudinal": 245.5,
+              "scanline_width": 41.90002183113305,
+              "distance_transform_width": 46.0
+            },
+            {
+              "longitudinal": 253.5,
+              "scanline_width": 23.594230907563336,
+              "distance_transform_width": 24.0
+            },
+            {
+              "longitudinal": 262.5,
+              "scanline_width": 1.8170313817282846,
+              "distance_transform_width": 4.0
+            }
+          ],
+          "contributing_cues": [
+            "major_axis",
+            "skeleton_geodesic_endpoints",
+            "scanline_width",
+            "distance_transform_width_diagnostic",
+            "proximal_widening",
+            "semantic_class_2"
+          ],
+          "reject_reason": null,
+          "component": 1,
+          "bbox": [
+            2180,
+            219,
+            2891,
+            836
+          ],
+          "working_scale": 0.128,
+          "metadata_coordinate_system": "working_image_pixels"
+        },
+        {
+          "proximal_boundary_source": "multi_cue_distal_geometry_candidate",
+          "distal_endpoint_source": "semantic_class_2_and_major_axis_centerline",
+          "confidence": 0.75,
+          "confidence_semantics": "fixed engineering evidence score; not probability",
+          "major_axis_yx": [
+            0.21175415227151492,
+            0.9773229655522129
+          ],
+          "major_axis_anisotropy": 2.1869982870396267,
+          "skeleton_endpoints_yx": [
+            [
+              197,
+              228
+            ],
+            [
+              233,
+              284
+            ]
+          ],
+          "distal_endpoint_yx": [
+            197,
+            228
+          ],
+          "skeleton_length": 76.42640687119278,
+          "finger_axis_length": 93.66015968551383,
+          "reference_width": 46.510681193233395,
+          "distal_extent": 79.46941403877983,
+          "width_profile": [
+            {
+              "longitudinal": 0.5,
+              "scanline_width": 11.099005663509939,
+              "distance_transform_width": 2.0
+            },
+            {
+              "longitudinal": 3.5,
+              "scanline_width": 26.706041980467447,
+              "distance_transform_width": 8.0
+            },
+            {
+              "longitudinal": 6.5,
+              "scanline_width": 33.267952480795316,
+              "distance_transform_width": 12.0
+            },
+            {
+              "longitudinal": 9.5,
+              "scanline_width": 38.6383429352664,
+              "distance_transform_width": 18.393798828125
+            },
+            {
+              "longitudinal": 12.5,
+              "scanline_width": 43.195111894454996,
+              "distance_transform_width": 25.181396484375
+            },
+            {
+              "longitudinal": 15.5,
+              "scanline_width": 46.119752007012515,
+              "distance_transform_width": 31.181396484375
+            },
+            {
+              "longitudinal": 18.5,
+              "scanline_width": 46.999342676009505,
+              "distance_transform_width": 37.5751953125
+            },
+            {
+              "longitudinal": 21.5,
+              "scanline_width": 48.758524014003484,
+              "distance_transform_width": 43.937992095947266
+            },
+            {
+              "longitudinal": 24.5,
+              "scanline_width": 49.70164092868193,
+              "distance_transform_width": 49.53799057006836
+            },
+            {
+              "longitudinal": 27.5,
+              "scanline_width": 50.570643890065355,
+              "distance_transform_width": 53.93178939819336
+            },
+            {
+              "longitudinal": 30.5,
+              "scanline_width": 50.631727207713766,
+              "distance_transform_width": 56.725589752197266
+            },
+            {
+              "longitudinal": 33.5,
+              "scanline_width": 51.511317876710756,
+              "distance_transform_width": 56.725589752197266
+            },
+            {
+              "longitudinal": 36.5,
+              "scanline_width": 51.60905017326598,
+              "distance_transform_width": 56.0
+            },
+            {
+              "longitudinal": 39.5,
+              "scanline_width": 51.60905017326598,
+              "distance_transform_width": 56.78759765625
+            },
+            {
+              "longitudinal": 42.5,
+              "scanline_width": 51.60905017326598,
+              "distance_transform_width": 56.78759765625
+            },
+            {
+              "longitudinal": 45.5,
+              "scanline_width": 51.51131787671076,
+              "distance_transform_width": 56.0
+            },
+            {
+              "longitudinal": 48.5,
+              "scanline_width": 52.390908545707745,
+              "distance_transform_width": 58.0
+            },
+            {
+              "longitudinal": 51.5,
+              "scanline_width": 52.48864084226297,
+              "distance_transform_width": 58.725589752197266
+            },
+            {
+              "longitudinal": 54.5,
+              "scanline_width": 53.36823151125996,
+              "distance_transform_width": 59.5751953125
+            },
+            {
+              "longitudinal": 57.5,
+              "scanline_width": 54.24782218025695,
+              "distance_transform_width": 56.725589752197266
+            },
+            {
+              "longitudinal": 60.5,
+              "scanline_width": 55.225145145809165,
+              "distance_transform_width": 55.5751953125
+            },
+            {
+              "longitudinal": 63.5,
+              "scanline_width": 55.02968055269872,
+              "distance_transform_width": 49.5751953125
+            },
+            {
+              "longitudinal": 66.5,
+              "scanline_width": 56.00700351825093,
+              "distance_transform_width": 44.78759765625
+            },
+            {
+              "longitudinal": 69.5,
+              "scanline_width": 56.984326483803144,
+              "distance_transform_width": 37.181396484375
+            },
+            {
+              "longitudinal": 72.5,
+              "scanline_width": 56.00700351825093,
+              "distance_transform_width": 33.181396484375
+            },
+            {
+              "longitudinal": 75.5,
+              "scanline_width": 56.25703611118648,
+              "distance_transform_width": 26.393798828125
+            },
+            {
+              "longitudinal": 78.5,
+              "scanline_width": 57.07717292429229,
+              "distance_transform_width": 20.78759765625
+            },
+            {
+              "longitudinal": 81.5,
+              "scanline_width": 56.09984995874008,
+              "distance_transform_width": 14.393799781799316
+            },
+            {
+              "longitudinal": 84.5,
+              "scanline_width": 46.022019710457286,
+              "distance_transform_width": 10.0
+            },
+            {
+              "longitudinal": 87.5,
+              "scanline_width": 33.26795248079531,
+              "distance_transform_width": 6.0
+            },
+            {
+              "longitudinal": 90.5,
+              "scanline_width": 16.490571533208183,
+              "distance_transform_width": 4.0
+            },
+            {
+              "longitudinal": 93.5,
+              "scanline_width": 3.638772006990976,
+              "distance_transform_width": 2.0
+            }
+          ],
+          "contributing_cues": [
+            "major_axis",
+            "skeleton_geodesic_endpoints",
+            "scanline_width",
+            "distance_transform_width_diagnostic",
+            "proximal_widening",
+            "semantic_class_2"
+          ],
+          "reject_reason": null,
+          "component": 1,
+          "bbox": [
+            1563,
+            1329,
+            2227,
+            1840
+          ],
+          "working_scale": 0.128,
+          "metadata_coordinate_system": "working_image_pixels"
+        },
+        {
+          "proximal_boundary_source": "multi_cue_distal_geometry_candidate",
+          "distal_endpoint_source": "semantic_class_2_and_major_axis_centerline",
+          "confidence": 0.75,
+          "confidence_semantics": "fixed engineering evidence score; not probability",
+          "major_axis_yx": [
+            -0.18603866322227428,
+            0.9825424244206807
+          ],
+          "major_axis_anisotropy": 2.7534222799973613,
+          "skeleton_endpoints_yx": [
+            [
+              177,
+              290
+            ],
+            [
+              193,
+              498
+            ],
+            [
+              222,
+              300
+            ],
+            [
+              312,
+              236
+            ]
+          ],
+          "distal_endpoint_yx": [
+            312,
+            236
+          ],
+          "skeleton_length": 451.39191898578747,
+          "finger_axis_length": 320.6744506224096,
+          "reference_width": 58.5673406972095,
+          "distal_extent": 79.06590994123283,
+          "width_profile": [
+            {
+              "longitudinal": 0.5,
+              "scanline_width": 11.080643461887059,
+              "distance_transform_width": 2.0
+            },
+            {
+              "longitudinal": 10.5,
+              "scanline_width": 39.34412004321558,
+              "distance_transform_width": 21.968997955322266
+            },
+            {
+              "longitudinal": 20.5,
+              "scanline_width": 48.657333431888325,
+              "distance_transform_width": 42.0
+            },
+            {
+              "longitudinal": 30.5,
+              "scanline_width": 51.11368949294003,
+              "distance_transform_width": 56.725589752197266
+            },
+            {
+              "longitudinal": 41.5,
+              "scanline_width": 54.0508469445402,
+              "distance_transform_width": 60.0
+            },
+            {
+              "longitudinal": 51.5,
+              "scanline_width": 57.638576360590406,
+              "distance_transform_width": 62.0
+            },
+            {
+              "longitudinal": 61.5,
+              "scanline_width": 59.60366120943178,
+              "distance_transform_width": 64.393798828125
+            },
+            {
+              "longitudinal": 72.5,
+              "scanline_width": 60.50131834690168,
+              "distance_transform_width": 66.0
+            },
+            {
+              "longitudinal": 82.5,
+              "scanline_width": 60.50131834690168,
+              "distance_transform_width": 64.78759765625
+            },
+            {
+              "longitudinal": 92.5,
+              "scanline_width": 114.65680073545778,
+              "distance_transform_width": 50.0
+            },
+            {
+              "longitudinal": 103.5,
+              "scanline_width": 156.33109520004183,
+              "distance_transform_width": 4.0
+            },
+            {
+              "longitudinal": 113.5,
+              "scanline_width": 154.7694971426306,
+              "distance_transform_width": 2.0
+            },
+            {
+              "longitudinal": 123.5,
+              "scanline_width": 153.4921919908837,
+              "distance_transform_width": 6.0
+            },
+            {
+              "longitudinal": 134.5,
+              "scanline_width": 153.1974292635575,
+              "distance_transform_width": 2.0
+            },
+            {
+              "longitudinal": 144.5,
+              "scanline_width": 154.8572815634108,
+              "distance_transform_width": 6.393799781799316
+            },
+            {
+              "longitudinal": 154.5,
+              "scanline_width": 155.43343806257195,
+              "distance_transform_width": 6.0
+            },
+            {
+              "longitudinal": 165.5,
+              "scanline_width": 153.36079703812737,
+              "distance_transform_width": 8.0
+            },
+            {
+              "longitudinal": 175.5,
+              "scanline_width": 152.79394247212738,
+              "distance_transform_width": 7.19379997253418
+            },
+            {
+              "longitudinal": 185.5,
+              "scanline_width": 150.212594257651,
+              "distance_transform_width": 10.787599563598633
+            },
+            {
+              "longitudinal": 196.5,
+              "scanline_width": 149.12249565762716,
+              "distance_transform_width": 21.968997955322266
+            },
+            {
+              "longitudinal": 206.5,
+              "scanline_width": 149.12249565762716,
+              "distance_transform_width": 41.181396484375
+            },
+            {
+              "longitudinal": 216.5,
+              "scanline_width": 148.2847171414541,
+              "distance_transform_width": 61.5751953125
+            },
+            {
+              "longitudinal": 227.5,
+              "scanline_width": 146.42835635671668,
+              "distance_transform_width": 83.181396484375
+            },
+            {
+              "longitudinal": 237.5,
+              "scanline_width": 143.77549181078086,
+              "distance_transform_width": 105.968994140625
+            },
+            {
+              "longitudinal": 247.5,
+              "scanline_width": 141.82087678360134,
+              "distance_transform_width": 125.968994140625
+            },
+            {
+              "longitudinal": 258.5,
+              "scanline_width": 138.09768539246463,
+              "distance_transform_width": 148.756591796875
+            },
+            {
+              "longitudinal": 268.5,
+              "scanline_width": 137.11514296804393,
+              "distance_transform_width": 150.0
+            },
+            {
+              "longitudinal": 278.5,
+              "scanline_width": 138.2837240556869,
+              "distance_transform_width": 147.968994140625
+            },
+            {
+              "longitudinal": 289.5,
+              "scanline_width": 139.81451717978535,
+              "distance_transform_width": 154.78759765625
+            },
+            {
+              "longitudinal": 299.5,
+              "scanline_width": 107.04181526778355,
+              "distance_transform_width": 111.05117797851562
+            },
+            {
+              "longitudinal": 309.5,
+              "scanline_width": 57.77403833567692,
+              "distance_transform_width": 64.0
+            },
+            {
+              "longitudinal": 320.5,
+              "scanline_width": 3.6528645459358415,
+              "distance_transform_width": 4.0
+            }
+          ],
+          "contributing_cues": [
+            "major_axis",
+            "skeleton_geodesic_endpoints",
+            "scanline_width",
+            "distance_transform_width_diagnostic",
+            "proximal_widening",
+            "semantic_class_2"
+          ],
+          "reject_reason": null,
+          "component": 1,
+          "bbox": [
+            1641,
+            2157,
+            2313,
+            2676
+          ],
+          "working_scale": 0.128,
+          "metadata_coordinate_system": "working_image_pixels"
+        }
+      ]
+    },
+    {
+      "sample_id": "DET-05",
+      "annotation_status": "valid_positive",
+      "raw_metrics": {
+        "iou": 0.6586041354119105,
+        "dice": 0.7941667590842557,
+        "precision": 0.9879667789949942,
+        "recall": 0.6639299527486155,
+        "predicted_outside_GT_ratio": 0.012033221005005852,
+        "predicted_pixels": 511002,
+        "GT_pixels": 760401,
+        "true_positive_pixels": 504853,
+        "false_positive_pixels": 6149,
+        "false_negative_pixels": 255548,
+        "predicted_component_count": 1,
+        "GT_component_count": 1,
+        "matched_components": 1,
+        "component_coverage": 1.0,
+        "false_positive_components": 0,
+        "missed_components": 0
+      },
+      "ridge_metrics": {
+        "iou": 0.1597827988127317,
+        "dice": 0.2755391767774124,
+        "precision": 1.0,
+        "recall": 0.1597827988127317,
+        "predicted_outside_GT_ratio": 0.0,
+        "predicted_pixels": 121499,
+        "GT_pixels": 760401,
+        "true_positive_pixels": 121499,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 638902,
+        "predicted_component_count": 2,
+        "GT_component_count": 1,
+        "matched_components": 0,
+        "component_coverage": 0.0,
+        "false_positive_components": 2,
+        "missed_components": 1
+      },
+      "body_exterior_pixels": 0,
+      "deterministic": true,
+      "mask_sha256": "3a0e7673bba783bd303be0cd399612e36316023793be05c6aa06e6c7e6f7102c",
+      "regions": [
+        {
+          "proximal_boundary_source": "multi_cue_distal_geometry_candidate",
+          "distal_endpoint_source": "semantic_class_2_and_major_axis_centerline",
+          "confidence": 0.75,
+          "confidence_semantics": "fixed engineering evidence score; not probability",
+          "major_axis_yx": [
+            0.07351199004801363,
+            0.9972943333435625
+          ],
+          "major_axis_anisotropy": 7.0805088927539055,
+          "skeleton_endpoints_yx": [
+            [
+              230,
+              275
+            ],
+            [
+              304,
+              509
+            ]
+          ],
+          "distal_endpoint_yx": [
+            230,
+            275
+          ],
+          "skeleton_length": 278.2670273047594,
+          "finger_axis_length": 282.90824790320744,
+          "reference_width": 77.63435900773626,
+          "distal_extent": 104.80638466044397,
+          "width_profile": [
+            {
+              "longitudinal": 0.5,
+              "scanline_width": 9.051866656796513,
+              "distance_transform_width": 2.0
+            },
+            {
+              "longitudinal": 9.5,
+              "scanline_width": 47.89391077062277,
+              "distance_transform_width": 20.0
+            },
+            {
+              "longitudinal": 18.5,
+              "scanline_width": 59.69090045332646,
+              "distance_transform_width": 37.95039367675781
+            },
+            {
+              "longitudinal": 27.5,
+              "scanline_width": 67.68763311758697,
+              "distance_transform_width": 55.52558898925781
+            },
+            {
+              "longitudinal": 36.5,
+              "scanline_width": 72.27518705096736,
+              "distance_transform_width": 71.50698852539062
+            },
+            {
+              "longitudinal": 45.5,
+              "scanline_width": 75.86544665100419,
+              "distance_transform_width": 78.7007827758789
+            },
+            {
+              "longitudinal": 54.5,
+              "scanline_width": 78.53192390774547,
+              "distance_transform_width": 83.48218536376953
+            },
+            {
+              "longitudinal": 63.5,
+              "scanline_width": 80.42678314109824,
+              "distance_transform_width": 88.0
+            },
+            {
+              "longitudinal": 72.5,
+              "scanline_width": 83.11947784112586,
+              "distance_transform_width": 92.0
+            },
+            {
+              "longitudinal": 81.5,
+              "scanline_width": 83.9173133078007,
+              "distance_transform_width": 94.0
+            },
+            {
+              "longitudinal": 90.5,
+              "scanline_width": 86.70973744116267,
+              "distance_transform_width": 94.0
+            },
+            {
+              "longitudinal": 100.5,
+              "scanline_width": 88.47864979789475,
+              "distance_transform_width": 98.0
+            },
+            {
+              "longitudinal": 109.5,
+              "scanline_width": 88.57837923122909,
+              "distance_transform_width": 98.0
+            },
+            {
+              "longitudinal": 118.5,
+              "scanline_width": 87.62200473918148,
+              "distance_transform_width": 98.0
+            },
+            {
+              "longitudinal": 127.5,
+              "scanline_width": 87.51859970634473,
+              "distance_transform_width": 96.0
+            },
+            {
+              "longitudinal": 136.5,
+              "scanline_width": 86.72811543867468,
+              "distance_transform_width": 96.0
+            },
+            {
+              "longitudinal": 145.5,
+              "scanline_width": 87.62200473918148,
+              "distance_transform_width": 98.0
+            },
+            {
+              "longitudinal": 154.5,
+              "scanline_width": 89.37621469790395,
+              "distance_transform_width": 97.5751953125
+            },
+            {
+              "longitudinal": 163.5,
+              "scanline_width": 91.17134449792235,
+              "distance_transform_width": 100.78759765625
+            },
+            {
+              "longitudinal": 172.5,
+              "scanline_width": 93.06620373127512,
+              "distance_transform_width": 104.0
+            },
+            {
+              "longitudinal": 181.5,
+              "scanline_width": 95.75889843130275,
+              "distance_transform_width": 104.393798828125
+            },
+            {
+              "longitudinal": 191.5,
+              "scanline_width": 96.65646333131195,
+              "distance_transform_width": 108.0
+            },
+            {
+              "longitudinal": 200.5,
+              "scanline_width": 96.65646333131195,
+              "distance_transform_width": 108.0
+            },
+            {
+              "longitudinal": 209.5,
+              "scanline_width": 97.45429879798681,
+              "distance_transform_width": 109.5751953125
+            },
+            {
+              "longitudinal": 218.5,
+              "scanline_width": 98.45159313133037,
+              "distance_transform_width": 110.0
+            },
+            {
+              "longitudinal": 227.5,
+              "scanline_width": 98.45159313133036,
+              "distance_transform_width": 111.5751953125
+            },
+            {
+              "longitudinal": 236.5,
+              "scanline_width": 100.14699349801442,
+              "distance_transform_width": 112.0
+            },
+            {
+              "longitudinal": 245.5,
+              "scanline_width": 101.14428783135799,
+              "distance_transform_width": 112.0
+            },
+            {
+              "longitudinal": 254.5,
+              "scanline_width": 103.0129296214244,
+              "distance_transform_width": 111.544189453125
+            },
+            {
+              "longitudinal": 263.5,
+              "scanline_width": 105.60589488811769,
+              "distance_transform_width": 113.08837890625
+            },
+            {
+              "longitudinal": 272.5,
+              "scanline_width": 107.50075412147045,
+              "distance_transform_width": 115.44497680664062
+            },
+            {
+              "longitudinal": 282.5,
+              "scanline_width": 11.770778800110477,
+              "distance_transform_width": 14.0
+            }
+          ],
+          "contributing_cues": [
+            "major_axis",
+            "skeleton_geodesic_endpoints",
+            "scanline_width",
+            "distance_transform_width_diagnostic",
+            "proximal_widening",
+            "semantic_class_2"
+          ],
+          "reject_reason": null,
+          "component": 1,
+          "bbox": [
+            1821,
+            1430,
+            2672,
+            2192
+          ],
+          "working_scale": 0.128,
+          "metadata_coordinate_system": "working_image_pixels"
+        }
+      ]
+    },
+    {
+      "sample_id": "CAP-016",
+      "annotation_status": "valid_positive",
+      "raw_metrics": {
+        "iou": 0.6648955908646224,
+        "dice": 0.798723468922547,
+        "precision": 0.7108414181123093,
+        "recall": 0.9114008924649141,
+        "predicted_outside_GT_ratio": 0.2891585818876907,
+        "predicted_pixels": 110908,
+        "GT_pixels": 86502,
+        "true_positive_pixels": 78838,
+        "false_positive_pixels": 32070,
+        "false_negative_pixels": 7664,
+        "predicted_component_count": 1,
+        "GT_component_count": 1,
+        "matched_components": 1,
+        "component_coverage": 1.0,
+        "false_positive_components": 0,
+        "missed_components": 0
+      },
+      "ridge_metrics": {
+        "iou": 0.0,
+        "dice": 0.0,
+        "precision": null,
+        "recall": 0.0,
+        "predicted_outside_GT_ratio": null,
+        "predicted_pixels": 0,
+        "GT_pixels": 86502,
+        "true_positive_pixels": 0,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 86502,
+        "predicted_component_count": 0,
+        "GT_component_count": 1,
+        "matched_components": 0,
+        "component_coverage": 0.0,
+        "false_positive_components": 0,
+        "missed_components": 1
+      },
+      "body_exterior_pixels": 0,
+      "deterministic": true,
+      "mask_sha256": "a39baa0c3d3edf505ed3ea64c22b1cbfdcce6b9911172199a14cb408e20d1284",
+      "regions": [
+        {
+          "component": 1,
+          "reject_reason": "distal_endpoint_ambiguous_without_class_2",
+          "confidence": 0.0
+        },
+        {
+          "component": 2,
+          "reject_reason": "distal_endpoint_ambiguous_without_class_2",
+          "confidence": 0.0
+        },
+        {
+          "component": 3,
+          "reject_reason": "distal_endpoint_ambiguous_without_class_2",
+          "confidence": 0.0
+        },
+        {
+          "component": 4,
+          "reject_reason": "distal_endpoint_ambiguous_without_class_2",
+          "confidence": 0.0
+        },
+        {
+          "component": 5,
+          "reject_reason": "distal_endpoint_ambiguous_without_class_2",
+          "confidence": 0.0
+        },
+        {
+          "component": 6,
+          "reject_reason": "distal_endpoint_ambiguous_without_class_2",
+          "confidence": 0.0
+        },
+        {
+          "component": 9,
+          "reject_reason": "distal_endpoint_ambiguous_without_class_2",
+          "confidence": 0.0
+        },
+        {
+          "component": 10,
+          "reject_reason": "finger_too_short",
+          "confidence": 0.0
+        },
+        {
+          "component": 11,
+          "reject_reason": "distal_endpoint_ambiguous_without_class_2",
+          "confidence": 0.0
+        },
+        {
+          "component": 13,
+          "reject_reason": "distal_endpoint_ambiguous_without_class_2",
+          "confidence": 0.0
+        },
+        {
+          "component": 14,
+          "reject_reason": "finger_too_short",
+          "confidence": 0.0
+        },
+        {
+          "component": 18,
+          "reject_reason": "distal_endpoint_ambiguous_without_class_2",
+          "confidence": 0.0
+        },
+        {
+          "component": 19,
+          "reject_reason": "finger_too_short",
+          "confidence": 0.0
+        },
+        {
+          "component": 24,
+          "reject_reason": "distal_endpoint_ambiguous_without_class_2",
+          "confidence": 0.0
+        },
+        {
+          "component": 25,
+          "reject_reason": "distal_endpoint_ambiguous_without_class_2",
+          "confidence": 0.0
+        },
+        {
+          "component": 26,
+          "reject_reason": "distal_endpoint_ambiguous_without_class_2",
+          "confidence": 0.0
+        },
+        {
+          "component": 29,
+          "reject_reason": "distal_endpoint_ambiguous_without_class_2",
+          "confidence": 0.0
+        },
+        {
+          "component": 32,
+          "reject_reason": "distal_endpoint_ambiguous_without_class_2",
+          "confidence": 0.0
+        },
+        {
+          "component": 34,
+          "reject_reason": "distal_endpoint_ambiguous_without_class_2",
+          "confidence": 0.0
+        },
+        {
+          "proximal_boundary_source": "multi_cue_distal_geometry_candidate",
+          "distal_endpoint_source": "semantic_class_2_and_major_axis_centerline",
+          "confidence": 0.75,
+          "confidence_semantics": "fixed engineering evidence score; not probability",
+          "major_axis_yx": [
+            0.3373812760875895,
+            0.9413680866406667
+          ],
+          "major_axis_anisotropy": 10.691869308967075,
+          "skeleton_endpoints_yx": [
+            [
+              234,
+              147
+            ],
+            [
+              240,
+              145
+            ],
+            [
+              261,
+              253
+            ],
+            [
+              340,
+              443
+            ],
+            [
+              343,
+              447
+            ],
+            [
+              375,
+              447
+            ]
+          ],
+          "distal_endpoint_yx": [
+            240,
+            145
+          ],
+          "skeleton_length": 384.3624817342645,
+          "finger_axis_length": 353.2487825521013,
+          "reference_width": 41.881663881870026,
+          "distal_extent": 56.54024624052454,
+          "width_profile": [
+            {
+              "longitudinal": 0.5,
+              "scanline_width": 5.715567750567837,
+              "distance_transform_width": 2.799999952316284
+            },
+            {
+              "longitudinal": 11.5,
+              "scanline_width": 22.95628028306342,
+              "distance_transform_width": 20.375198364257812
+            },
+            {
+              "longitudinal": 22.5,
+              "scanline_width": 26.817539181492442,
+              "distance_transform_width": 28.362796783447266
+            },
+            {
+              "longitudinal": 34.5,
+              "scanline_width": 31.540184506222484,
+              "distance_transform_width": 32.78759765625
+            },
+            {
+              "longitudinal": 45.5,
+              "scanline_width": 37.392471534921334,
+              "distance_transform_width": 39.19999313354492
+            },
+            {
+              "longitudinal": 56.5,
+              "scanline_width": 41.77065800940158,
+              "distance_transform_width": 36.787593841552734
+            },
+            {
+              "longitudinal": 68.5,
+              "scanline_width": 42.81324047886851,
+              "distance_transform_width": 44.799991607666016
+            },
+            {
+              "longitudinal": 79.5,
+              "scanline_width": 42.053068435393776,
+              "distance_transform_width": 45.5751953125
+            },
+            {
+              "longitudinal": 91.5,
+              "scanline_width": 43.76876371383361,
+              "distance_transform_width": 45.962791442871094
+            },
+            {
+              "longitudinal": 102.5,
+              "scanline_width": 43.76876371383361,
+              "distance_transform_width": 48.331790924072266
+            },
+            {
+              "longitudinal": 113.5,
+              "scanline_width": 45.72605371649467,
+              "distance_transform_width": 49.5751953125
+            },
+            {
+              "longitudinal": 125.5,
+              "scanline_width": 50.96562661727593,
+              "distance_transform_width": 53.93178939819336
+            },
+            {
+              "longitudinal": 136.5,
+              "scanline_width": 53.38817283229741,
+              "distance_transform_width": 58.725589752197266
+            },
+            {
+              "longitudinal": 148.5,
+              "scanline_width": 56.96973522021419,
+              "distance_transform_width": 60.0
+            },
+            {
+              "longitudinal": 159.5,
+              "scanline_width": 61.295425459402495,
+              "distance_transform_width": 64.0
+            },
+            {
+              "longitudinal": 170.5,
+              "scanline_width": 63.71986071830278,
+              "distance_transform_width": 64.0
+            },
+            {
+              "longitudinal": 182.5,
+              "scanline_width": 66.51187659381831,
+              "distance_transform_width": 70.0
+            },
+            {
+              "longitudinal": 193.5,
+              "scanline_width": 70.28171259906323,
+              "distance_transform_width": 72.0
+            },
+            {
+              "longitudinal": 204.5,
+              "scanline_width": 75.14202434970827,
+              "distance_transform_width": 80.0
+            },
+            {
+              "longitudinal": 216.5,
+              "scanline_width": 80.83977588868774,
+              "distance_transform_width": 85.48218536376953
+            },
+            {
+              "longitudinal": 227.5,
+              "scanline_width": 91.41116945503552,
+              "distance_transform_width": 85.55038452148438
+            },
+            {
+              "longitudinal": 239.5,
+              "scanline_width": 105.50644064372474,
+              "distance_transform_width": 91.19380950927734
+            },
+            {
+              "longitudinal": 250.5,
+              "scanline_width": 117.70835929788933,
+              "distance_transform_width": 97.91317749023438
+            },
+            {
+              "longitudinal": 261.5,
+              "scanline_width": 117.87704993593314,
+              "distance_transform_width": 98.331787109375
+            },
+            {
+              "longitudinal": 273.5,
+              "scanline_width": 115.04858201732887,
+              "distance_transform_width": 75.51318359375
+            },
+            {
+              "longitudinal": 284.5,
+              "scanline_width": 104.10689391888589,
+              "distance_transform_width": 61.94418716430664
+            },
+            {
+              "longitudinal": 296.5,
+              "scanline_width": 82.65232189127161,
+              "distance_transform_width": 59.53178787231445
+            },
+            {
+              "longitudinal": 307.5,
+              "scanline_width": 64.71619965503882,
+              "distance_transform_width": 48.756595611572266
+            },
+            {
+              "longitudinal": 318.5,
+              "scanline_width": 54.2522731740784,
+              "distance_transform_width": 31.96279525756836
+            },
+            {
+              "longitudinal": 330.5,
+              "scanline_width": 35.05698455440171,
+              "distance_transform_width": 34.393798828125
+            },
+            {
+              "longitudinal": 341.5,
+              "scanline_width": 31.179681463769445,
+              "distance_transform_width": 12.787599563598633
+            },
+            {
+              "longitudinal": 353.5,
+              "scanline_width": 3.845336982408618,
+              "distance_transform_width": 0.0
+            }
+          ],
+          "contributing_cues": [
+            "major_axis",
+            "skeleton_geodesic_endpoints",
+            "scanline_width",
+            "distance_transform_width_diagnostic",
+            "proximal_widening",
+            "semantic_class_2"
+          ],
+          "reject_reason": null,
+          "component": 35,
+          "bbox": [
+            1024,
+            1774,
+            1500,
+            2200
+          ],
+          "working_scale": 0.128,
+          "metadata_coordinate_system": "working_image_pixels"
+        },
+        {
+          "component": 38,
+          "reject_reason": "distal_endpoint_ambiguous_without_class_2",
+          "confidence": 0.0
+        },
+        {
+          "component": 39,
+          "reject_reason": "distal_endpoint_ambiguous_without_class_2",
+          "confidence": 0.0
+        },
+        {
+          "component": 42,
+          "reject_reason": "distal_endpoint_ambiguous_without_class_2",
+          "confidence": 0.0
+        }
+      ]
+    },
+    {
+      "sample_id": "CAP-042",
+      "annotation_status": "valid_positive",
+      "raw_metrics": {
+        "iou": 0.7804072186335451,
+        "dice": 0.8766614856038433,
+        "precision": 0.9981207949134884,
+        "recall": 0.7815555631797441,
+        "predicted_outside_GT_ratio": 0.0018792050865115916,
+        "predicted_pixels": 205406,
+        "GT_pixels": 262323,
+        "true_positive_pixels": 205020,
+        "false_positive_pixels": 386,
+        "false_negative_pixels": 57303,
+        "predicted_component_count": 1,
+        "GT_component_count": 1,
+        "matched_components": 1,
+        "component_coverage": 1.0,
+        "false_positive_components": 0,
+        "missed_components": 0
+      },
+      "ridge_metrics": {
+        "iou": 0.08303884905250397,
+        "dice": 0.15334417435745812,
+        "precision": 1.0,
+        "recall": 0.08303884905250397,
+        "predicted_outside_GT_ratio": 0.0,
+        "predicted_pixels": 21783,
+        "GT_pixels": 262323,
+        "true_positive_pixels": 21783,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 240540,
+        "predicted_component_count": 3,
+        "GT_component_count": 1,
+        "matched_components": 0,
+        "component_coverage": 0.0,
+        "false_positive_components": 3,
+        "missed_components": 1
+      },
+      "body_exterior_pixels": 0,
+      "deterministic": true,
+      "mask_sha256": "4fff91252c9f6c8683ee7dd27dec2c66ec3308154029a92e9cd6bad8155f7e8f",
+      "regions": [
+        {
+          "proximal_boundary_source": "multi_cue_distal_geometry_candidate",
+          "distal_endpoint_source": "semantic_class_2_and_major_axis_centerline",
+          "confidence": 0.75,
+          "confidence_semantics": "fixed engineering evidence score; not probability",
+          "major_axis_yx": [
+            0.1404565418436382,
+            0.9900868446016875
+          ],
+          "major_axis_anisotropy": 6.637380774461559,
+          "skeleton_endpoints_yx": [
+            [
+              108,
+              510
+            ],
+            [
+              186,
+              234
+            ],
+            [
+              272,
+              482
+            ],
+            [
+              299,
+              499
+            ]
+          ],
+          "distal_endpoint_yx": [
+            186,
+            234
+          ],
+          "skeleton_length": 364.22539674441634,
+          "finger_axis_length": 317.974751270297,
+          "reference_width": 48.319260120264445,
+          "distal_extent": 67.41933647458364,
+          "width_profile": [
+            {
+              "longitudinal": 0.5,
+              "scanline_width": 10.884755476323642,
+              "distance_transform_width": 2.0
+            },
+            {
+              "longitudinal": 10.5,
+              "scanline_width": 40.018643595303494,
+              "distance_transform_width": 22.0
+            },
+            {
+              "longitudinal": 20.5,
+              "scanline_width": 46.5371037999814,
+              "distance_transform_width": 40.36279296875
+            },
+            {
+              "longitudinal": 30.5,
+              "scanline_width": 48.22025143580426,
+              "distance_transform_width": 52.0
+            },
+            {
+              "longitudinal": 40.5,
+              "scanline_width": 49.11132959594579,
+              "distance_transform_width": 54.0
+            },
+            {
+              "longitudinal": 51.5,
+              "scanline_width": 49.210338280405956,
+              "distance_transform_width": 54.0
+            },
+            {
+              "longitudinal": 61.5,
+              "scanline_width": 49.21033828040595,
+              "distance_transform_width": 54.0
+            },
+            {
+              "longitudinal": 71.5,
+              "scanline_width": 47.329173275662754,
+              "distance_transform_width": 53.181396484375
+            },
+            {
+              "longitudinal": 81.5,
+              "scanline_width": 47.42818196012292,
+              "distance_transform_width": 52.0
+            },
+            {
+              "longitudinal": 92.5,
+              "scanline_width": 46.53710379998141,
+              "distance_transform_width": 51.968994140625
+            },
+            {
+              "longitudinal": 102.5,
+              "scanline_width": 47.42818196012292,
+              "distance_transform_width": 50.331790924072266
+            },
+            {
+              "longitudinal": 112.5,
+              "scanline_width": 49.11132959594579,
+              "distance_transform_width": 53.968994140625
+            },
+            {
+              "longitudinal": 122.5,
+              "scanline_width": 50.10141644054748,
+              "distance_transform_width": 55.544189453125
+            },
+            {
+              "longitudinal": 132.5,
+              "scanline_width": 50.992494600689,
+              "distance_transform_width": 56.393798828125
+            },
+            {
+              "longitudinal": 143.5,
+              "scanline_width": 52.583656379143875,
+              "distance_transform_width": 58.0
+            },
+            {
+              "longitudinal": 153.5,
+              "scanline_width": 54.49924641417837,
+              "distance_transform_width": 59.93798828125
+            },
+            {
+              "longitudinal": 163.5,
+              "scanline_width": 54.69726378309871,
+              "distance_transform_width": 60.0
+            },
+            {
+              "longitudinal": 173.5,
+              "scanline_width": 54.56383006834726,
+              "distance_transform_width": 60.0
+            },
+            {
+              "longitudinal": 184.5,
+              "scanline_width": 53.46771171219322,
+              "distance_transform_width": 58.78759765625
+            },
+            {
+              "longitudinal": 194.5,
+              "scanline_width": 50.992494600689,
+              "distance_transform_width": 56.0
+            },
+            {
+              "longitudinal": 204.5,
+              "scanline_width": 50.992494600689,
+              "distance_transform_width": 56.0
+            },
+            {
+              "longitudinal": 214.5,
+              "scanline_width": 50.00240775608731,
+              "distance_transform_width": 54.0
+            },
+            {
+              "longitudinal": 224.5,
+              "scanline_width": 49.11132959594579,
+              "distance_transform_width": 54.0
+            },
+            {
+              "longitudinal": 235.5,
+              "scanline_width": 46.53710379998141,
+              "distance_transform_width": 50.393798828125
+            },
+            {
+              "longitudinal": 245.5,
+              "scanline_width": 45.582820196010246,
+              "distance_transform_width": 49.937992095947266
+            },
+            {
+              "longitudinal": 255.5,
+              "scanline_width": 44.41647356893439,
+              "distance_transform_width": 50.0
+            },
+            {
+              "longitudinal": 265.5,
+              "scanline_width": 155.67233982907837,
+              "distance_transform_width": 45.5751953125
+            },
+            {
+              "longitudinal": 276.5,
+              "scanline_width": 170.70554689733083,
+              "distance_transform_width": 49.53799057006836
+            },
+            {
+              "longitudinal": 286.5,
+              "scanline_width": 181.7784065871765,
+              "distance_transform_width": 57.981388092041016
+            },
+            {
+              "longitudinal": 296.5,
+              "scanline_width": 142.61930645002934,
+              "distance_transform_width": 46.0
+            },
+            {
+              "longitudinal": 306.5,
+              "scanline_width": 78.08864820338877,
+              "distance_transform_width": 82.7938003540039
+            },
+            {
+              "longitudinal": 317.5,
+              "scanline_width": 6.3464689608491085,
+              "distance_transform_width": 8.0
+            }
+          ],
+          "contributing_cues": [
+            "major_axis",
+            "skeleton_geodesic_endpoints",
+            "scanline_width",
+            "distance_transform_width_diagnostic",
+            "proximal_widening",
+            "semantic_class_2"
+          ],
+          "reject_reason": null,
+          "component": 1,
+          "bbox": [
+            1638,
+            1260,
+            2205,
+            1701
+          ],
+          "working_scale": 0.12698412698412698,
+          "metadata_coordinate_system": "working_image_pixels"
+        }
+      ]
+    },
+    {
+      "sample_id": "CAP-054",
+      "annotation_status": "valid_positive",
+      "raw_metrics": {
+        "iou": 0.8789190281912743,
+        "dice": 0.9355581746780843,
+        "precision": 0.9819826294068127,
+        "recall": 0.8933251146414128,
+        "predicted_outside_GT_ratio": 0.01801737059318728,
+        "predicted_pixels": 194812,
+        "GT_pixels": 214146,
+        "true_positive_pixels": 191302,
+        "false_positive_pixels": 3510,
+        "false_negative_pixels": 22844,
+        "predicted_component_count": 1,
+        "GT_component_count": 1,
+        "matched_components": 1,
+        "component_coverage": 1.0,
+        "false_positive_components": 0,
+        "missed_components": 0
+      },
+      "ridge_metrics": {
+        "iou": 0.0,
+        "dice": 0.0,
+        "precision": null,
+        "recall": 0.0,
+        "predicted_outside_GT_ratio": null,
+        "predicted_pixels": 0,
+        "GT_pixels": 214146,
+        "true_positive_pixels": 0,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 214146,
+        "predicted_component_count": 0,
+        "GT_component_count": 1,
+        "matched_components": 0,
+        "component_coverage": 0.0,
+        "false_positive_components": 0,
+        "missed_components": 1
+      },
+      "body_exterior_pixels": 0,
+      "deterministic": true,
+      "mask_sha256": "5f4ae3ba5b7369b80fb80f7fc1894b706bbd0153e1819eee247f4cbaa6a2e748",
+      "regions": [
+        {
+          "proximal_boundary_source": "multi_cue_distal_geometry_candidate",
+          "distal_endpoint_source": "semantic_class_2_and_major_axis_centerline",
+          "confidence": 0.75,
+          "confidence_semantics": "fixed engineering evidence score; not probability",
+          "major_axis_yx": [
+            0.581960060108476,
+            0.8132173685052103
+          ],
+          "major_axis_anisotropy": 2.0524016428565024,
+          "skeleton_endpoints_yx": [
+            [
+              159,
+              509
+            ],
+            [
+              191,
+              241
+            ],
+            [
+              300,
+              358
+            ],
+            [
+              364,
+              493
+            ],
+            [
+              376,
+              364
+            ]
+          ],
+          "distal_endpoint_yx": [
+            191,
+            241
+          ],
+          "skeleton_length": 339.26197667087615,
+          "finger_axis_length": 353.27715714334147,
+          "reference_width": 47.75469936898821,
+          "distal_extent": 64.4688441481341,
+          "width_profile": [
+            {
+              "longitudinal": 0.5,
+              "scanline_width": 10.857981565831167,
+              "distance_transform_width": 2.0
+            },
+            {
+              "longitudinal": 11.5,
+              "scanline_width": 38.73382426032526,
+              "distance_transform_width": 23.968997955322266
+            },
+            {
+              "longitudinal": 22.5,
+              "scanline_width": 47.77782509982788,
+              "distance_transform_width": 43.59379196166992
+            },
+            {
+              "longitudinal": 34.5,
+              "scanline_width": 49.568430026185986,
+              "distance_transform_width": 47.968994140625
+            },
+            {
+              "longitudinal": 45.5,
+              "scanline_width": 50.11455645329999,
+              "distance_transform_width": 48.78759765625
+            },
+            {
+              "longitudinal": 56.5,
+              "scanline_width": 48.719379024686305,
+              "distance_transform_width": 48.0
+            },
+            {
+              "longitudinal": 68.5,
+              "scanline_width": 46.73182370727929,
+              "distance_transform_width": 45.937992095947266
+            },
+            {
+              "longitudinal": 79.5,
+              "scanline_width": 46.91200231856591,
+              "distance_transform_width": 45.968994140625
+            },
+            {
+              "longitudinal": 90.5,
+              "scanline_width": 45.115806798953706,
+              "distance_transform_width": 45.544193267822266
+            },
+            {
+              "longitudinal": 102.5,
+              "scanline_width": 47.28989467872476,
+              "distance_transform_width": 46.78759765625
+            },
+            {
+              "longitudinal": 113.5,
+              "scanline_width": 49.783297233732135,
+              "distance_transform_width": 44.0
+            },
+            {
+              "longitudinal": 124.5,
+              "scanline_width": 71.4345919489564,
+              "distance_transform_width": 37.56279373168945
+            },
+            {
+              "longitudinal": 136.5,
+              "scanline_width": 82.26843435699381,
+              "distance_transform_width": 50.78759765625
+            },
+            {
+              "longitudinal": 147.5,
+              "scanline_width": 87.24405828050041,
+              "distance_transform_width": 70.0
+            },
+            {
+              "longitudinal": 158.5,
+              "scanline_width": 121.78130067825735,
+              "distance_transform_width": 58.725589752197266
+            },
+            {
+              "longitudinal": 170.5,
+              "scanline_width": 132.86546224792374,
+              "distance_transform_width": 49.53799057006836
+            },
+            {
+              "longitudinal": 181.5,
+              "scanline_width": 142.51975779271694,
+              "distance_transform_width": 23.575199127197266
+            },
+            {
+              "longitudinal": 193.5,
+              "scanline_width": 174.37185615876004,
+              "distance_transform_width": 8.0
+            },
+            {
+              "longitudinal": 204.5,
+              "scanline_width": 192.95376053103422,
+              "distance_transform_width": 6.0
+            },
+            {
+              "longitudinal": 215.5,
+              "scanline_width": 217.97698848468264,
+              "distance_transform_width": 30.78759765625
+            },
+            {
+              "longitudinal": 227.5,
+              "scanline_width": 237.70336944502978,
+              "distance_transform_width": 67.5751953125
+            },
+            {
+              "longitudinal": 238.5,
+              "scanline_width": 221.34218609311773,
+              "distance_transform_width": 87.93798828125
+            },
+            {
+              "longitudinal": 249.5,
+              "scanline_width": 198.52214402224575,
+              "distance_transform_width": 108.694580078125
+            },
+            {
+              "longitudinal": 261.5,
+              "scanline_width": 175.8479736453126,
+              "distance_transform_width": 132.23876953125
+            },
+            {
+              "longitudinal": 272.5,
+              "scanline_width": 155.42324061283523,
+              "distance_transform_width": 141.119384765625
+            },
+            {
+              "longitudinal": 283.5,
+              "scanline_width": 132.9758819877797,
+              "distance_transform_width": 123.5751953125
+            },
+            {
+              "longitudinal": 295.5,
+              "scanline_width": 109.87718611009664,
+              "distance_transform_width": 96.0
+            },
+            {
+              "longitudinal": 306.5,
+              "scanline_width": 90.6965498979518,
+              "distance_transform_width": 87.544189453125
+            },
+            {
+              "longitudinal": 317.5,
+              "scanline_width": 69.41196635637822,
+              "distance_transform_width": 63.119388580322266
+            },
+            {
+              "longitudinal": 329.5,
+              "scanline_width": 47.77782509982788,
+              "distance_transform_width": 60.3937873840332
+            },
+            {
+              "longitudinal": 340.5,
+              "scanline_width": 24.52843029277531,
+              "distance_transform_width": 60.331787109375
+            },
+            {
+              "longitudinal": 352.5,
+              "scanline_width": 2.987555317407015,
+              "distance_transform_width": 72.393798828125
+            }
+          ],
+          "contributing_cues": [
+            "major_axis",
+            "skeleton_geodesic_endpoints",
+            "scanline_width",
+            "distance_transform_width_diagnostic",
+            "proximal_widening",
+            "semantic_class_2"
+          ],
+          "reject_reason": null,
+          "component": 1,
+          "bbox": [
+            1733,
+            1308,
+            2394,
+            1725
+          ],
+          "working_scale": 0.12698412698412698,
+          "metadata_coordinate_system": "working_image_pixels"
+        }
+      ]
+    }
+  ]
+}

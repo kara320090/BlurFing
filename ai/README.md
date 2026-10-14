@@ -34,7 +34,7 @@ LINUX_REGRESSION_OK=true
 FINAL_INDEPENDENT_VALIDATION_COMPLETE=false
 PROJECT_COMPLETE=false
 ```
-Linux 상태는 비공개 작업본의 기존 검증 근거에 따릅니다. LINUX_REGRESSION_OK는 구문·가져오기·설정·운영체제별 호출 분기 및 소스 보존 검사이며 Linux 네이티브 실행을 재검증한 결과가 아닙니다. Windows에서는 NBIS 네이티브 빌드, 공식 검증용 자료의 특징점 87개·참조 XYT 바이트 일치·동일 지문 매칭 결과 499 87 87, SourceAFIS 실제 실행을 확인하여 실행 환경 검증을 완료했습니다. Windows/Linux 전체 변환·평가 파이프라인 동등성은 별도 미검증이므로 windows_full_equivalence_verified=false를 유지합니다. 상세 범위는 [검증 기록](docs/VALIDATION.md)을 확인하세요.
+Linux는 개발 사진의 fail-closed 처리·반환 RGB·반복 실행·scanner 회귀를 검증했습니다. Windows는 NBIS/SourceAFIS 실행 환경 검증과 제공된 10-case PHOTO/scanner exact parity 및 실제 unified GUI smoke를 완료했습니다. 검증 범위와 미검증 항목은 [검증 기록](docs/VALIDATION.md) 및 [Windows parity 기록](docs/WINDOWS_PARITY_COMPATIBILITY.md)을 따릅니다. 개발·동등성 검증을 독립 보호 성능 승인으로 간주하지 않습니다.
 
 ## 저장소 구성
 - scripts/: 공통 렌더러, 합성기, 관심 영역(ROI)·기하 및 이미지 보조 함수, 운영체제별 호출을 분기하는 매칭 인터페이스, 단일 Java 소스.
@@ -60,3 +60,50 @@ scripts를 Python 모듈 검색 경로에 두거나 문서의 명령줄 명령�
 
 ## 제한사항
 일반적 보호 효과나 완전한 자연스러움을 입증하지 않습니다. 합성 지문 능선의 규칙성과 일부 질감 경계가 남고 Windows 전체 동등성도 미검증입니다. 특징점 추출 실패를 보호 성공으로 계산하지 않습니다. NBIS와 SourceAFIS의 점수 척도는 다르므로 직접 비교하지 않습니다.
+
+## Experimental automatic detection artifact
+The new automatic boundary prototype is **not ready for unattended protection**. The 20-image baseline reproduced 17 candidates and one accepted boundary; new graph-cut masks are review-gated. [Detection contract, CLI, tests and limitations](docs/DETECTION_PIPELINE.md) and [results](results/linux_detection_validation_summary.md) distinguish the 20-image diagnostics from the successful existing-baseline artifact control.
+
+Public-source smoke test: `python ai/scripts/test_detection_artifact.py`. Actual private-data detector/consumer and benchmark commands are in the detection guide. Windows consumers must use the identical source bytes, EXIF-transposed dimensions, decoded RGB and mask hashes. This artifact work does not change existing Windows runtime verification claims or establish Windows full equivalence.
+
+## Linux SAM-to-pad development path
+
+See [SAM_PAD_PIPELINE.md](docs/SAM_PAD_PIPELINE.md) for native-coordinate private-mask input, extraction, evaluation and detector-only benchmark commands. This experimental path is not approved for protection use.
+
+## Unified photo/scanner front-end (experimental)
+
+Use `scripts/protect_fingerprint.py --input /path/to/image --output /path/to/new-result`. Content routes to PHOTO, FINGERPRINT_IMAGE or UNKNOWN; failures return unchanged pixels. Scanner detection is development-validated on 21 fixtures with structure-guarded scanner transformation. The configured COLFISPOOF body/distal PHOTO branch now has a fail-closed quality gate and partial-success response; it remains detector/production-unapproved. MediaPipe/SAM and legacy are optional, not primary. [Architecture and setup](docs/UNIFIED_FINGERPRINT_FRONTEND.md), [measured validation](results/unified_frontend_validation.md). No general protection or final-independent-validation claim.
+
+## Raw COLFISPOOF pretrained PHOTO evaluation
+
+[실행 방법](docs/COLFISPOOF_RAW_EVALUATION.md)과 [GT7 결과](results/colfispoof_raw_gt7_summary.md)를 공개합니다. 공식 DeepLab fingertip class 2를 네 회전으로 추론하고 고정 2/4 consensus를 평가했습니다. 공식 contour/crop 후처리는 호출하지 않습니다. 실제 손끝 선택은 일부 개선됐지만 macro IoU 0.4973, coverage 7/10으로 자동 보호 승인 기준을 충족하지 못했습니다. PHOTO 기본 경로에 연결하지 않았으며 GT7은 개발 평가용입니다. 모델·사진·GT·overlay는 포함하지 않습니다.
+
+[Class 1+2 finger-body distal 실험](docs/FINGER_BODY_DISTAL.md)은 class 2가 없는 초근접 입력에서도 후보를 생성합니다. GT7에서 macro IoU 0.7529, coverage 10/10을 기록했지만, 목표 IoU 0.85와 경계 정밀도를 충족하지 못해 자동 보호 frontend로 승인하지 않았습니다. Ridge 검사는 별도 진단이며 기존 renderer·scanner·legacy 경로는 유지합니다.
+
+[PHOTO pad refinement 학습 준비](docs/PAD_REFINEMENT_TRAINING.md): 지정된 10개 annotation을 검증하고 coarse-guided crop 27개와 source 단위 5-fold 학습 코드를 준비했습니다. 학습과 최종 평가는 완료됐으나 GT7 IoU 0.4149, coverage 3/10으로 회귀하여 모델을 거절했습니다. 기본 inference에는 사용하지 않습니다.
+
+[Refinement 최종 학습·GT7 결과](results/pad_refinement_final_summary.md): pretrained encoder 확보 후 고정 5-fold와 최종 13 epoch 학습을 완료했습니다. GT7 macro IoU 0.4149, coverage 3/10으로 coarse baseline보다 나빠져 모델을 채택하지 않았습니다. 보호 변환에는 연결하지 않았으며 GT7을 보고 설정을 바꾸거나 재학습하지 않았습니다.
+
+## Experimental coarse PHOTO integration
+
+The unapproved COLFISPOOF body/distal path can be exercised explicitly with
+`protect_photo_coarse_experimental.py`; it does not replace the default API.
+See [PHOTO_COARSE_EXPERIMENTAL.md](docs/PHOTO_COARSE_EXPERIMENTAL.md) for
+source-bound private semantic caches, native-coordinate compositing, runtime
+preparation and the complete 10-run benchmark. Detector and production approval
+remain false; the rejected refinement model is not used.
+
+An additional opt-in [external observed pitch v1 experiment](docs/PHOTO_EXTERNAL_PITCH_V1.md)
+provides a versioned ACF/FFT evidence contract. It preserves frozen v4 and uses
+an unchanged lower-level renderer; its output is not equivalent to the frozen
+natural_auto_04/boundaryblend_02 baseline. Production approval remains false.
+
+## Unified fail-closed development system
+
+[현재 구조·quality gate·독립 평가 준비·GUI·완료 제한](docs/FAIL_CLOSED_SYSTEM.md)을 참고하세요.
+`protect_image()`와 공통 CLI는 자동 routing 후 success/partial_success/rejected를 반환합니다.
+독립 촬영본 검증과 실제 Windows equivalence는 미완료이며 PROJECT_COMPLETE=false입니다.
+
+### PHOTO adapter memory safety
+
+The unified PHOTO path now uses `photo_coarse_adapter_v2` with deterministic pre-allocation bounds. Pathological working-image requests return unchanged RGB and `adapter_memory_limit_exceeded`; no detector/pitch/feature threshold or frozen renderer formula is changed. Historical independent reports stay frozen. See [memory safety contract](docs/PHOTO_ADAPTER_MEMORY_SAFETY.md) and [post-holdout operational validation](results/post_holdout_adapter_safety_summary.md). This safety fix does not approve PHOTO detection or production protection.

@@ -1,0 +1,212 @@
+{
+  "TRAINING_ANNOTATION_INTEGRITY_OK": true,
+  "USABLE_TRAIN_IMAGES": 10,
+  "GT7_TRAIN_OVERLAP": 0,
+  "REFINEMENT_MODEL_IMPLEMENTED": true,
+  "CROSS_VALIDATION_COMPLETE": false,
+  "CV_MEAN_IOU": null,
+  "CV_MEAN_DICE": null,
+  "FINAL_MODEL_TRAINED": false,
+  "GT7_REFINEMENT_EVALUATED": false,
+  "GT7_BASELINE_MACRO_IOU": 0.7529,
+  "GT7_REFINED_MACRO_IOU": null,
+  "GT7_COMPONENT_COVERAGE": null,
+  "DET03_BASELINE_IOU": 0.5946,
+  "DET03_REFINED_IOU": null,
+  "CAP016_BASELINE_IOU": 0.6649,
+  "CAP016_REFINED_IOU": null,
+  "CAP016_BASELINE_LEAKAGE": 0.2892,
+  "CAP016_REFINED_LEAKAGE": null,
+  "FINGER_BODY_EXTERIOR_PRESERVED": "NOT_RUN_REFINEMENT",
+  "DETERMINISTIC_INFERENCE_OK": "NOT_RUN_REFINEMENT",
+  "PHOTO_REFINEMENT_APPROVED": false,
+  "PHOTO_PROTECTION_TRANSFORM_OK": "NOT_RUN",
+  "BOUNDARY_EXTERIOR_PRESERVED": "PASS_SCANNER_ONLY",
+  "NBIS_DEVELOPMENT_CHECK": "NOT_RUN_PHOTO",
+  "SOURCEAFIS_DEVELOPMENT_CHECK": "NOT_RUN_PHOTO",
+  "SCANNER_REGRESSION_OK": true,
+  "LINUX_REGRESSION_OK": true,
+  "WINDOWS_FULL_EQUIVALENCE_VERIFIED": false,
+  "FINAL_INDEPENDENT_VALIDATION_COMPLETE": false,
+  "PROJECT_COMPLETE": false,
+  "blocker": "BLOCKED_PRETRAINED_ENCODER_DOWNLOAD: official download.pytorch.org DNS unresolved; checkpoint not cached",
+  "model_weights_available": false,
+  "model_sha256": null,
+  "encoder_url": "https://download.pytorch.org/models/mobilenet_v3_small-047dcff4.pth",
+  "device": "CPU; CUDA unavailable",
+  "crop_count": 27,
+  "training_sources": [
+    {
+      "sample_id": "TRN-001",
+      "annotation_components": 6,
+      "integrity_ok": true,
+      "crop_count": 5
+    },
+    {
+      "sample_id": "TRN-002",
+      "annotation_components": 5,
+      "integrity_ok": true,
+      "crop_count": 2
+    },
+    {
+      "sample_id": "TRN-003",
+      "annotation_components": 2,
+      "integrity_ok": true,
+      "crop_count": 2
+    },
+    {
+      "sample_id": "TRN-004",
+      "annotation_components": 1,
+      "integrity_ok": true,
+      "crop_count": 1
+    },
+    {
+      "sample_id": "TRN-006",
+      "annotation_components": 4,
+      "integrity_ok": true,
+      "crop_count": 2
+    },
+    {
+      "sample_id": "TRN-010",
+      "annotation_components": 5,
+      "integrity_ok": true,
+      "crop_count": 5
+    },
+    {
+      "sample_id": "TRN-014",
+      "annotation_components": 5,
+      "integrity_ok": true,
+      "crop_count": 1
+    },
+    {
+      "sample_id": "TRN-016",
+      "annotation_components": 3,
+      "integrity_ok": true,
+      "crop_count": 3
+    },
+    {
+      "sample_id": "TRN-020",
+      "annotation_components": 4,
+      "integrity_ok": true,
+      "crop_count": 3
+    },
+    {
+      "sample_id": "TRN-022",
+      "annotation_components": 3,
+      "integrity_ok": true,
+      "crop_count": 3
+    }
+  ],
+  "protocol": {
+    "seed": 20261014,
+    "max_epochs": 40,
+    "patience": 6,
+    "input_size": 256,
+    "batch_size": 4,
+    "decoder_lr": 0.001,
+    "input_conv_lr": 0.0001,
+    "weight_decay": 0.0001,
+    "loss": "BCE + Dice",
+    "threshold": 0.5,
+    "final_epoch_rule": "median of five best validation epochs",
+    "encoder": "MobileNetV3-small ImageNet1K V1",
+    "encoder_policy": "all layers frozen except 4-channel input convolution; BatchNorm fixed eval",
+    "extra_channel_initialization": "zero; RGB weights copied exactly",
+    "context_padding": 0.35,
+    "status": "BLOCKED_PRETRAINED_ENCODER_DOWNLOAD",
+    "parameter_count": 1203441,
+    "trainable_parameter_count": 276865,
+    "source_splits": [
+      {
+        "train": [
+          "TRN-022",
+          "TRN-004",
+          "TRN-016",
+          "TRN-003",
+          "TRN-001",
+          "TRN-010",
+          "TRN-002",
+          "TRN-020"
+        ],
+        "validation": [
+          "TRN-006",
+          "TRN-014"
+        ]
+      },
+      {
+        "train": [
+          "TRN-006",
+          "TRN-014",
+          "TRN-016",
+          "TRN-003",
+          "TRN-001",
+          "TRN-010",
+          "TRN-002",
+          "TRN-020"
+        ],
+        "validation": [
+          "TRN-022",
+          "TRN-004"
+        ]
+      },
+      {
+        "train": [
+          "TRN-006",
+          "TRN-014",
+          "TRN-022",
+          "TRN-004",
+          "TRN-001",
+          "TRN-010",
+          "TRN-002",
+          "TRN-020"
+        ],
+        "validation": [
+          "TRN-016",
+          "TRN-003"
+        ]
+      },
+      {
+        "train": [
+          "TRN-006",
+          "TRN-014",
+          "TRN-022",
+          "TRN-004",
+          "TRN-016",
+          "TRN-003",
+          "TRN-002",
+          "TRN-020"
+        ],
+        "validation": [
+          "TRN-001",
+          "TRN-010"
+        ]
+      },
+      {
+        "train": [
+          "TRN-006",
+          "TRN-014",
+          "TRN-022",
+          "TRN-004",
+          "TRN-016",
+          "TRN-003",
+          "TRN-001",
+          "TRN-010"
+        ],
+        "validation": [
+          "TRN-002",
+          "TRN-020"
+        ]
+      }
+    ],
+    "GT7_role": "one-shot final test only; NOT_EXECUTED",
+    "pretrained_loaded": false,
+    "training_executed": false
+  },
+  "tests": {
+    "core_suite_passed": 110,
+    "core_suite_skipped_torch": 3,
+    "isolated_torch_tests_passed": 6
+  },
+  "GT7_one_shot_consumed": false,
+  "benchmark": "NOT_RUN: trained refinement checkpoint unavailable"
+}

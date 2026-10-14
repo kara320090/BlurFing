@@ -1,0 +1,417 @@
+{
+  "GT7_EVALUATION_COMPLETE": true,
+  "VALID_GT_COUNT": 7,
+  "AMBIGUOUS_GT_COUNT": 0,
+  "NON_TARGET_GT_COUNT": 0,
+  "PAD_MACRO_IOU": 0.4912548052974346,
+  "PAD_COMPONENT_COVERAGE": {
+    "matched": 7,
+    "total": 10,
+    "ratio": 0.7
+  },
+  "NON_TARGET_FALSE_POSITIVE_COUNT": "NOT_TESTED",
+  "AMBIGUOUS_AUTO_APPROVAL_COUNT": 0,
+  "ambiguous_tested": false,
+  "BACKGROUND_LEAKAGE_OK": false,
+  "DETERMINISTIC_INFERENCE_OK": true,
+  "DETECTOR_APPROVED_FOR_USE": false,
+  "ARTIFACT_CONTRACT_OK": true,
+  "RENDERER_CONTRACT_BLOCKED": true,
+  "LINUX_PROTECTION_TRANSFORM_OK": "NOT_RUN",
+  "BOUNDARY_EXTERIOR_PRESERVED": "NOT_RUN",
+  "NBIS_DEVELOPMENT_CHECK": "NOT_RUN",
+  "SOURCEAFIS_DEVELOPMENT_CHECK": "NOT_RUN",
+  "LINUX_REGRESSION_OK": true,
+  "WINDOWS_FULL_EQUIVALENCE_VERIFIED": false,
+  "FINAL_INDEPENDENT_VALIDATION_COMPLETE": false,
+  "PROJECT_COMPLETE": false,
+  "estimator_modified": false,
+  "tests_passed": 73,
+  "existing_GT4_masks_byte_identical": true,
+  "annotation_status_note": "All seven source.json records lack annotation_status; existing human-reviewed nonempty pad masks are evaluated as positives. No annotation file was modified. No ambiguous or negative ground-truth test exists in this set.",
+  "rows": [
+    {
+      "sample_id": "DET-01",
+      "declared_annotation_status": null,
+      "evaluation_class": "valid_positive",
+      "status_derivation": "existing human nonempty pad annotation; annotation_status absent",
+      "image_width": 4000,
+      "image_height": 3000,
+      "source_and_mask_integrity_passed": true,
+      "polygon_count": 2,
+      "GT_components": 2,
+      "detector_status": "review_candidates",
+      "candidate_count": 2,
+      "predicted_pad_count": 2,
+      "boundary_sources": [
+        "observed_crease_axis_width",
+        "observed_crease_axis_width"
+      ],
+      "confidence": [
+        0.75,
+        0.75
+      ],
+      "metrics": {
+        "iou": 0.9318176601932516,
+        "dice": 0.9647056028052214,
+        "precision": 0.9678678341183322,
+        "recall": 0.9615639675729811,
+        "predicted_outside_GT_ratio": 0.032132165881667805,
+        "predicted_pixels": 293631,
+        "GT_pixels": 295556,
+        "true_positive_pixels": 284196,
+        "false_positive_pixels": 9435,
+        "false_negative_pixels": 11360,
+        "predicted_component_count": 2,
+        "GT_component_count": 2,
+        "matched_components": 2,
+        "component_coverage": 1.0,
+        "false_positive_components": 0,
+        "missed_components": 0
+      },
+      "protection_auto_approved": false,
+      "finger_exterior_pixels": 0,
+      "deterministic": true
+    },
+    {
+      "sample_id": "DET-03",
+      "declared_annotation_status": null,
+      "evaluation_class": "valid_positive",
+      "status_derivation": "existing human nonempty pad annotation; annotation_status absent",
+      "image_width": 4000,
+      "image_height": 3000,
+      "source_and_mask_integrity_passed": true,
+      "polygon_count": 1,
+      "GT_components": 1,
+      "detector_status": "rejected",
+      "candidate_count": 1,
+      "predicted_pad_count": 0,
+      "boundary_sources": [
+        "unobserved"
+      ],
+      "confidence": [
+        0.5
+      ],
+      "metrics": {
+        "iou": 0.0,
+        "dice": 0.0,
+        "precision": null,
+        "recall": 0.0,
+        "predicted_outside_GT_ratio": null,
+        "predicted_pixels": 0,
+        "GT_pixels": 6629458,
+        "true_positive_pixels": 0,
+        "false_positive_pixels": 0,
+        "false_negative_pixels": 6629458,
+        "predicted_component_count": 0,
+        "GT_component_count": 1,
+        "matched_components": 0,
+        "component_coverage": 0.0,
+        "false_positive_components": 0,
+        "missed_components": 1
+      },
+      "protection_auto_approved": false,
+      "finger_exterior_pixels": 0,
+      "deterministic": true
+    },
+    {
+      "sample_id": "DET-04",
+      "declared_annotation_status": null,
+      "evaluation_class": "valid_positive",
+      "status_derivation": "existing human nonempty pad annotation; annotation_status absent",
+      "image_width": 4000,
+      "image_height": 3000,
+      "source_and_mask_integrity_passed": true,
+      "polygon_count": 3,
+      "GT_components": 3,
+      "detector_status": "review_candidates",
+      "candidate_count": 4,
+      "predicted_pad_count": 3,
+      "boundary_sources": [
+        "observed_crease_axis_width",
+        "observed_crease_axis_width",
+        "observed_crease_axis_width",
+        "rejected"
+      ],
+      "confidence": [
+        0.75,
+        0.75,
+        0.75,
+        0.0
+      ],
+      "metrics": {
+        "iou": 0.9251067241885573,
+        "dice": 0.9610965590268713,
+        "precision": 0.9579093441022213,
+        "recall": 0.9643050541516246,
+        "predicted_outside_GT_ratio": 0.042090655897778724,
+        "predicted_pixels": 1026166,
+        "GT_pixels": 1019360,
+        "true_positive_pixels": 982974,
+        "false_positive_pixels": 43192,
+        "false_negative_pixels": 36386,
+        "predicted_component_count": 3,
+        "GT_component_count": 3,
+        "matched_components": 3,
+        "component_coverage": 1.0,
+        "false_positive_components": 0,
+        "missed_components": 0
+      },
+      "protection_auto_approved": false,
+      "finger_exterior_pixels": 0,
+      "deterministic": true
+    },
+    {
+      "sample_id": "DET-05",
+      "declared_annotation_status": null,
+      "evaluation_class": "valid_positive",
+      "status_derivation": "existing human nonempty pad annotation; annotation_status absent",
+      "image_width": 4000,
+      "image_height": 3000,
+      "source_and_mask_integrity_passed": true,
+      "polygon_count": 1,
+      "GT_components": 1,
+      "detector_status": "review_candidates",
+      "candidate_count": 1,
+      "predicted_pad_count": 1,
+      "boundary_sources": [
+        "observed_crease_axis_width"
+      ],
+      "confidence": [
+        0.75
+      ],
+      "metrics": {
+        "iou": 0.9173164835867434,
+        "dice": 0.9568753947921109,
+        "precision": 0.9337829989836839,
+        "recall": 0.9811388990808797,
+        "predicted_outside_GT_ratio": 0.06621700101631613,
+        "predicted_pixels": 798964,
+        "GT_pixels": 760401,
+        "true_positive_pixels": 746059,
+        "false_positive_pixels": 52905,
+        "false_negative_pixels": 14342,
+        "predicted_component_count": 1,
+        "GT_component_count": 1,
+        "matched_components": 1,
+        "component_coverage": 1.0,
+        "false_positive_components": 0,
+        "missed_components": 0
+      },
+      "protection_auto_approved": false,
+      "finger_exterior_pixels": 0,
+      "deterministic": true
+    },
+    {
+      "sample_id": "CAP-016",
+      "declared_annotation_status": null,
+      "evaluation_class": "valid_positive",
+      "status_derivation": "existing human nonempty pad annotation; annotation_status absent",
+      "image_width": 4000,
+      "image_height": 3000,
+      "source_and_mask_integrity_passed": true,
+      "polygon_count": 1,
+      "GT_components": 1,
+      "detector_status": "review_candidates",
+      "candidate_count": 2,
+      "predicted_pad_count": 1,
+      "boundary_sources": [
+        "multicue_distal_transition",
+        "unobserved"
+      ],
+      "confidence": [
+        0.75,
+        0.5
+      ],
+      "metrics": {
+        "iou": 0.0,
+        "dice": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "predicted_outside_GT_ratio": 1.0,
+        "predicted_pixels": 98406,
+        "GT_pixels": 86502,
+        "true_positive_pixels": 0,
+        "false_positive_pixels": 98406,
+        "false_negative_pixels": 86502,
+        "predicted_component_count": 1,
+        "GT_component_count": 1,
+        "matched_components": 0,
+        "component_coverage": 0.0,
+        "false_positive_components": 1,
+        "missed_components": 1
+      },
+      "protection_auto_approved": false,
+      "finger_exterior_pixels": 0,
+      "deterministic": true
+    },
+    {
+      "sample_id": "CAP-042",
+      "declared_annotation_status": null,
+      "evaluation_class": "valid_positive",
+      "status_derivation": "existing human nonempty pad annotation; annotation_status absent",
+      "image_width": 4032,
+      "image_height": 3024,
+      "source_and_mask_integrity_passed": true,
+      "polygon_count": 1,
+      "GT_components": 1,
+      "detector_status": "review_candidates",
+      "candidate_count": 5,
+      "predicted_pad_count": 2,
+      "boundary_sources": [
+        "rejected",
+        "multicue_distal_transition",
+        "unobserved",
+        "unobserved",
+        "observed_crease_axis_width"
+      ],
+      "confidence": [
+        0.0,
+        0.75,
+        0.0,
+        0.25,
+        0.75
+      ],
+      "metrics": {
+        "iou": 0.0,
+        "dice": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "predicted_outside_GT_ratio": 1.0,
+        "predicted_pixels": 111143,
+        "GT_pixels": 262323,
+        "true_positive_pixels": 0,
+        "false_positive_pixels": 111143,
+        "false_negative_pixels": 262323,
+        "predicted_component_count": 2,
+        "GT_component_count": 1,
+        "matched_components": 0,
+        "component_coverage": 0.0,
+        "false_positive_components": 2,
+        "missed_components": 1
+      },
+      "protection_auto_approved": false,
+      "finger_exterior_pixels": 0,
+      "deterministic": true
+    },
+    {
+      "sample_id": "CAP-054",
+      "declared_annotation_status": null,
+      "evaluation_class": "valid_positive",
+      "status_derivation": "existing human nonempty pad annotation; annotation_status absent",
+      "image_width": 4032,
+      "image_height": 3024,
+      "source_and_mask_integrity_passed": true,
+      "polygon_count": 1,
+      "GT_components": 1,
+      "detector_status": "review_candidates",
+      "candidate_count": 4,
+      "predicted_pad_count": 2,
+      "boundary_sources": [
+        "observed_crease_axis_width",
+        "multicue_distal_transition",
+        "unobserved",
+        "unobserved"
+      ],
+      "confidence": [
+        0.75,
+        0.75,
+        0.25,
+        0.25
+      ],
+      "metrics": {
+        "iou": 0.6645427691134899,
+        "dice": 0.7984688425487741,
+        "precision": 0.6751101961265175,
+        "recall": 0.9769876626226967,
+        "predicted_outside_GT_ratio": 0.3248898038734826,
+        "predicted_pixels": 309902,
+        "GT_pixels": 214146,
+        "true_positive_pixels": 209218,
+        "false_positive_pixels": 100684,
+        "false_negative_pixels": 4928,
+        "predicted_component_count": 2,
+        "GT_component_count": 1,
+        "matched_components": 1,
+        "component_coverage": 1.0,
+        "false_positive_components": 1,
+        "missed_components": 0
+      },
+      "protection_auto_approved": false,
+      "finger_exterior_pixels": 0,
+      "deterministic": true
+    }
+  ],
+  "detector_benchmark": {
+    "warmup": 1,
+    "measured": 10,
+    "deterministic": true,
+    "scope": "saved SAM masks; no neural SAM inference",
+    "stats": {
+      "SAM_loading_validation_preflight_postprocess": {
+        "mean": 0.3303777755005285,
+        "median": 0.32748058246215805,
+        "min": 0.30313939903862774,
+        "max": 0.4162627150071785,
+        "std": 0.0313196409531896,
+        "p95": 0.38307206184836096
+      },
+      "pad_estimator": {
+        "mean": 1.2620736652170308,
+        "median": 1.2519968235283159,
+        "min": 1.2468070689355955,
+        "max": 1.3172975610941648,
+        "std": 0.020271432099222168,
+        "p95": 1.2969943220028652
+      },
+      "total_detector": {
+        "mean": 1.5924514407175594,
+        "median": 1.5785500850179233,
+        "min": 1.5544981100829318,
+        "max": 1.7335602761013433,
+        "std": 0.04944939120756186,
+        "p95": 1.6755194650962948
+      }
+    }
+  },
+  "SAM_actual_detector_benchmark": {
+    "warmup": 1,
+    "measured": 10,
+    "device": "CPU, four torch threads",
+    "deterministic": true,
+    "scope": "actual warm SAM producer including input/mask I/O plus separately measured native-mask consumer; paired stage sum, not a single continuous wall-clock run; excludes environment/model startup, protection and matchers",
+    "stats": {
+      "SAM_producer": {
+        "mean": 3.5017983979079874,
+        "median": 3.4899506384972483,
+        "min": 3.4649979100795463,
+        "max": 3.5832838859641925,
+        "std": 0.035200116473726395,
+        "p95": 3.5651191387500147
+      },
+      "consumer": {
+        "mean": 1.5394388589076697,
+        "median": 1.5234838709584437,
+        "min": 1.5028554510790855,
+        "max": 1.6716311019845307,
+        "std": 0.04682130082634737,
+        "p95": 1.621242984238779
+      },
+      "paired_detector_stage_sum": {
+        "mean": 5.041237256815657,
+        "median": 5.025261648988817,
+        "min": 4.967853361158632,
+        "max": 5.1648886549519375,
+        "std": 0.05874055217499113,
+        "p95": 5.136847639840562
+      }
+    }
+  },
+  "blockers": [
+    "DET-03 remains missed",
+    "CAP-016/CAP-042 false pads on non-pad anatomy/background; actual annotated pads missed",
+    "CAP-054 extra background component; outside-GT ratio 32.49%",
+    "Confidence 0.75 does not establish fingerprint-pad semantics"
+  ],
+  "additional_annotations_required_now": false
+}

@@ -53,3 +53,23 @@ PROJECT_COMPLETE=false
 ```
 
 WINDOWS_RUNTIME_VALIDATED는 네이티브 NBIS 빌드, 공식 브리지 검증용 자료 확인 및 실제 Windows SourceAFIS 실행을 포함합니다. Windows/Linux 전체 파이프라인 동등성, 실제 렌더링 변환의 마스크 밖 픽셀 보존, Windows 개발용 관심 영역 결과 재현, MinGW DLL PATH 없이 수행하는 독립 설치, 실제 시간 초과 상황, 독립 보류 자료의 보호 성능은 아직 검증하지 않았습니다. LINUX_REGRESSION_OK는 구문·가져오기·설정·호출 분기 및 소스 보존만 의미하며 Linux 네이티브 실행은 다시 검사하지 않았습니다. Windows 네이티브 컴파일은 Linux에서 Windows용으로 수행하는 교차 빌드가 아니므로 WINDOWS_CROSS_BUILD_SUCCESS=false를 유지합니다. 기존 Linux 개발용 결과와 독립 검증·프로젝트 완료 상태도 그대로 유지합니다.
+
+## SAM pad development evaluation
+
+See [SAM pad evaluation](../results/sam_pad_evaluation_summary.md): macro IoU 0.8458, coverage 7/7, approval false due to sample-specific outside-GT leakage. No downstream transform or matcher run.
+
+### SAM foreground follow-up
+
+Macro pad IoU 0.9051, coverage 7/7; DET-03 outside-GT ratio 14.16% versus 38.67%. Other sample masks are unchanged. The comparative metrics improve but automatic pad approval is withheld because DET-03 still lacks a verified proximal boundary. No transform/matcher run. See [follow-up evidence](../results/sam_pad_foreground_refinement_summary.md).
+
+### Proximal evidence follow-up
+
+IoU and coverage are unchanged (macro 0.9051, 7/7). DET-03 lacks agreeing observed crease/appearance evidence; `proximal_boundary_unobserved` blocks approval. 56 tests pass, no downstream execution. See [proximal evidence result](../results/sam_pad_proximal_summary.md).
+
+### Crease-optional estimator GT7 rejection
+
+Unmodified estimator, seven human nonempty positive masks: macro IoU 0.4913, coverage 7/10, false pad regions in extra samples. Approval false. No ambiguous/non-target annotation exists in this set; those branches are tested only synthetically. No downstream transform/matcher. [Detailed GT7 result](../results/distal_pad_GT7_summary.md).
+
+### Unified scanner/photo front-end
+
+Scanner: 21/21 known fixture routes and ridge ROIs, one structure-guarded transform and matcher/benchmark validation. Photo: new adapter runtime unavailable; no new GT7 metric or approval. Existing legacy GT results are preserved. [Unified validation](../results/unified_frontend_validation.md).

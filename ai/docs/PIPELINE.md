@@ -22,3 +22,7 @@ SourceAFIS는 Java 11 대상 버전의 브리지와 Linux의 os.pathsep 클래�
 공개 사본은 사용하지 않는 과거 보조 진입점을 제외하고 필요한 함수와 직접·전이 사용자 정의 의존성을 포함합니다. 경로와 Linux 연동 구성만 공개 저장소 구조로 옮겼습니다. 개인정보 목록, 원본 영상 및 실행 바이너리는 공개하지 않습니다.
 
 공통 nbis_matcher/sourceafis_matcher 인터페이스가 실행 중인 운영체제를 선택합니다. Windows는 같은 공통 알고리즘을 사용하며 출력 경로만 시스템 임시 폴더로 이동합니다.
+
+## Current routed development entrypoint
+
+The frozen description above remains historical/core documentation. Current PHOTO/scanner routing, normal rejection codes, partial success, model setup and independent/Windows completion limits are in [FAIL_CLOSED_SYSTEM.md](FAIL_CLOSED_SYSTEM.md). The external-pitch-v1 experiment is separate and is not a silent renderer replacement.

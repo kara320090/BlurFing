@@ -1,0 +1,314 @@
+{
+  "status": {
+    "PHOTO_COARSE_ADAPTER_READY": true,
+    "PHOTO_RENDERER_COMPATIBLE": "partial_explicit_geometry_normalization",
+    "PHOTO_EXPERIMENTAL_TRANSFORM_OK": true,
+    "PHOTO_TRANSFORM_SAMPLE_COUNT": 3,
+    "PHOTO_EXTERIOR_PRESERVED": true,
+    "PHOTO_NBIS_DEVELOPMENT_CHECK": "COMPLETED_INSUFFICIENT_FEATURES",
+    "PHOTO_SOURCEAFIS_DEVELOPMENT_CHECK": "COMPLETED_NO_MINUTIAE_LIMITATION",
+    "PHOTO_END_TO_END_BENCHMARK_COMPLETE": true,
+    "PHOTO_DETERMINISTIC_OUTPUT_OK": true,
+    "PHOTO_DETECTOR_APPROVED": false,
+    "PHOTO_PROTECTION_PRODUCTION_READY": false,
+    "SCANNER_REGRESSION_OK": true,
+    "LINUX_REGRESSION_OK": true,
+    "CHECKPOINT_INTEGRITY": "303/303",
+    "CAPTURE_INTEGRITY": "55/55",
+    "TESTS_PASS": "117 passed, 3 optional Torch tests skipped; 6 Torch tests separately passed",
+    "WINDOWS_FULL_EQUIVALENCE_VERIFIED": false,
+    "FINAL_INDEPENDENT_VALIDATION_COMPLETE": false,
+    "PROJECT_COMPLETE": false
+  },
+  "samples": [
+    {
+      "sample_id": "DET-01",
+      "detected": 2,
+      "canonical": 2,
+      "transformed": 0,
+      "changed_pixels": 0,
+      "mask_pixels": 285791,
+      "exterior_preserved": true,
+      "rejected": [],
+      "structure_status": [
+        {
+          "component": "coarse-1",
+          "applied": false,
+          "status": "structure_change_not_demonstrated_unchanged",
+          "reason": "original_width_unavailable"
+        },
+        {
+          "component": "coarse-2",
+          "applied": false,
+          "status": "structure_change_not_demonstrated_unchanged",
+          "reason": "original_width_unavailable"
+        }
+      ],
+      "working_scale": 1.254467182597943,
+      "matcher": null
+    },
+    {
+      "sample_id": "DET-03",
+      "detected": 1,
+      "canonical": 1,
+      "transformed": 1,
+      "changed_pixels": 3857780,
+      "mask_pixels": 3960363,
+      "exterior_preserved": true,
+      "rejected": [],
+      "structure_status": [
+        {
+          "component": "coarse-1",
+          "applied": true,
+          "status": "structure_changed_protection_unverified",
+          "reason": "changed_structure_observed"
+        }
+      ],
+      "working_scale": 0.2043982042300348,
+      "matcher": {
+        "NBIS_original_features": 23,
+        "NBIS_returned_features": 8,
+        "NBIS_self": 114,
+        "NBIS_transformed": 0,
+        "NBIS_status": "insufficient_features",
+        "SourceAFIS_original_features": 2,
+        "SourceAFIS_returned_features": 0,
+        "SourceAFIS_self": 16.586865026205977,
+        "SourceAFIS_transformed": 0.0,
+        "SourceAFIS_extraction_status": [
+          "ok",
+          "no_minutiae"
+        ]
+      }
+    },
+    {
+      "sample_id": "DET-04",
+      "detected": 3,
+      "canonical": 2,
+      "transformed": 1,
+      "changed_pixels": 250124,
+      "mask_pixels": 821881,
+      "exterior_preserved": true,
+      "rejected": [
+        {
+          "component": 1,
+          "reject_reason": "pitch_unobserved"
+        }
+      ],
+      "structure_status": [
+        {
+          "component": "coarse-2",
+          "applied": true,
+          "status": "structure_changed_protection_unverified",
+          "reason": "changed_structure_observed"
+        },
+        {
+          "component": "coarse-3",
+          "applied": false,
+          "status": "structure_change_not_demonstrated_unchanged",
+          "reason": "insufficient_features"
+        }
+      ],
+      "working_scale": 0.8403361344537815,
+      "matcher": {
+        "NBIS_original_features": 8,
+        "NBIS_returned_features": 5,
+        "NBIS_self": 0,
+        "NBIS_transformed": 0,
+        "NBIS_status": "insufficient_features",
+        "SourceAFIS_original_features": 0,
+        "SourceAFIS_returned_features": 0,
+        "SourceAFIS_self": 0.0,
+        "SourceAFIS_transformed": 0.0,
+        "SourceAFIS_extraction_status": [
+          "no_minutiae",
+          "no_minutiae"
+        ]
+      }
+    },
+    {
+      "sample_id": "DET-05",
+      "detected": 1,
+      "canonical": 1,
+      "transformed": 0,
+      "changed_pixels": 0,
+      "mask_pixels": 511002,
+      "exterior_preserved": true,
+      "rejected": [],
+      "structure_status": [
+        {
+          "component": "coarse-1",
+          "applied": false,
+          "status": "structure_change_not_demonstrated_unchanged",
+          "reason": "insufficient_features"
+        }
+      ],
+      "working_scale": 0.5862676535123816,
+      "matcher": null
+    },
+    {
+      "sample_id": "CAP-016",
+      "detected": 1,
+      "canonical": 0,
+      "transformed": 0,
+      "changed_pixels": 0,
+      "mask_pixels": 110908,
+      "exterior_preserved": true,
+      "rejected": [
+        {
+          "component": 1,
+          "reject_reason": "pitch_unobserved"
+        }
+      ],
+      "structure_status": [],
+      "working_scale": 1.4356465141058579,
+      "matcher": null
+    },
+    {
+      "sample_id": "CAP-042",
+      "detected": 1,
+      "canonical": 1,
+      "transformed": 1,
+      "changed_pixels": 196810,
+      "mask_pixels": 205406,
+      "exterior_preserved": true,
+      "rejected": [],
+      "structure_status": [
+        {
+          "component": "coarse-1",
+          "applied": true,
+          "status": "structure_changed_protection_unverified",
+          "reason": "changed_structure_observed"
+        }
+      ],
+      "working_scale": 0.9569377990430622,
+      "matcher": {
+        "NBIS_original_features": 0,
+        "NBIS_returned_features": 3,
+        "NBIS_self": 0,
+        "NBIS_transformed": 0,
+        "NBIS_status": "insufficient_features",
+        "SourceAFIS_original_features": 0,
+        "SourceAFIS_returned_features": 0,
+        "SourceAFIS_self": 0.0,
+        "SourceAFIS_transformed": 0.0,
+        "SourceAFIS_extraction_status": [
+          "no_minutiae",
+          "no_minutiae"
+        ]
+      }
+    },
+    {
+      "sample_id": "CAP-054",
+      "detected": 1,
+      "canonical": 0,
+      "transformed": 0,
+      "changed_pixels": 0,
+      "mask_pixels": 194812,
+      "exterior_preserved": true,
+      "rejected": [
+        {
+          "component": 1,
+          "reject_reason": "pitch_unobserved"
+        }
+      ],
+      "structure_status": [],
+      "working_scale": 1.038496765789949,
+      "matcher": null
+    }
+  ],
+  "benchmark": {
+    "sample_id": "DET-03",
+    "device": "CPU",
+    "warmup": 1,
+    "measurements": 10,
+    "successful_runs": 10,
+    "deterministic": true,
+    "seconds": {
+      "COLFISPOOF": {
+        "mean": 1.9308101479080506,
+        "median": 1.9155667595332488,
+        "min": 1.8255394229199737,
+        "max": 2.111229349975474,
+        "std": 0.08049581288506925,
+        "p95": 2.066975527856266
+      },
+      "worker_roundtrip": {
+        "mean": 2.0204527347930705,
+        "median": 2.0059487619437277,
+        "min": 1.9144516579108313,
+        "max": 2.2000434770016,
+        "std": 0.08022120443748751,
+        "p95": 2.155623900075443
+      },
+      "coarse_and_canonical": {
+        "mean": 0.8573637199006043,
+        "median": 0.8575665319804102,
+        "min": 0.830625853035599,
+        "max": 0.8869324190309271,
+        "std": 0.014344209170434262,
+        "p95": 0.880146790278377
+      },
+      "renderer_and_structure": {
+        "mean": 1.9393484737025575,
+        "median": 1.9352603740408085,
+        "min": 1.8955879169516265,
+        "max": 1.987905633985065,
+        "std": 0.03450656442021589,
+        "p95": 1.9838538132957182
+      },
+      "matcher_preparation": {
+        "mean": 0.07886122402269394,
+        "median": 0.07974279148038477,
+        "min": 0.07518199796322733,
+        "max": 0.08122492302209139,
+        "std": 0.0021677821829811385,
+        "p95": 0.08109073661034927
+      },
+      "NBIS": {
+        "mean": 0.04961453890427947,
+        "median": 0.04885663301683962,
+        "min": 0.040371931972913444,
+        "max": 0.0617117719957605,
+        "std": 0.005495613350307518,
+        "p95": 0.058553881698753675
+      },
+      "SourceAFIS": {
+        "mean": 0.9494753101025708,
+        "median": 0.949671647453215,
+        "min": 0.8947156870272011,
+        "max": 1.002420304925181,
+        "std": 0.03857025026673845,
+        "p95": 1.0006195075635334
+      },
+      "end_to_end": {
+        "mean": 6.577528737985995,
+        "median": 6.575732817989774,
+        "min": 6.482079201960005,
+        "max": 6.800241608987562,
+        "std": 0.09444527978832756,
+        "p95": 6.729368445894215
+      }
+    }
+  },
+  "detector_GT7_regression": {
+    "macro_IoU": 0.7529,
+    "component_coverage": "10/10",
+    "detector_changed": false
+  },
+  "matcher_protocol": "Identical existing Canonical 512px grayscale letterbox on original and actual native returned RGB; 500 DPI adapter default; not historical structure-gate frame contract",
+  "limitations": [
+    "PHOTO detector not approved; rejected refinement not used",
+    "Working-canvas normalization is not native-renderer equivalence",
+    "Four samples and seven pads remain rejected by pitch or frozen structure gate",
+    "All NBIS transformed comparisons have insufficient_features; SourceAFIS returned Canonical ROI has no minutiae",
+    "No protection/generalization/privacy claim from zero or insufficient-feature scores",
+    "Not independent holdout; Windows full equivalence unverified",
+    "Renderer/compositor/structure timing is combined, not separately instrumented"
+  ],
+  "additional_regression": {
+    "all_seven_cached_semantics_repeat_mask_and_returned_RGB_identical": true,
+    "CLI_stdout_valid_JSON": true,
+    "CLI_returned_pixels_identical": true
+  }
+}

@@ -80,3 +80,19 @@ scripts/nbis_matcher.py의 run_nbis_job(images, pairs, run_name=...)을 기존 �
 동일한 매칭 쌍으로 scripts/sourceafis_matcher.py의 run_matcher_job을 사용합니다. 매칭 엔진마다 점수 척도가 다르므로 원시 점수는 별도로 기록합니다. 실행 환경 검증은 네이티브 NBIS 빌드, 공식 브리지 검증용 자료 확인 및 실제 SourceAFIS 실행을 포함합니다. Windows/Linux 전체 파이프라인 동등성은 별도로 변환·평가 입력과 비교 기준의 일치, 실제 렌더링 변환의 마스크 밖 픽셀 보존, 개발용 관심 영역 결과 재현 및 남은 실패·시간 초과 상황을 확인해야 합니다. 해당 근거가 확보되기 전에는 windows_full_equivalence_verified=false를 유지합니다. 독립 최종 검증에는 새로운 사람·다른 날짜에 촬영한 개발 미사용 자료가 여전히 필요하며 FINAL_INDEPENDENT_VALIDATION_COMPLETE=false와 PROJECT_COMPLETE=false를 유지합니다.
 
 2026-10-12 SourceAFIS 실행 검사는 합성 능선, 복제 이미지 및 잘못된 이미지를 사용했습니다. 실제 래퍼 컴파일·특징점 추출·매칭, 복제 이미지의 템플릿 캐시 재사용, 실패 상태 및 유니코드·공백 입력 경로를 확인했습니다. 개발용 관심 영역을 다시 실행한 결과나 보호 성능 검증은 아닙니다. Windows 네이티브 빌드 결과는 WINDOWS_CROSS_BUILD_SUCCESS=false를 변경하지 않습니다.
+
+## Unified GUI and actual verification
+
+Launch `python ai/app/windows/unified_gui.py` from the configured core environment. Configure BLURFING_COLFISPOOF_PYTHON, BLURFING_COLFISPOOF_SOURCE and BLURFING_COLFISPOOF_MODEL to Windows-local absolute paths and keep TensorFlow dependencies isolated. Runtime check is prerequisite inventory only. Run PHOTO and scanner on actual Windows, save JSON/returned images and compare with Linux before claiming equivalence. Existing frozen core and numeric settings must remain unchanged. See [FAIL_CLOSED_SYSTEM.md](FAIL_CLOSED_SYSTEM.md).
+
+Actual single-case parity probe (reference files and input stay private):
+
+```powershell
+python ai/platform/windows/validate_unified_case.py --input /path/to/input.jpg --reference-json /path/to/linux/result.json --reference-image /path/to/linux/returned.png --output /path/to/fresh/windows-case
+```
+
+The probe verifies source identity, routed outcome/counts, region pixel-mask
+signatures and returned pixels. It reports only CASE_EQUIVALENCE_PASS; one case
+cannot set WINDOWS_FULL_EQUIVALENCE_VERIFIED=true. Use PHOTO success/partial/
+rejected, UNKNOWN and scanner cases, including Unicode/space paths, and actual GUI
+runtime operation before full equivalence claims. On Linux it reports NOT_RUN.

@@ -1,0 +1,924 @@
+{
+  "INPUT_ROUTER_IMPLEMENTED": true,
+  "PHOTO_FRONTEND_IMPLEMENTED": "ADAPTER_ONLY_RUNTIME_BLOCKED",
+  "SCANNER_FRONTEND_IMPLEMENTED": true,
+  "COLFISPOOF_EVALUATED": false,
+  "MEDIAPIPE_SAM_EVALUATED": false,
+  "LEGACY_FALLBACK_AVAILABLE": true,
+  "CANONICAL_FINGERPRINT_ROI_READY": true,
+  "PHOTO_GT7_MACRO_IOU": null,
+  "PHOTO_GT7_COMPONENT_COVERAGE": null,
+  "PHOTO_BACKGROUND_FP_OK": false,
+  "PHOTO_DETECTOR_APPROVED": false,
+  "SCANNER_FIXTURE_DETECTION_OK": true,
+  "SCANNER_RIDGE_VALIDATION_OK": true,
+  "SCANNER_DETECTOR_APPROVED": true,
+  "scanner_approval_scope": "development detector on 21 known fixtures; no foreground GT or general scanner accuracy claim",
+  "PHOTO_PROTECTION_TRANSFORM_OK": "NOT_RUN",
+  "SCANNER_PROTECTION_TRANSFORM_OK": true,
+  "BOUNDARY_EXTERIOR_PRESERVED": true,
+  "NBIS_DEVELOPMENT_CHECK": "PASS_SCANNER_FIXTURE_ONLY",
+  "SOURCEAFIS_DEVELOPMENT_CHECK": "PASS_SCANNER_FIXTURE_ONLY",
+  "BENCHMARK_COMPLETE": "SCANNER_ONLY",
+  "LINUX_REGRESSION_OK": true,
+  "WINDOWS_FULL_EQUIVALENCE_VERIFIED": false,
+  "FINAL_INDEPENDENT_VALIDATION_COMPLETE": false,
+  "PROJECT_COMPLETE": false,
+  "tests_passed": 93,
+  "photo_runtime_blockers": [
+    "COLFISPOOF preprocessing code unavailable via local DNS; redistribution license not verified",
+    "MediaPipe package and Hand Landmarker task absent; download DNS unavailable",
+    "NVIDIA driver unavailable; no GPU benchmark"
+  ],
+  "photo55_route_counts": {
+    "PHOTO": 55
+  },
+  "PHOTO_GT7": [
+    {
+      "sample_id": "DET-01",
+      "route": "PHOTO",
+      "new_status": "blocked",
+      "new_reason": "photo_primary_runtime_unavailable",
+      "new_primary_metrics": null,
+      "legacy_iou": 0.9318176601932516,
+      "legacy_coverage": [
+        2,
+        2
+      ],
+      "new_photo_model_evaluated": false
+    },
+    {
+      "sample_id": "DET-03",
+      "route": "PHOTO",
+      "new_status": "blocked",
+      "new_reason": "photo_primary_runtime_unavailable",
+      "new_primary_metrics": null,
+      "legacy_iou": 0.0,
+      "legacy_coverage": [
+        0,
+        1
+      ],
+      "new_photo_model_evaluated": false
+    },
+    {
+      "sample_id": "DET-04",
+      "route": "PHOTO",
+      "new_status": "blocked",
+      "new_reason": "photo_primary_runtime_unavailable",
+      "new_primary_metrics": null,
+      "legacy_iou": 0.9251067241885573,
+      "legacy_coverage": [
+        3,
+        3
+      ],
+      "new_photo_model_evaluated": false
+    },
+    {
+      "sample_id": "DET-05",
+      "route": "PHOTO",
+      "new_status": "blocked",
+      "new_reason": "photo_primary_runtime_unavailable",
+      "new_primary_metrics": null,
+      "legacy_iou": 0.9173164835867434,
+      "legacy_coverage": [
+        1,
+        1
+      ],
+      "new_photo_model_evaluated": false
+    },
+    {
+      "sample_id": "CAP-016",
+      "route": "PHOTO",
+      "new_status": "blocked",
+      "new_reason": "photo_primary_runtime_unavailable",
+      "new_primary_metrics": null,
+      "legacy_iou": 0.0,
+      "legacy_coverage": [
+        0,
+        1
+      ],
+      "new_photo_model_evaluated": false
+    },
+    {
+      "sample_id": "CAP-042",
+      "route": "PHOTO",
+      "new_status": "blocked",
+      "new_reason": "photo_primary_runtime_unavailable",
+      "new_primary_metrics": null,
+      "legacy_iou": 0.0,
+      "legacy_coverage": [
+        0,
+        1
+      ],
+      "new_photo_model_evaluated": false
+    },
+    {
+      "sample_id": "CAP-054",
+      "route": "PHOTO",
+      "new_status": "blocked",
+      "new_reason": "photo_primary_runtime_unavailable",
+      "new_primary_metrics": null,
+      "legacy_iou": 0.6645427691134899,
+      "legacy_coverage": [
+        1,
+        1
+      ],
+      "new_photo_model_evaluated": false
+    }
+  ],
+  "scanner_fixtures": [
+    {
+      "sample_id": "SCN-001",
+      "fixture_name": "a011_02.wsq",
+      "width": 796,
+      "height": 736,
+      "detected": 1,
+      "route": "FINGERPRINT_IMAGE",
+      "ridge_quality": {
+        "credible_windows": 244,
+        "eligible_windows": 868,
+        "credible_fraction": 0.28110599078341014,
+        "pitch_native": 9.950000000000001,
+        "orientation": 0.30241861939430237,
+        "working_ratio": 0.6432160804020101,
+        "status": "ridge_observed",
+        "confidence_semantics": "credible-window fraction, not probability",
+        "physical_DPI_known": false,
+        "resolution_attempts": [
+          {
+            "credible_windows": 244,
+            "eligible_windows": 868,
+            "credible_fraction": 0.28110599078341014,
+            "pitch_native": 9.950000000000001,
+            "orientation": 0.30241861939430237,
+            "working_ratio": 0.6432160804020101,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        ]
+      }
+    },
+    {
+      "sample_id": "SCN-002",
+      "fixture_name": "a011_03.wsq",
+      "width": 796,
+      "height": 736,
+      "detected": 1,
+      "route": "FINGERPRINT_IMAGE",
+      "ridge_quality": {
+        "credible_windows": 277,
+        "eligible_windows": 868,
+        "credible_fraction": 0.3191244239631336,
+        "pitch_native": 9.950000000000001,
+        "orientation": 0.22442376613616943,
+        "working_ratio": 0.6432160804020101,
+        "status": "ridge_observed",
+        "confidence_semantics": "credible-window fraction, not probability",
+        "physical_DPI_known": false,
+        "resolution_attempts": [
+          {
+            "credible_windows": 277,
+            "eligible_windows": 868,
+            "credible_fraction": 0.3191244239631336,
+            "pitch_native": 9.950000000000001,
+            "orientation": 0.22442376613616943,
+            "working_ratio": 0.6432160804020101,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        ]
+      }
+    },
+    {
+      "sample_id": "SCN-003",
+      "fixture_name": "a011_04.wsq",
+      "width": 764,
+      "height": 736,
+      "detected": 1,
+      "route": "FINGERPRINT_IMAGE",
+      "ridge_quality": {
+        "credible_windows": 256,
+        "eligible_windows": 899,
+        "credible_fraction": 0.28476084538375973,
+        "pitch_native": 9.364545452848288,
+        "orientation": -0.13795404881238937,
+        "working_ratio": 0.6701570680628273,
+        "status": "ridge_observed",
+        "confidence_semantics": "credible-window fraction, not probability",
+        "physical_DPI_known": false,
+        "resolution_attempts": [
+          {
+            "credible_windows": 256,
+            "eligible_windows": 899,
+            "credible_fraction": 0.28476084538375973,
+            "pitch_native": 9.364545452848288,
+            "orientation": -0.13795404881238937,
+            "working_ratio": 0.6701570680628273,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        ]
+      }
+    },
+    {
+      "sample_id": "SCN-004",
+      "fixture_name": "a011_05.wsq",
+      "width": 800,
+      "height": 736,
+      "detected": 1,
+      "route": "FINGERPRINT_IMAGE",
+      "ridge_quality": {
+        "credible_windows": 115,
+        "eligible_windows": 868,
+        "credible_fraction": 0.13248847926267282,
+        "pitch_native": 8.838834764831843,
+        "orientation": -0.7366729378700256,
+        "working_ratio": 0.64,
+        "status": "ridge_observed",
+        "confidence_semantics": "credible-window fraction, not probability",
+        "physical_DPI_known": false,
+        "resolution_attempts": [
+          {
+            "credible_windows": 115,
+            "eligible_windows": 868,
+            "credible_fraction": 0.13248847926267282,
+            "pitch_native": 8.838834764831843,
+            "orientation": -0.7366729378700256,
+            "working_ratio": 0.64,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        ]
+      }
+    },
+    {
+      "sample_id": "SCN-005",
+      "fixture_name": "a011_13.wsq",
+      "width": 1624,
+      "height": 1008,
+      "detected": 1,
+      "route": "FINGERPRINT_IMAGE",
+      "ridge_quality": {
+        "credible_windows": 417,
+        "eligible_windows": 2394,
+        "credible_fraction": 0.17418546365914786,
+        "pitch_native": 8.971417286304321,
+        "orientation": -0.006176941096782684,
+        "working_ratio": 0.6305418719211823,
+        "status": "ridge_observed",
+        "confidence_semantics": "credible-window fraction, not probability",
+        "physical_DPI_known": false,
+        "resolution_attempts": [
+          {
+            "credible_windows": 4,
+            "eligible_windows": 558,
+            "credible_fraction": 0.007168458781362007,
+            "pitch_native": 33.83333333333333,
+            "orientation": 0.08628414198756218,
+            "working_ratio": 0.31527093596059114,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          },
+          {
+            "credible_windows": 417,
+            "eligible_windows": 2394,
+            "credible_fraction": 0.17418546365914786,
+            "pitch_native": 8.971417286304321,
+            "orientation": -0.006176941096782684,
+            "working_ratio": 0.6305418719211823,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        ]
+      }
+    },
+    {
+      "sample_id": "SCN-006",
+      "fixture_name": "a011p_02.wsq",
+      "width": 320,
+      "height": 528,
+      "detected": 1,
+      "route": "FINGERPRINT_IMAGE",
+      "ridge_quality": {
+        "credible_windows": 321,
+        "eligible_windows": 558,
+        "credible_fraction": 0.5752688172043011,
+        "pitch_native": 9.152553237716281,
+        "orientation": -0.11167863011360168,
+        "working_ratio": 0.9696969696969697,
+        "status": "ridge_observed",
+        "confidence_semantics": "credible-window fraction, not probability",
+        "physical_DPI_known": false,
+        "resolution_attempts": [
+          {
+            "credible_windows": 321,
+            "eligible_windows": 558,
+            "credible_fraction": 0.5752688172043011,
+            "pitch_native": 9.152553237716281,
+            "orientation": -0.11167863011360168,
+            "working_ratio": 0.9696969696969697,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        ]
+      }
+    },
+    {
+      "sample_id": "SCN-007",
+      "fixture_name": "a011p_03.wsq",
+      "width": 336,
+      "height": 512,
+      "detected": 1,
+      "route": "FINGERPRINT_IMAGE",
+      "ridge_quality": {
+        "credible_windows": 285,
+        "eligible_windows": 620,
+        "credible_fraction": 0.4596774193548387,
+        "pitch_native": 8.875203139603666,
+        "orientation": -0.18083232641220093,
+        "working_ratio": 1.0,
+        "status": "ridge_observed",
+        "confidence_semantics": "credible-window fraction, not probability",
+        "physical_DPI_known": false,
+        "resolution_attempts": [
+          {
+            "credible_windows": 285,
+            "eligible_windows": 620,
+            "credible_fraction": 0.4596774193548387,
+            "pitch_native": 8.875203139603666,
+            "orientation": -0.18083232641220093,
+            "working_ratio": 1.0,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        ]
+      }
+    },
+    {
+      "sample_id": "SCN-008",
+      "fixture_name": "a011p_04.wsq",
+      "width": 320,
+      "height": 544,
+      "detected": 1,
+      "route": "FINGERPRINT_IMAGE",
+      "ridge_quality": {
+        "credible_windows": 297,
+        "eligible_windows": 527,
+        "credible_fraction": 0.5635673624288425,
+        "pitch_native": 8.246211251235321,
+        "orientation": -0.19568738341331482,
+        "working_ratio": 0.9411764705882353,
+        "status": "ridge_observed",
+        "confidence_semantics": "credible-window fraction, not probability",
+        "physical_DPI_known": false,
+        "resolution_attempts": [
+          {
+            "credible_windows": 297,
+            "eligible_windows": 527,
+            "credible_fraction": 0.5635673624288425,
+            "pitch_native": 8.246211251235321,
+            "orientation": -0.19568738341331482,
+            "working_ratio": 0.9411764705882353,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        ]
+      }
+    },
+    {
+      "sample_id": "SCN-009",
+      "fixture_name": "a011p_05.wsq",
+      "width": 272,
+      "height": 304,
+      "detected": 1,
+      "route": "FINGERPRINT_IMAGE",
+      "ridge_quality": {
+        "credible_windows": 141,
+        "eligible_windows": 288,
+        "credible_fraction": 0.4895833333333333,
+        "pitch_native": 7.761140001162655,
+        "orientation": -0.13341963291168213,
+        "working_ratio": 1.0,
+        "status": "ridge_observed",
+        "confidence_semantics": "credible-window fraction, not probability",
+        "physical_DPI_known": false,
+        "resolution_attempts": [
+          {
+            "credible_windows": 141,
+            "eligible_windows": 288,
+            "credible_fraction": 0.4895833333333333,
+            "pitch_native": 7.761140001162655,
+            "orientation": -0.13341963291168213,
+            "working_ratio": 1.0,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        ]
+      }
+    },
+    {
+      "sample_id": "SCN-010",
+      "fixture_name": "a011r_02.wsq",
+      "width": 568,
+      "height": 600,
+      "detected": 1,
+      "route": "FINGERPRINT_IMAGE",
+      "ridge_quality": {
+        "credible_windows": 494,
+        "eligible_windows": 899,
+        "credible_fraction": 0.5494994438264739,
+        "pitch_native": 10.400628679223045,
+        "orientation": 0.330648735165596,
+        "working_ratio": 0.8533333333333334,
+        "status": "ridge_observed",
+        "confidence_semantics": "credible-window fraction, not probability",
+        "physical_DPI_known": false,
+        "resolution_attempts": [
+          {
+            "credible_windows": 494,
+            "eligible_windows": 899,
+            "credible_fraction": 0.5494994438264739,
+            "pitch_native": 10.400628679223045,
+            "orientation": 0.330648735165596,
+            "working_ratio": 0.8533333333333334,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        ]
+      }
+    },
+    {
+      "sample_id": "SCN-011",
+      "fixture_name": "a011r_03.wsq",
+      "width": 568,
+      "height": 600,
+      "detected": 1,
+      "route": "FINGERPRINT_IMAGE",
+      "ridge_quality": {
+        "credible_windows": 552,
+        "eligible_windows": 899,
+        "credible_fraction": 0.6140155728587319,
+        "pitch_native": 10.400628679223045,
+        "orientation": 0.2648161053657532,
+        "working_ratio": 0.8533333333333334,
+        "status": "ridge_observed",
+        "confidence_semantics": "credible-window fraction, not probability",
+        "physical_DPI_known": false,
+        "resolution_attempts": [
+          {
+            "credible_windows": 552,
+            "eligible_windows": 899,
+            "credible_fraction": 0.6140155728587319,
+            "pitch_native": 10.400628679223045,
+            "orientation": 0.2648161053657532,
+            "working_ratio": 0.8533333333333334,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        ]
+      }
+    },
+    {
+      "sample_id": "SCN-012",
+      "fixture_name": "a011r_04.wsq",
+      "width": 552,
+      "height": 600,
+      "detected": 1,
+      "route": "FINGERPRINT_IMAGE",
+      "ridge_quality": {
+        "credible_windows": 459,
+        "eligible_windows": 868,
+        "credible_fraction": 0.5288018433179723,
+        "pitch_native": 9.095085938862486,
+        "orientation": -0.21402178704738617,
+        "working_ratio": 0.8533333333333334,
+        "status": "ridge_observed",
+        "confidence_semantics": "credible-window fraction, not probability",
+        "physical_DPI_known": false,
+        "resolution_attempts": [
+          {
+            "credible_windows": 459,
+            "eligible_windows": 868,
+            "credible_fraction": 0.5288018433179723,
+            "pitch_native": 9.095085938862486,
+            "orientation": -0.21402178704738617,
+            "working_ratio": 0.8533333333333334,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        ]
+      }
+    },
+    {
+      "sample_id": "SCN-013",
+      "fixture_name": "a011r_05.wsq",
+      "width": 488,
+      "height": 432,
+      "detected": 1,
+      "route": "FINGERPRINT_IMAGE",
+      "ridge_quality": {
+        "credible_windows": 300,
+        "eligible_windows": 754,
+        "credible_fraction": 0.3978779840848806,
+        "pitch_native": 8.875203139603666,
+        "orientation": -0.6858177185058594,
+        "working_ratio": 1.0,
+        "status": "ridge_observed",
+        "confidence_semantics": "credible-window fraction, not probability",
+        "physical_DPI_known": false,
+        "resolution_attempts": [
+          {
+            "credible_windows": 300,
+            "eligible_windows": 754,
+            "credible_fraction": 0.3978779840848806,
+            "pitch_native": 8.875203139603666,
+            "orientation": -0.6858177185058594,
+            "working_ratio": 1.0,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        ]
+      }
+    },
+    {
+      "sample_id": "SCN-014",
+      "fixture_name": "cmp00001.wsq",
+      "width": 589,
+      "height": 605,
+      "detected": 1,
+      "route": "FINGERPRINT_IMAGE",
+      "ridge_quality": {
+        "credible_windows": 518,
+        "eligible_windows": 930,
+        "credible_fraction": 0.556989247311828,
+        "pitch_native": 10.487300584883238,
+        "orientation": -0.5183598399162292,
+        "working_ratio": 0.8462809917355372,
+        "status": "ridge_observed",
+        "confidence_semantics": "credible-window fraction, not probability",
+        "physical_DPI_known": false,
+        "resolution_attempts": [
+          {
+            "credible_windows": 518,
+            "eligible_windows": 930,
+            "credible_fraction": 0.556989247311828,
+            "pitch_native": 10.487300584883238,
+            "orientation": -0.5183598399162292,
+            "working_ratio": 0.8462809917355372,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        ]
+      }
+    },
+    {
+      "sample_id": "SCN-015",
+      "fixture_name": "cmp00002.wsq",
+      "width": 832,
+      "height": 768,
+      "detected": 1,
+      "route": "FINGERPRINT_IMAGE",
+      "ridge_quality": {
+        "credible_windows": 174,
+        "eligible_windows": 868,
+        "credible_fraction": 0.20046082949308755,
+        "pitch_native": 10.4,
+        "orientation": -0.2762850821018219,
+        "working_ratio": 0.6153846153846154,
+        "status": "ridge_observed",
+        "confidence_semantics": "credible-window fraction, not probability",
+        "physical_DPI_known": false,
+        "resolution_attempts": [
+          {
+            "credible_windows": 174,
+            "eligible_windows": 868,
+            "credible_fraction": 0.20046082949308755,
+            "pitch_native": 10.4,
+            "orientation": -0.2762850821018219,
+            "working_ratio": 0.6153846153846154,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        ]
+      }
+    },
+    {
+      "sample_id": "SCN-016",
+      "fixture_name": "cmp00003.wsq",
+      "width": 832,
+      "height": 768,
+      "detected": 1,
+      "route": "FINGERPRINT_IMAGE",
+      "ridge_quality": {
+        "credible_windows": 135,
+        "eligible_windows": 868,
+        "credible_fraction": 0.15552995391705068,
+        "pitch_native": 9.656157585206696,
+        "orientation": -0.6039562225341797,
+        "working_ratio": 0.6153846153846154,
+        "status": "ridge_observed",
+        "confidence_semantics": "credible-window fraction, not probability",
+        "physical_DPI_known": false,
+        "resolution_attempts": [
+          {
+            "credible_windows": 135,
+            "eligible_windows": 868,
+            "credible_fraction": 0.15552995391705068,
+            "pitch_native": 9.656157585206696,
+            "orientation": -0.6039562225341797,
+            "working_ratio": 0.6153846153846154,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        ]
+      }
+    },
+    {
+      "sample_id": "SCN-017",
+      "fixture_name": "cmp00004.wsq",
+      "width": 815,
+      "height": 752,
+      "detected": 1,
+      "route": "FINGERPRINT_IMAGE",
+      "ridge_quality": {
+        "credible_windows": 131,
+        "eligible_windows": 868,
+        "credible_fraction": 0.15092165898617513,
+        "pitch_native": 9.00456291667244,
+        "orientation": 0.45128577947616577,
+        "working_ratio": 0.6282208588957056,
+        "status": "ridge_observed",
+        "confidence_semantics": "credible-window fraction, not probability",
+        "physical_DPI_known": false,
+        "resolution_attempts": [
+          {
+            "credible_windows": 131,
+            "eligible_windows": 868,
+            "credible_fraction": 0.15092165898617513,
+            "pitch_native": 9.00456291667244,
+            "orientation": 0.45128577947616577,
+            "working_ratio": 0.6282208588957056,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        ]
+      }
+    },
+    {
+      "sample_id": "SCN-018",
+      "fixture_name": "cmp00005.wsq",
+      "width": 832,
+      "height": 768,
+      "detected": 1,
+      "route": "FINGERPRINT_IMAGE",
+      "ridge_quality": {
+        "credible_windows": 155,
+        "eligible_windows": 868,
+        "credible_fraction": 0.17857142857142858,
+        "pitch_native": 12.256517540566824,
+        "orientation": -0.7816785573959351,
+        "working_ratio": 0.6153846153846154,
+        "status": "ridge_observed",
+        "confidence_semantics": "credible-window fraction, not probability",
+        "physical_DPI_known": false,
+        "resolution_attempts": [
+          {
+            "credible_windows": 155,
+            "eligible_windows": 868,
+            "credible_fraction": 0.17857142857142858,
+            "pitch_native": 12.256517540566824,
+            "orientation": -0.7816785573959351,
+            "working_ratio": 0.6153846153846154,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        ]
+      }
+    },
+    {
+      "sample_id": "SCN-019",
+      "fixture_name": "cmp00011.wsq",
+      "width": 614,
+      "height": 717,
+      "detected": 1,
+      "route": "FINGERPRINT_IMAGE",
+      "ridge_quality": {
+        "credible_windows": 479,
+        "eligible_windows": 806,
+        "credible_fraction": 0.5942928039702233,
+        "pitch_native": 10.562407543974055,
+        "orientation": -0.635919451713562,
+        "working_ratio": 0.7140864714086471,
+        "status": "ridge_observed",
+        "confidence_semantics": "credible-window fraction, not probability",
+        "physical_DPI_known": false,
+        "resolution_attempts": [
+          {
+            "credible_windows": 479,
+            "eligible_windows": 806,
+            "credible_fraction": 0.5942928039702233,
+            "pitch_native": 10.562407543974055,
+            "orientation": -0.635919451713562,
+            "working_ratio": 0.7140864714086471,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        ]
+      }
+    },
+    {
+      "sample_id": "SCN-020",
+      "fixture_name": "cmp00012.wsq",
+      "width": 516,
+      "height": 716,
+      "detected": 1,
+      "route": "FINGERPRINT_IMAGE",
+      "ridge_quality": {
+        "credible_windows": 300,
+        "eligible_windows": 682,
+        "credible_fraction": 0.4398826979472141,
+        "pitch_native": 10.547676152699335,
+        "orientation": 0.6196763217449188,
+        "working_ratio": 0.7150837988826816,
+        "status": "ridge_observed",
+        "confidence_semantics": "credible-window fraction, not probability",
+        "physical_DPI_known": false,
+        "resolution_attempts": [
+          {
+            "credible_windows": 300,
+            "eligible_windows": 682,
+            "credible_fraction": 0.4398826979472141,
+            "pitch_native": 10.547676152699335,
+            "orientation": 0.6196763217449188,
+            "working_ratio": 0.7150837988826816,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        ]
+      }
+    },
+    {
+      "sample_id": "SCN-021",
+      "fixture_name": "cmp00013.wsq",
+      "width": 539,
+      "height": 651,
+      "detected": 1,
+      "route": "FINGERPRINT_IMAGE",
+      "ridge_quality": {
+        "credible_windows": 302,
+        "eligible_windows": 775,
+        "credible_fraction": 0.3896774193548387,
+        "pitch_native": 9.868168243665798,
+        "orientation": 0.36766333878040314,
+        "working_ratio": 0.7864823348694316,
+        "status": "ridge_observed",
+        "confidence_semantics": "credible-window fraction, not probability",
+        "physical_DPI_known": false,
+        "resolution_attempts": [
+          {
+            "credible_windows": 302,
+            "eligible_windows": 775,
+            "credible_fraction": 0.3896774193548387,
+            "pitch_native": 9.868168243665798,
+            "orientation": 0.36766333878040314,
+            "working_ratio": 0.7864823348694316,
+            "status": "ridge_observed",
+            "confidence_semantics": "credible-window fraction, not probability",
+            "physical_DPI_known": false
+          }
+        ]
+      }
+    }
+  ],
+  "scanner_transform": {
+    "applied": true,
+    "changed_pixels": 95930,
+    "exterior_preserved": true,
+    "SourceAFIS_structure_features": [
+      62,
+      100
+    ],
+    "same_coordinate_point_Dice": 0.1728395061728395,
+    "skeleton_changed_fraction": 0.6689677605898511
+  },
+  "scanner_matchers": {
+    "NBIS_features": [
+      87,
+      182
+    ],
+    "NBIS_scores": [
+      499,
+      36
+    ],
+    "NBIS_pruned_counts": [
+      87,
+      150
+    ],
+    "SourceAFIS_features": [
+      62,
+      100
+    ],
+    "SourceAFIS_scores": [
+      734.9329664251815,
+      3.185747975448335
+    ]
+  },
+  "scanner_benchmark": {
+    "warmup": 1,
+    "measured": 10,
+    "applied_runs": 10,
+    "deterministic": true,
+    "device": "CPU",
+    "stats": {
+      "routing": {
+        "mean": 0.05638952719746158,
+        "median": 0.0578579165157862,
+        "min": 0.05014779104385525,
+        "max": 0.060632882989011705,
+        "std": 0.0035687403951054305,
+        "p95": 0.06039367059711367
+      },
+      "ridge_validation": {
+        "mean": 0.04515182899776846,
+        "median": 0.04530058754608035,
+        "min": 0.043588200001977384,
+        "max": 0.04647763294633478,
+        "std": 0.000851824113298028,
+        "p95": 0.046197267662500964
+      },
+      "foreground_segmentation": {
+        "mean": 0.0014832745771855115,
+        "median": 0.0014895284548401833,
+        "min": 0.0014184679603204131,
+        "max": 0.001532615046016872,
+        "std": 3.178205917123917e-05,
+        "p95": 0.0015250122407451272
+      },
+      "transform": {
+        "mean": 0.158275453094393,
+        "median": 0.15777535497909412,
+        "min": 0.155871266964823,
+        "max": 0.16105272097047418,
+        "std": 0.001692081887943829,
+        "p95": 0.1608351905713789
+      },
+      "structure_check": {
+        "mean": 1.4575584895093925,
+        "median": 1.4638878434780054,
+        "min": 1.4058279839809984,
+        "max": 1.511576746008359,
+        "std": 0.02870978033570024,
+        "p95": 1.4919798615796025
+      },
+      "NBIS": {
+        "mean": 0.07925643859198317,
+        "median": 0.079830888484139,
+        "min": 0.0688334769802168,
+        "max": 0.09055515099316835,
+        "std": 0.006707182447270429,
+        "p95": 0.08828799564507789
+      },
+      "SourceAFIS": {
+        "mean": 1.0149655366200023,
+        "median": 1.0036799694644287,
+        "min": 0.9934148070169613,
+        "max": 1.0950518790632486,
+        "std": 0.030611480511325,
+        "p95": 1.074464343523141
+      },
+      "total": {
+        "mean": 2.844723020517267,
+        "median": 2.837058082513977,
+        "min": 2.7844130330486223,
+        "max": 2.9243527519283816,
+        "std": 0.035394774180646044,
+        "p95": 2.904405081341974
+      }
+    },
+    "routing_includes_initial_ridge_probe": true
+  },
+  "actual_CLI_stdout_JSON_validated": true,
+  "SDK_download_attempted_in_isolated_environment": true,
+  "SDK_download_success": false
+}

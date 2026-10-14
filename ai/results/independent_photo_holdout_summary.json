@@ -1,0 +1,137 @@
+{
+  "INDEPENDENT_HOLDOUT_AVAILABLE": true,
+  "INDEPENDENT_HOLDOUT_IMAGE_COUNT": 8,
+  "INDEPENDENT_HASH_OVERLAP_COUNT": 0,
+  "INDEPENDENT_PHOTO_EVALUATION_COMPLETE": false,
+  "FINAL_INDEPENDENT_VALIDATION_COMPLETE": false,
+  "PHOTO_DETECTOR_APPROVED": false,
+  "PHOTO_PROTECTION_PRODUCTION_READY": false,
+  "PROJECT_COMPLETE": false,
+  "configuration_changed": false,
+  "accuracy_metrics_available": false,
+  "reason": "Four sources decode as RGBA, outside frozen RGB/L API contract; no implicit alpha conversion performed.",
+  "samples": [
+    {
+      "filename": "holdout_001.jpg",
+      "routing": "photo",
+      "detected": 3,
+      "transformed": 0,
+      "rejected": 3,
+      "status": "rejected",
+      "reject_reasons": [
+        "pitch_unobserved",
+        "pitch_unobserved",
+        "pitch_unobserved"
+      ],
+      "changed_pixels": 0,
+      "exterior_changed_pixels": 0,
+      "exterior_preserved": true,
+      "deterministic": true,
+      "runtime_error": null
+    },
+    {
+      "filename": "holdout_002.jpg",
+      "routing": "photo",
+      "detected": 4,
+      "transformed": 0,
+      "rejected": 4,
+      "status": "rejected",
+      "reject_reasons": [
+        "pitch_unobserved",
+        "pitch_unobserved",
+        "pitch_unobserved",
+        "pitch_unobserved"
+      ],
+      "changed_pixels": 0,
+      "exterior_changed_pixels": 0,
+      "exterior_preserved": true,
+      "deterministic": true,
+      "runtime_error": null
+    },
+    {
+      "filename": "holdout_003.jpg",
+      "routing": "photo",
+      "detected": 2,
+      "transformed": 0,
+      "rejected": 2,
+      "status": "rejected",
+      "reject_reasons": [
+        "pitch_unobserved",
+        "pitch_unobserved"
+      ],
+      "changed_pixels": 0,
+      "exterior_changed_pixels": 0,
+      "exterior_preserved": true,
+      "deterministic": true,
+      "runtime_error": null
+    },
+    {
+      "filename": "holdout_004.jpg",
+      "routing": "NOT_RUN",
+      "detected": null,
+      "transformed": null,
+      "rejected": null,
+      "status": "input_contract_error",
+      "reject_reasons": [
+        "unsupported_RGBA_input"
+      ],
+      "exterior_preserved": "NOT_RUN",
+      "deterministic": "same_input_error_twice"
+    },
+    {
+      "filename": "holdout_005.jpg",
+      "routing": "NOT_RUN",
+      "detected": null,
+      "transformed": null,
+      "rejected": null,
+      "status": "input_contract_error",
+      "reject_reasons": [
+        "unsupported_RGBA_input"
+      ],
+      "exterior_preserved": "NOT_RUN",
+      "deterministic": "same_input_error_twice"
+    },
+    {
+      "filename": "holdout_006.jpg",
+      "routing": "photo",
+      "detected": 1,
+      "transformed": 0,
+      "rejected": 1,
+      "status": "rejected",
+      "reject_reasons": [
+        "pitch_unobserved"
+      ],
+      "changed_pixels": 0,
+      "exterior_changed_pixels": 0,
+      "exterior_preserved": true,
+      "deterministic": true,
+      "runtime_error": null
+    },
+    {
+      "filename": "holdout_007.jpg",
+      "routing": "NOT_RUN",
+      "detected": null,
+      "transformed": null,
+      "rejected": null,
+      "status": "input_contract_error",
+      "reject_reasons": [
+        "unsupported_RGBA_input"
+      ],
+      "exterior_preserved": "NOT_RUN",
+      "deterministic": "same_input_error_twice"
+    },
+    {
+      "filename": "holdout_008.jpg",
+      "routing": "NOT_RUN",
+      "detected": null,
+      "transformed": null,
+      "rejected": null,
+      "status": "input_contract_error",
+      "reject_reasons": [
+        "unsupported_RGBA_input"
+      ],
+      "exterior_preserved": "NOT_RUN",
+      "deterministic": "same_input_error_twice"
+    }
+  ]
+}
