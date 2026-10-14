@@ -25,11 +25,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.blurfing.app.model.ProcessingSettingsStore
 import com.blurfing.app.utils.DraftSession
 import com.blurfing.app.utils.ProtectedShareFiles
+import com.blurfing.app.utils.DiagnosticsReport
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
 import com.blurfing.app.ui.screens.ComparisonScreen
 import com.blurfing.app.ui.screens.ImagePickerScreen
 import com.blurfing.app.ui.screens.ProcessingScreen
@@ -65,6 +69,21 @@ class MainActivity : ComponentActivity() {
                     val processingSettings by viewModel.settings.collectAsState()
                     val backendReadiness by viewModel.readiness.collectAsState()
                     val context = LocalContext.current
+                    var pendingDiagnosticReport by rememberSaveable { mutableStateOf<String?>(null) }
+                    val diagnosticLauncher = rememberLauncherForActivityResult(
+                        ActivityResultContracts.CreateDocument("application/json")
+                    ) { uri ->
+                        val report = pendingDiagnosticReport
+                        pendingDiagnosticReport = null
+                        if (uri != null && report != null) lifecycleScope.launch {
+                            val message = try {
+                                DiagnosticsReport.write(applicationContext, uri, report)
+                                "사진이 포함되지 않은 진단 기록을 저장했습니다."
+                            } catch (error: CancellationException) { throw error }
+                            catch (_: Exception) { "진단 기록을 저장하지 못했습니다. 저장 위치와 공간을 확인해 주세요." }
+                            Toast.makeText(applicationContext, message, Toast.LENGTH_LONG).show()
+                        }
+                    }
                     val pendingCameraUri by cameraViewModel.pendingUri.collectAsState()
                     val cameraError by cameraViewModel.error.collectAsState()
                     // Register independently of the current screen so a restored camera result is delivered.
@@ -193,6 +212,21 @@ class MainActivity : ComponentActivity() {
                                         isSharing = state.isSharing,
                                         shareError = state.shareError,
                                         processingTiming = state.processingTiming,
+                                        isDiagnosticPending = pendingDiagnosticReport != null,
+                                        onExportDiagnostics = {
+                                            if (pendingDiagnosticReport == null) {
+                                                val latest = viewModel.uiState.value as? UiState.Ready
+                                                val report = latest?.let { DiagnosticsReport.create(it, viewModel.settings.value) }
+                                                if (report != null) {
+                                                    pendingDiagnosticReport = report
+                                                    try { diagnosticLauncher.launch("BlurFing-diagnostics.json") }
+                                                    catch (_: Exception) {
+                                                        pendingDiagnosticReport = null
+                                                        Toast.makeText(context, "진단 기록 저장 창을 열지 못했습니다.", Toast.LENGTH_LONG).show()
+                                                    }
+                                                }
+                                            }
+                                        },
                                         onShare = { viewModel.shareProtectedImage(context) },
                                         onSaveProtectedImage = {
                                             if (savePermissionRequestId == null) {

@@ -48,7 +48,9 @@ fun ComparisonScreen(
     onShare: () -> Unit = {},
     isSharing: Boolean = false,
     shareError: String? = null,
-    processingTiming: ProcessingTiming? = null
+    processingTiming: ProcessingTiming? = null,
+    onExportDiagnostics: () -> Unit = {},
+    isDiagnosticPending: Boolean = false
 ) {
     var showProtectedOnly by rememberSaveable(response?.requestId) { mutableStateOf(true) }
     var sideBySide by rememberSaveable(response?.requestId) { mutableStateOf(false) }
@@ -159,6 +161,10 @@ fun ComparisonScreen(
                 modifier = Modifier.fillMaxWidth()) {
                 Text(if (isSharing) "공유 사본 준비 중…" else if (response?.resultKind == "mock") "Mock 프리뷰 공유" else "처리 사본 공유")
             }
+            OutlinedButton(onClick = onExportDiagnostics, enabled = !isDiagnosticPending && !isSharing && !isSaving,
+                modifier = Modifier.fillMaxWidth()) { Text("진단 기록 저장 (사진 제외)") }
+            Text("사진·서버 주소·지문 점수는 제외하고 처리 설정과 앱 측정 시간만 JSON으로 저장합니다.",
+                style = MaterialTheme.typography.bodySmall)
         }
     }
 }
