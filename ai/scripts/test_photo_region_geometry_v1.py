@@ -58,5 +58,12 @@ class AxisWidthTests(unittest.TestCase):
         for axis in [(0,0),(1,),[np.nan,1],[np.inf,1]]:
             with self.assertRaises(ValueError):estimate_finger_width_axis(image,box,axis)
 
+    def test_boundary_rejection_is_diagnosed_without_relaxing_criteria(self):
+        image=np.full((1024,1024,3),[180,100,85],np.uint8)
+        result=estimate_finger_width_axis(image,[412,412,612,612],(1,0))
+        self.assertEqual(result['status'],'insufficient_boundary_rows')
+        self.assertIsNone(result['width']); self.assertEqual(len(result['rejected_samples']),7)
+        self.assertTrue(all(r['reason']=='skin_interval_touches_sample_boundary' for r in result['rejected_samples']))
+
 
 if __name__=='__main__':unittest.main()

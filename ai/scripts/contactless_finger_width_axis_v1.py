@@ -28,10 +28,11 @@ def estimate_finger_width_axis(rgb, box, axis_yx):
                max(0,cx-20):min(rgb.shape[1],cx+21)]
     saturation = float(np.median(cv2.cvtColor(seed, cv2.COLOR_RGB2HSV)[:,:,1]))
     threshold = max(12.0, saturation * .5)
-    samples = []
+    samples, rejected_samples = [], []
     for offset in range(-90, 91, 30):
         row_center = center + offset * axis
         if not (0 <= row_center[0] < rgb.shape[0] and 0 <= row_center[1] < rgb.shape[1]):
+            rejected_samples.append(dict(axis_offset=offset, reason='row_center_outside_image'))
             continue
         distances = np.arange(-600, 600, dtype=np.float64)
         points = row_center + distances[:,None] * normal
@@ -39,6 +40,7 @@ def estimate_finger_width_axis(rgb, box, axis_yx):
                  & (points[:,1] >= 0) & (points[:,1] <= rgb.shape[1]-1))
         points, distances = points[valid], distances[valid]
         if not len(points):
+            rejected_samples.append(dict(axis_offset=offset, reason='no_in_bounds_samples'))
             continue
         row = cv2.remap(rgb, points[:,1].astype(np.float32)[None],
                        points[:,0].astype(np.float32)[None], cv2.INTER_LINEAR,
@@ -52,6 +54,7 @@ def estimate_finger_width_axis(rgb, box, axis_yx):
         if not skin[index]:
             nearby = np.flatnonzero(skin & (np.abs(distances) <= 20))
             if not len(nearby):
+                rejected_samples.append(dict(axis_offset=offset, reason='no_skin_near_seed_center'))
                 continue
             index = int(nearby[np.argmin(np.abs(distances[nearby]))])
         left, right = index, index+1
@@ -59,10 +62,13 @@ def estimate_finger_width_axis(rgb, box, axis_yx):
         while right < len(skin) and skin[right]:right += 1
         observed = right-left
         if left == 0 or right == len(skin) or not 160 <= observed <= 900:
+            rejected_samples.append(dict(axis_offset=offset, width=observed,
+                reason='skin_interval_touches_sample_boundary' if left == 0 or right == len(skin)
+                       else 'width_outside_existing_range'))
             continue
         samples.append(dict(axis_offset=offset, width=observed,
                             start_yx=points[left].tolist(), end_yx=points[right-1].tolist()))
-    info = dict(version=VERSION, axis_yx=axis.tolist(), samples=samples,
+    info = dict(version=VERSION, axis_yx=axis.tolist(), samples=samples, rejected_samples=rejected_samples,
                 seed_saturation=saturation, saturation_threshold=threshold,
                 coordinate_system='caller_current_image_pixels',
                 physical_dpi_known=False, default_pipeline_enabled=False,

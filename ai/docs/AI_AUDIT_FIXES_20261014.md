@@ -19,7 +19,7 @@
 
 합성 검증은 고정 큰 mask에 tiny fragments를 추가하는 불변성, 경계에 닿는 mask의 유한 직경, 90도 회전과 대각선 손가락 폭, 입력 보존과 invalid axis를 포함한다. 단독 관측 함수는 renderer·structure guard·GUI 기본 경로에 연결하지 않았다. 기본 v2의 global scale 문제와 기존 width gate의 방향 의존성은 이 별도 구현만으로 해결 완료가 되지 않는다.
 
-두 기능의 다음 단계는 candidate association·좌표 연결·region별 실행/composite 계약을 별도 adapter로 검증하는 것이다. 합성 불변성을 고정한 뒤 독립 development 자료로 평가한다. 이미 사용한 holdout이나 a/b 사진에 맞춘 threshold 조정은 하지 않는다.
+후속 `photo_region_pipeline_v1`은 candidate association·좌표 연결·region별 실행/composite 계약을 별도 opt-in adapter로 연결했다. [구현 계약과 실제 결과](PHOTO_REGION_PIPELINE_V1.md)를 따른다. a/development 성공 사례도 새 폭 관측에서 거절됐으므로 기본 경로로 채택하지 않았다. 이미 사용한 holdout이나 a/b 사진에 맞춘 threshold 조정은 하지 않는다.
 
 ## 계속 남는 알고리즘 과제
 
@@ -28,6 +28,8 @@ a와 같은 visible ridge undercoverage, b와 같은 feature gate 보류, 새 �
 제공된 10-case의 outcome/region/native RGB parity와 기하 실험의 합성 불변성은 다른 검증이다. raw Linux TF tensor 비교나 matcher score 동등성으로 확대 해석하지 않는다.
 
 ## 검증 결과
+
+아래 수치는 최초 감사 수정 시점의 기록이다. 후속 adapter/EXIF 수정의 현재 검증은 [PHOTO_REGION_PIPELINE_V1.md](PHOTO_REGION_PIPELINE_V1.md)의 178 PASS/3 SKIP, GUI 9 PASS, syntax 118 PASS와 source-bound cached 10-case exact 결과를 따른다. 새 worker 추론 여부를 두 실행 간 혼동하지 않는다.
 
 수정 후 core 테스트 168개를 실행해 165개가 통과하고 선택적 Torch 3개가 skip됐다. GUI 회귀 9개와 Python 116개 syntax 검사도 통과했다. 제공된 holdout 8개, development_success, scanner_reference를 새 출력에서 순차 실행해 outcome·region signature·native RGB 모두 exact PASS, 최대 오차 0을 확인했다.
 
