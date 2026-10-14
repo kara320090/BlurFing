@@ -60,7 +60,13 @@ def graph_path(skeleton,start):
 
 
 def component_pad(component,tip):
-    points=np.argwhere(component);mean=points.mean(axis=0);cov=np.cov(points.T);values,vectors=np.linalg.eigh(cov);axis=vectors[:,-1];anisotropy=float(values[-1]/max(values[0],1e-6));skeleton=skeletonize(component);distance=cv2.distanceTransform(component.astype(np.uint8),cv2.DIST_L2,5)
+    points=np.argwhere(component)
+    # Watershed can leave a single-pixel owner inside a larger body. Sample
+    # covariance is undefined with fewer than two points. These components
+    # already have no skeleton endpoints; keep that rejection before NaNs or
+    # RuntimeWarnings can enter numerical libraries or become exceptions.
+    if len(points)<2:raise ValueError('skeleton_endpoints_unobserved')
+    mean=points.mean(axis=0);cov=np.cov(points.T);values,vectors=np.linalg.eigh(cov);axis=vectors[:,-1];anisotropy=float(values[-1]/max(values[0],1e-6));skeleton=skeletonize(component);distance=cv2.distanceTransform(component.astype(np.uint8),cv2.DIST_L2,5)
     coords,endpoints,skel_path,skel_arc=graph_path(skeleton,None)
     projections=(points-mean)@axis;low=float(projections.min());high=float(projections.max());length=high-low
     if length<12:raise ValueError('finger_too_short')

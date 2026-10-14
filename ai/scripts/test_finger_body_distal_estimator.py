@@ -1,4 +1,7 @@
 import unittest
+import json
+import warnings
+from unittest.mock import patch
 import cv2
 import numpy as np
 from finger_body_distal_estimator import estimate,component_pad
@@ -17,6 +20,32 @@ class BodyDistalTests(unittest.TestCase):
     def test_bad_tip_subset(self):
         body,tip=self.masks();tip[0,0]=True
         with self.assertRaises(ValueError):estimate(body,tip)
+    def test_empty_and_single_pixel_geometry_rejected_before_undefined_covariance(self):
+        for count in [0,1]:
+            component=np.zeros((20,20),bool)
+            if count:component[10,10]=True
+            with warnings.catch_warnings(), patch('finger_body_distal_estimator.np.cov',
+                    side_effect=AssertionError('undefined sample covariance must not run')):
+                warnings.simplefilter('error',RuntimeWarning)
+                with self.assertRaisesRegex(ValueError,'^skeleton_endpoints_unobserved$'):
+                    component_pad(component,np.zeros_like(component))
+
+    def test_single_pixel_watershed_owner_rejects_without_losing_valid_owner(self):
+        body,tip=self.masks();tip[120,50]=True
+        parts=body.astype(np.int32);parts[120,50]=2
+        with warnings.catch_warnings(), patch('finger_body_distal_estimator.watershed',return_value=parts):
+            warnings.simplefilter('error',RuntimeWarning)
+            result=estimate(body,tip,preserve_candidates=True)
+        self.assertEqual(len(result['regions']),2)
+        valid,rejected=result['regions']
+        self.assertIsNone(valid['reject_reason']);self.assertTrue(valid['mask'].any())
+        self.assertEqual(rejected['reject_reason'],'skeleton_endpoints_unobserved')
+        self.assertEqual(int(rejected['body_mask'].sum()),1)
+        self.assertNotIn('mask',rejected)
+        np.testing.assert_array_equal(result['mask'],valid['mask'])
+        self.assertFalse(np.any(result['mask']&~body))
+        json.dumps([{k:v for k,v in r.items() if not isinstance(v,np.ndarray)}
+                    for r in result['regions']],allow_nan=False)
     def test_rotation_geometry(self):
         body,tip=self.masks();original=estimate(body,tip)['mask']
         for k in [1,2,3]:

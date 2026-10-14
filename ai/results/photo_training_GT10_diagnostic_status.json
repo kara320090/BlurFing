@@ -1,0 +1,72 @@
+{
+  "schema_version": "photo-training-GT10-diagnostic-v1",
+  "evaluation_code_commit": "85cd386ccf22f658d2b6ba1d34bfcf0d739e9521",
+  "data_role": "training/development",
+  "human_GT_image_count": 10,
+  "independent_validation": false,
+  "fresh_COLFISPOOF_inference": true,
+  "semantic_policy": {
+    "body_classes": [
+      1,
+      2
+    ],
+    "tip_class": 2,
+    "minimum_votes": 2,
+    "rotations": 4,
+    "coordinate_system": "encoded_original_pixels"
+  },
+  "coarse_mask_metrics": {
+    "macro_iou": 0.3511169803549435,
+    "macro_recall": 0.8151357915079093,
+    "macro_precision": 0.3845153383999464,
+    "GT_components": 38,
+    "matched_components": 8,
+    "FP_components": 13
+  },
+  "GT_components_are_connected_masks_not_anatomical_fingers": true,
+  "stage_attribution": {
+    "macro_GT_fraction_outside_body": 0.05396054142081445,
+    "macro_additional_GT_fraction_excluded_by_distal_estimator": 0.13090366707127626
+  },
+  "fixed_resolution_external_pitch_diagnostic": {
+    "512": {
+      "observed_candidates": 0,
+      "evaluated_candidates": 27
+    },
+    "1024": {
+      "observed_candidates": 0,
+      "evaluated_candidates": 27
+    },
+    "2048": {
+      "observed_candidates": 0,
+      "evaluated_candidates": 27
+    },
+    "native": {
+      "observed_candidates": 0,
+      "evaluated_candidates": 27
+    }
+  },
+  "pitch_scope": "Existing ACF/FFT diagnostic on body bbox; not frozen renderer pitch, not protection rate, no DPI proof",
+  "post_covariance_guard_verification": {
+    "core_pass": 240,
+    "optional_Torch_skipped": 3,
+    "GUI_pass": 9,
+    "training_masks_and_candidate_decisions_exact": 10,
+    "existing_default_regression_cases_exact": 10,
+    "protected_file_hashes_verified": 553,
+    "syntax_files": 130
+  },
+  "thresholds_changed": false,
+  "frozen_renderer_changed": false,
+  "GT_or_sources_changed": false,
+  "protection_applied_in_training_diagnostic": false,
+  "production_path_promoted": false,
+  "PHOTO_DETECTOR_APPROVED": false,
+  "PHOTO_PROTECTION_PRODUCTION_READY": false,
+  "known_limits": [
+    "Coarse candidates include proximal finger/whole-hand tissue in multi-finger poses.",
+    "Body segmentation omission and distal selection omission are both present.",
+    "Fixed ACF/FFT evidence rejected all observed candidates at the four requested resolutions.",
+    "Training observations do not establish independent generalization."
+  ]
+}
