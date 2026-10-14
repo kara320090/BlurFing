@@ -36,8 +36,19 @@ def square_scope(mask):
     return [a,b,a+side,b+side],dict(right=max(0,a+side-w),bottom=max(0,b+side-h))
 
 
+def validate_semantic_policy(identity):
+    """Accept only the encoded-pixel policy produced by the body worker."""
+    if not isinstance(identity,dict):raise ValueError('invalid_semantics_identity')
+    classes=identity.get('body_classes')
+    if identity.get('coordinate_system')!='encoded_original_pixels':raise ValueError('semantic_coordinate_contract_mismatch')
+    if not isinstance(classes,list) or any(type(v) is not int for v in classes) or classes!=[1,2]:raise ValueError('semantic_class_contract_mismatch')
+    if type(identity.get('tip_class')) is not int or identity['tip_class']!=2:raise ValueError('semantic_class_contract_mismatch')
+    if type(identity.get('minimum_votes')) is not int or identity['minimum_votes']!=2:raise ValueError('semantic_consensus_contract_mismatch')
+
+
 def adapt(source,semantics):
     source=Path(source);sha=hashlib.sha256(source.read_bytes()).hexdigest();identity=json.loads((Path(semantics)/'semantics.json').read_text())
+    validate_semantic_policy(identity)
     with Image.open(source) as im:rgb=np.asarray(im.convert('RGB')).copy();orientation=im.getexif().get(274,1)
     if identity['source_sha256']!=sha or (identity['image_height'],identity['image_width'])!=rgb.shape[:2]:raise ValueError('source_semantics_contract_mismatch')
     body=read_binary(Path(semantics)/'body.png',rgb.shape[:2],identity['body_sha256']);tip=read_binary(Path(semantics)/'tip.png',rgb.shape[:2],identity['tip_sha256']);result=estimate(body,tip);labels,n=ndimage.label(result['mask']);upright=orient(rgb,orientation);accepted=[];rejected=[]

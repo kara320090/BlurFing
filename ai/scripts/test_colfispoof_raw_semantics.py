@@ -16,6 +16,16 @@ class RawSemanticTests(unittest.TestCase):
     def test_odd_padding(self):
         p,g=prepare(np.zeros((5,10,3),np.uint8),11)
         self.assertEqual(p.shape[:2],(10,11));self.assertEqual(g['scaled_height'],6);self.assertEqual(g['top'],2)
+    def test_zero_target_side_rejected_before_resize(self):
+        from unittest.mock import patch
+        for shape in [(1,4096,3),(4096,1,3)]:
+            with self.subTest(shape=shape),patch('colfispoof_raw_semantics.cv2.resize',side_effect=AssertionError('must reject before resize')):
+                with self.assertRaisesRegex(ValueError,'unsupported_preprocessing_aspect_ratio'):prepare(np.zeros(shape,np.uint8))
+    def test_invalid_preprocessing_contract(self):
+        for size in [0,-1,True,1.5]:
+            with self.subTest(size=size),self.assertRaises(ValueError):prepare(np.zeros((4,4,3),np.uint8),size)
+        for image in [np.zeros((0,4,3),np.uint8),np.zeros((4,4),np.uint8),np.zeros((4,4,3),np.float32)]:
+            with self.assertRaises(ValueError):prepare(image)
     def test_rotation_inverse_pixel_locations(self):
         # No resize/padding needed in this exact-resolution geometry fixture.
         expected=np.zeros((20,30),bool);expected[2:7,19:27]=True

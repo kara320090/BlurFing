@@ -20,12 +20,12 @@ def pitch_failure_reason(measurement):
     for attempt in measurement.get('attempts',[]):
         observed=attempt.get('measurement',{})
         if observed.get('status') in ['inconsistent','scale_disagreement']:return 'pitch_unstable'
-        if any(z.get('status')=='inconsistent' for z in observed.get('scales',[])):return 'pitch_unstable'
+        if any(z.get('status')=='inconsistent' or z.get('selection',{}).get('status')=='inconsistent' for z in observed.get('scales',[])):return 'pitch_unstable'
     return 'pitch_unobserved'
 
 def summarize(regions):
     n=len(regions);applied=sum(r['quality_status']=='TRANSFORMED' for r in regions)
-    return dict(status='success' if n and applied==n else 'partial_success' if applied else 'rejected',fingerprints_detected=n,fingerprints_transformed=applied,fingerprints_rejected=n-applied,regions=regions,PHOTO_DETECTOR_APPROVED=False,PHOTO_PROTECTION_PRODUCTION_READY=False,PHOTO_FAIL_CLOSED_PIPELINE_READY=True)
+    return dict(status='success' if n and applied==n else 'partial_success' if applied else 'rejected',fingerprints_detected=n,fingerprints_transformed=applied,fingerprints_rejected=n-applied,regions=regions,quality_gate_version='photo_quality_gate_v2',PHOTO_DETECTOR_APPROVED=False,PHOTO_PROTECTION_PRODUCTION_READY=False,PHOTO_FAIL_CLOSED_PIPELINE_READY=True)
 
 def evaluate(source,semantics=None,detect_only=False):
     tick=time.perf_counter();inference=0.

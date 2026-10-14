@@ -15,4 +15,15 @@ class GateTests(unittest.TestCase):
         self.assertEqual(pitch_failure_reason({'attempts':[{'measurement':{'count':0}}]}),'pitch_unobserved')
     def test_deterministic_JSON(self):
         a=summarize([self.region('TRANSFORMED'),self.region('REJECT_INSUFFICIENT_FEATURES')]);self.assertEqual(json.dumps(a,sort_keys=True),json.dumps(summarize([self.region('TRANSFORMED'),self.region('REJECT_INSUFFICIENT_FEATURES')]),sort_keys=True))
+    def test_actual_two_scale_producer_schema(self):
+        from unittest.mock import patch
+        import numpy as np
+        from diagnose_ridge_measurement_noise import two_scale_measurement
+        patches=[dict(pitch=p,correlation=.9,coherence=.9,profile_contrast=10) for p in [6,8,20,22]]
+        with patch('diagnose_ridge_measurement_noise.estimate_ridge_pitch',return_value=dict(status='estimated',pitch=12,count=4,measurements=patches)):
+            measurement=two_scale_measurement(np.zeros((512,512),np.uint8),np.ones((512,512),bool))
+        self.assertEqual(measurement['scales'][0]['selection']['status'],'inconsistent')
+        self.assertEqual(pitch_failure_reason(dict(attempts=[dict(measurement=measurement)])),'pitch_unstable')
+    def test_insufficient_nested_patches_remain_unobserved(self):
+        self.assertEqual(pitch_failure_reason(dict(attempts=[dict(measurement=dict(status='unavailable',scales=[dict(selection=dict(status='insufficient'))]))])),'pitch_unobserved')
 if __name__=='__main__':unittest.main()

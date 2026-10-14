@@ -8,9 +8,19 @@ ROOT=Path(__file__).resolve().parents[2]
 class App:
     def __init__(self,root):
         self.root=root;root.title('BlurFing — development fail-closed pipeline');self.source=None;self.output=None;self.photo=None
-        for name,callback in [('Select image',self.select),('Process',self.process),('Runtime check',self.runtime),('Benchmark (1 + 10)',self.benchmark),('Save output',self.save)]:tk.Button(root,text=name,command=callback).pack(fill='x')
+        self._generation=0;self._output_generation=None;self._worker_lock=threading.Lock()
+        for name,callback in [('Select image',self.select),('Process',self.process),('Runtime check',self.runtime),('Benchmark (1 + 10)',self.benchmark),('Save output',self.save)]:
+            button=tk.Button(root,text=name,command=callback);button.pack(fill='x')
+            if name=='Save output':self.save_button=button;button.config(state='disabled')
         self.label=tk.Label(root,text='PHOTO detector and production readiness remain unapproved.');self.label.pack();self.preview=tk.Label(root);self.preview.pack();self.text=tk.Text(root,width=90,height=15);self.text.pack()
-    def select(self):self.source=filedialog.askopenfilename(filetypes=[('Images','*.jpg *.jpeg *.png *.bmp *.tif *.tiff')]);self.label.config(text=Path(self.source).name if self.source else 'No image selected')
+    def invalidate_result(self):
+        self._generation+=1;self.output=None;self.photo=None;self._output_generation=None
+        self.preview.config(image='');self.text.delete('1.0','end');self.save_button.config(state='disabled')
+        return self._generation
+    def select(self):
+        source=filedialog.askopenfilename(filetypes=[('Images','*.jpg *.jpeg *.png *.bmp *.tif *.tiff')])
+        if not source:return
+        self.invalidate_result();self.source=source;self.label.config(text=Path(source).name)
     def execute(self,script,args):
         interpreter=os.environ.get('BLURFING_CORE_PYTHON') or sys.executable
         if Path(interpreter).name.lower()=='pythonw.exe':interpreter=str(Path(interpreter).with_name('python.exe'))
@@ -19,20 +29,34 @@ class App:
         if result.returncode or data.get('status')=='error':raise RuntimeError(data.get('error','CLI failure'))
         return data
     def job(self,work,complete):
+        generation=self._generation
+        def deliver(value):
+            if generation==self._generation:complete(value)
+        def report_error(message):
+            if generation==self._generation:messagebox.showerror('BlurFing',message)
         def run():
-            try:value=work();self.root.after(0,lambda:complete(value))
+            try:
+                # Large model subprocesses from this window must not overlap.
+                with self._worker_lock:
+                    if generation!=self._generation:return
+                    value=work()
             except Exception as exc:
-                message=str(exc);self.root.after(0,lambda:messagebox.showerror('BlurFing',message))
-        threading.Thread(target=run,daemon=True).start()
+                message=str(exc);self.root.after(0,lambda:report_error(message))
+            else:self.root.after(0,lambda:deliver(value))
+        worker=threading.Thread(target=run,daemon=True);worker.start();return worker
     def process(self):
         if not self.source:return
-        source=self.source;folder=str(Path(tempfile.mkdtemp(prefix='blurfing_gui_'))/'result')
+        source=self.source;generation=self.invalidate_result();folder=str(Path(tempfile.mkdtemp(prefix='blurfing_gui_'))/'result');self.label.config(text=f'Processing: {Path(source).name}')
         def complete(data):
-            self.output=data['output_path'];self.text.delete('1.0','end');self.text.insert('end',json.dumps(data,indent=2));image=ImageOps.exif_transpose(Image.open(self.output));image.thumbnail((900,550));self.photo=ImageTk.PhotoImage(image);self.preview.config(image=self.photo);self.label.config(text=f"{data['input_type']}: {data['status']} | detected {data['fingerprints_detected']}, transformed {data['fingerprints_transformed']}, rejected {data['fingerprints_rejected']}")
+            if generation!=self._generation or source!=self.source:return
+            output=data['output_path']
+            with Image.open(output) as image:
+                preview=ImageOps.exif_transpose(image);preview.thumbnail((900,550));photo=ImageTk.PhotoImage(preview)
+            self.output=output;self.photo=photo;self._output_generation=generation;self.text.delete('1.0','end');self.text.insert('end',json.dumps(data,indent=2));self.preview.config(image=self.photo);self.label.config(text=f"{data['input_type']}: {data['status']} | detected {data['fingerprints_detected']}, transformed {data['fingerprints_transformed']}, rejected {data['fingerprints_rejected']}");self.save_button.config(state='normal')
         self.job(lambda:self.execute('protect_fingerprint.py',['--input',source,'--output',folder]),complete)
     def runtime(self):self.job(lambda:self.execute('check_unified_runtime.py',[]),lambda r:(self.text.delete('1.0','end'),self.text.insert('end',json.dumps(r,indent=2))))
     def save(self):
-        if self.output:
+        if self.output and self._output_generation==self._generation:
             dest=filedialog.asksaveasfilename(defaultextension='.png',filetypes=[('PNG','*.png')])
             if dest:
                 if Path(dest).exists():messagebox.showerror('BlurFing','Choose a new filename; existing files are preserved.');return

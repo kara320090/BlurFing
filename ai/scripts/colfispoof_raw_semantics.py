@@ -34,11 +34,14 @@ def resolve_preprocessing(external_source):
 
 def prepare(rgb, size=1024):
     """Official crop_to_size resize/black-padding geometry, without rotation."""
+    if rgb.ndim!=3 or rgb.shape[2]!=3 or rgb.dtype!=np.uint8 or min(rgb.shape[:2])<1:raise ValueError('uint8_RGB_required')
+    if isinstance(size,(bool,np.bool_)) or not isinstance(size,(int,np.integer)) or size<1:raise ValueError('positive_integer_preprocessing_size_required')
     h,w=rgb.shape[:2]
     if w>=h:
         nw=size;nh=round(size/w*h);left=0;top=round((size-nh)/2)
     else:
         nh=size;nw=round(size/h*w);top=0;left=round((size-nw)/2)
+    if min(nh,nw)<1:raise ValueError('unsupported_preprocessing_aspect_ratio')
     # Match upstream's positional call exactly: the third argument is dst,
     # not interpolation. OpenCV therefore actually uses default INTER_LINEAR.
     scaled=cv2.resize(rgb,(nw,nh),cv2.INTER_AREA)
