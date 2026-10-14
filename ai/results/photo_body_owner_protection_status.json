@@ -1,0 +1,68 @@
+{
+  "schema_version": "experimental-body-owner-protection-v1",
+  "entrypoint": "protect_photo_learned_v1.py",
+  "current_connection": "photo_learned_pad_pipeline_v4.py",
+  "default_pipeline_enabled": false,
+  "PHOTO_DETECTOR_APPROVED": false,
+  "PHOTO_PROTECTION_PRODUCTION_READY": false,
+  "independent_final_test": false,
+  "privacy_proof": false,
+  "complete_photo_protection_verified": false,
+  "model_sha256": "b168c8af175018d83ae796a97af7fad34ba16c28ec19332976057a373fbc143c",
+  "saved_group_heldout_development": {
+    "source_count": 10,
+    "sources_with_transform": 1,
+    "transformed_components": 1,
+    "rejected_components": 33,
+    "rejection_reasons": {
+      "body_supported_pitch_unobserved": 19,
+      "insufficient_features": 4,
+      "learned_body_owner_unavailable": 8,
+      "original_width_unavailable": 2
+    },
+    "all_exterior_preserved": true,
+    "all_rejected_pixels_preserved": true,
+    "mean_GT_covered_by_applied_fraction": 0.01356083699647138,
+    "development_only": true,
+    "independent_final_test": false,
+    "privacy_proof": false,
+    "approved_for_protection": false
+  },
+  "additional_unlabelled_development": {
+    "source_count": 5,
+    "sources_with_transform": 1,
+    "all_predicted_groups_transformed_sources": 1,
+    "transformed_groups": 1,
+    "rejected_groups": 4,
+    "reasons": {
+      "insufficient_features": 2,
+      "body_supported_pitch_unobserved": 2
+    },
+    "pipeline_errors": 0,
+    "all_exterior_preserved": true,
+    "all_rejected_pixels_preserved": true,
+    "human_GT_available": false,
+    "accuracy_evaluated": false,
+    "prior_unseen_status_verified": false,
+    "independent_final_test": false
+  },
+  "V5_shared_anchor_variant": {
+    "development_sources_with_transform": 0,
+    "source_count": 10,
+    "adopted": false
+  },
+  "AI_unit_tests_passed": 381,
+  "Windows_GUI_regression_tests_passed": 9,
+  "unchanged_original_private_files": 257,
+  "algorithm_thresholds_unchanged": true,
+  "frozen_protection_files_unchanged": true,
+  "network_and_training_code_unchanged": true,
+  "new_path_Linux_execution_parity_verified": false,
+  "outstanding": [
+    "insufficient ridge/feature evidence on real inputs",
+    "model pad recall and fragment false positives",
+    "multiple-owner native boundary ambiguity",
+    "fresh human annotations and final validation",
+    "new experimental path Linux execution"
+  ]
+}

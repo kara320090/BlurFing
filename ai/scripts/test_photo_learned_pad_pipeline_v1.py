@@ -101,6 +101,14 @@ class LearnedProtectionTests(unittest.TestCase):
         with patch.object(pipeline,'render_candidate_region',side_effect=render):out,report=self.evaluate()
         np.testing.assert_array_equal(out,self.rgb);self.assertEqual(report['fingerprints_transformed'],0)
 
+    def test_applied_identical_native_RGB_is_not_success(self):
+        def render(rgb,artifact,axis):
+            return rgb.copy(),dict(regions=[dict(candidate_id=f"coarse-{artifact['component']}",applied=True,
+                structure_check=dict(structure_change_passed=True))])
+        with patch.object(pipeline,'render_candidate_region',side_effect=render):out,report=self.evaluate()
+        np.testing.assert_array_equal(out,self.rgb);self.assertEqual(report['fingerprints_transformed'],0)
+        self.assertTrue(all(r['reason']=='renderer_success_without_native_RGB_change' for r in report['regions']))
+
     def test_target_fields_and_mask_outside_body_fail_before_renderer(self):
         with self.assertRaisesRegex(ValueError,'GT_fields'):
             pipeline.evaluate_learned_mask(self.source|dict(GT_folder='forbidden'),self.mask,pipeline.pixel_hash(self.mask))

@@ -53,7 +53,7 @@ def associate_learned_body_axis(native,contexts):
     return association,context['body']
 
 
-def evaluate_learned_mask(source,mask,expected_pixel_sha256,*,detect_only=False,_scope_adapter=None,_version=VERSION):
+def evaluate_learned_mask(source,mask,expected_pixel_sha256,*,detect_only=False,_scope_adapter=None,_version=VERSION,_candidate_builder=None,_context_adapter=None):
     """Source is an inference-manifest record; mask is hash-bound native bool."""
     start=time.perf_counter()
     if any(k.startswith('GT') for k in source):raise ValueError('GT_fields_forbidden_in_learned_protection')
@@ -68,16 +68,27 @@ def evaluate_learned_mask(source,mask,expected_pixel_sha256,*,detect_only=False,
         if type(orientation) is not int or orientation not in range(1,9):raise ValueError('invalid_source_exif_orientation')
         if route['input_type']!='PHOTO':raise ValueError('experimental_photo_input_required')
         labels,count=ndimage.label(mask)
-        if count>MAX_COMPONENTS:raise ValueError('learned_component_resource_limit')
+        if count>MAX_COMPONENTS and _candidate_builder is None:raise ValueError('learned_component_resource_limit')
         result=estimate(body,tip,preserve_candidates=True);contexts=candidate_contexts(result,body)
-        plans=shared.plan_region_scales(mask);gray=cv2.cvtColor(rgb,cv2.COLOR_RGB2GRAY)
-        for plan in plans['regions']:
+        if _context_adapter is not None:contexts=_context_adapter(contexts,body)
+        if _candidate_builder is None:
+            records=[dict(plan=p,association=None,owner=None,reason=None) for p in shared.plan_region_scales(mask)['regions']]
+        else:
+            partition=_candidate_builder(mask,contexts);labels=partition['labels'];records=partition['records']
+            if (labels.shape!=mask.shape or labels.dtype!=np.uint16 or not np.array_equal(labels>0,mask) or
+                    len(records)>MAX_COMPONENTS+2 or set(np.unique(labels))-{0}!={r['plan']['component'] for r in records}):
+                raise ValueError('learned_candidate_partition_contract')
+        gray=cv2.cvtColor(rgb,cv2.COLOR_RGB2GRAY)
+        for record in records:
+            plan=record['plan']
             native=labels==plan['component']
             row=dict(region_id=plan['component'],mask_pixels=int(native.sum()),mask_pixel_sha256=pixel_hash(native),
-                     scale_plan=plan,status='rejected',quality_status='REJECT_OTHER',reason=plan['reject_reason'])
+                     scale_plan=plan,status='rejected',quality_status='REJECT_OTHER',reason=record['reason'] or plan['reject_reason'])
+            if record.get('candidate_id') is not None:row['candidate_id']=record['candidate_id']
             try:
-                if plan['status']=='planned' or _scope_adapter is not None:
-                    association,owner=associate_learned_body_axis(native,contexts);row['association']=association
+                if record['reason'] is None and (plan['status']=='planned' or _scope_adapter is not None):
+                    association,owner=(associate_learned_body_axis(native,contexts) if record['association'] is None
+                                       else (record['association'],record['owner']));row['association']=association
                     scoped_render=None
                     if _scope_adapter is None:
                         artifact,geometry=shared.prepare_region(rgb,gray,native,owner,orientation,source['source_sha256'],plan,association)
@@ -105,6 +116,7 @@ def evaluate_learned_mask(source,mask,expected_pixel_sha256,*,detect_only=False,
                                 if (not isinstance(candidate,np.ndarray) or candidate.dtype!=np.uint8 or candidate.shape!=rgb.shape or
                                         not np.array_equal(candidate[~native],rgb[~native])):
                                     raise ValueError('region_renderer_output_contract_mismatch')
+                                if np.array_equal(candidate[native],rgb[native]):raise ValueError('renderer_success_without_native_RGB_change')
                                 returned[native]=candidate[native];row.update(status='transformed',quality_status='TRANSFORMED')
                 if row['status']!='transformed':row['quality_status']=state(row['reason'])
             except HANDLED as error:row.update(reason=str(error),error=type(error).__name__,quality_status=state(str(error)))
@@ -125,7 +137,10 @@ def evaluate_learned_mask(source,mask,expected_pixel_sha256,*,detect_only=False,
         default_pipeline_enabled=False,approved_for_protection=False,independent_validation_complete=False,PHOTO_FAIL_CLOSED_PIPELINE_READY=False,
         algorithm_thresholds_unchanged=True,frozen_files_unchanged=True,exterior_preserved=True,rejected_pixels_preserved=True,
         changed_pixels=int(np.any(returned!=rgb,axis=2).sum()),returned_RGB_sha256=pixel_hash(returned),
-        count_semantics='connected learned mask components, not true fingerprint count',timing_total=time.perf_counter()-start)
+        count_semantics=('connected learned mask components, not true fingerprint count' if _candidate_builder is None
+                         else 'observed body-owner groups plus rejected unassigned/ambiguous portions; not anatomical finger count'),
+        partition_policy='native_connected_components' if _candidate_builder is None else 'unique_observed_body_owner_no_pixel_dropping',
+        timing_total=time.perf_counter()-start)
     if failure:report.update(failure)
     return returned,report
 

@@ -9,8 +9,8 @@ from photo_coarse_renderer_adapter_v1 import transform
 
 STATES=('TRANSFORMED','REJECT_WIDTH_UNAVAILABLE','REJECT_PITCH_UNOBSERVED','REJECT_PITCH_UNSTABLE','REJECT_INSUFFICIENT_FEATURES','REJECT_RENDERER_CONTRACT','REJECT_OTHER')
 def state(reason):
-    if reason=='original_width_unavailable':return STATES[1]
-    if reason in ['pitch_unobserved','no_periodicity','no_ridges']:return STATES[2]
+    if reason in ['original_width_unavailable','native_body_width_boundary_unobserved']:return STATES[1]
+    if reason in ['pitch_unobserved','no_periodicity','no_ridges','body_supported_pitch_unobserved','body_supported_seed_unavailable']:return STATES[2]
     if reason in ['pitch_unstable','cue_disagreement','unstable_orientation','insufficient_patches','multi_patch_disagreement']:return STATES[3]
     if reason=='insufficient_features':return STATES[4]
     if reason in ['renderer_pitch_out_of_range','renderer_padding_required','square_scope_contract','scope_drops_mask','coarse_pad_too_small_for_seed']:return STATES[5]
