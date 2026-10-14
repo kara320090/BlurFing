@@ -3,14 +3,16 @@
 A valid official ImageNet checkpoint is mandatory for real training. Random
 architecture construction is exposed only for synthetic shape/initialization tests.
 """
-import hashlib
+import io
 from pathlib import Path
 import torch
 from torch import nn
 import torch.nn.functional as F
 from torchvision.models import mobilenet_v3_small
+from pad_refinement_data_contract_v2 import checked_bytes
 
 IMAGENET_URL='https://download.pytorch.org/models/mobilenet_v3_small-047dcff4.pth'
+IMAGENET_SHA256='047dcff4addef86ea5bc2eff13c9614dc11f47ab1160d0a71a25e7db994f4e1f'
 
 
 def block(cin,cout):
@@ -43,10 +45,9 @@ class PadRefinement(nn.Module):
 def build_pretrained(path):
     path=Path(path)
     if not path.is_file():raise FileNotFoundError('official ImageNet encoder checkpoint required; no random fallback')
-    digest=hashlib.sha256(path.read_bytes()).hexdigest()
-    if not digest.startswith('047dcff4'):raise ValueError('official torchvision checkpoint SHA prefix mismatch')
-    encoder=mobilenet_v3_small(weights=None);encoder.load_state_dict(torch.load(path,map_location='cpu',weights_only=True),strict=True)
-    return PadRefinement(encoder),digest
+    data=checked_bytes(path,IMAGENET_SHA256)
+    encoder=mobilenet_v3_small(weights=None);encoder.load_state_dict(torch.load(io.BytesIO(data),map_location='cpu',weights_only=True),strict=True)
+    return PadRefinement(encoder),IMAGENET_SHA256
 
 
 def synthetic_test_model():

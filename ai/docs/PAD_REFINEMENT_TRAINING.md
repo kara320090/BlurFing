@@ -1,6 +1,6 @@
 # Private PHOTO pad refinement training protocol
 
-Current state: annotation/crop preparation and code are complete; actual training is blocked by unavailable official pretrained encoder weights. No GT7 refinement test has run. See [status](../results/pad_refinement_training_summary.md).
+Current state: the historical model completed training and its one-shot GT7 evaluation was rejected (macro IoU 0.4149; coverage 3/10). It remains disabled in PHOTO inference. The earlier [preparation status](../results/pad_refinement_training_summary.md) is historical; see the [final result](../results/pad_refinement_final_summary.md). The V2 asset contract below fixes reproducible input/evaluation errors without changing the historical model, thresholds, crop policy or results.
 
 Exactly ten allowed source IDs are enforced by code: TRN-001/002/003/004/006/010/014/016/020/022. Source-level folds keep every crop from a source together. GT7 source hashes are passed as an exclusion list; GT7 labels and images are never loaded by the trainer. GT7 cannot choose crops, hyperparameters, validation/early stopping, epochs or probability threshold.
 
@@ -19,15 +19,19 @@ Use the existing scientific-Python environment, without changing the coarse fron
 
 The output is private RGB/coarse/label NPZ crops and source-level metadata. Bboxes are computed only from coarse candidate masks, with 35% context padding. Labels are applied afterwards. Empty/unusable source annotations fail; zero proposals block training rather than using GT bboxes or inventing negatives. A coarse false-positive crop can naturally have an empty label in an otherwise valid positive source; that is not conversion of an unusable annotation.
 
+New preparation writes `pad_refinement_data_v2`: encoded source/RGB, EXIF, body/tip/semantic metadata, human annotation and individual crop hashes are bound to exact dimensions and coordinate systems. Consumers preflight every source/crop before a model, optimizer, test ledger or prediction output is created. Assets are checked again from the same bytes at consumption. Native masks cannot broadcast, NPZ members/header/raster/decompression reads are bounded, and crop paths are contained basenames with case-insensitive duplicate checks. Preparation captures identities before estimating crops and rejects changed inputs before publishing a manifest.
+
+V1 manifests are not accepted or automatically re-signed. Regenerate into a fresh private directory from authoritative original photos, human masks and verified semantics. An empty reserved-test hash list permits development-only preparation, reports overlap as unavailable, and blocks training. Training still requires all seven reserved source hashes and no overlap. Declared blocked-source fields cannot hide missing crops. An existing historical checkpoint only accepts its unchanged `coarse_guided_v1` crop policy.
+
 ## Encoder acquisition and training
 
-Keep PyTorch and TensorFlow in their existing separate environments. The tested installed PyTorch/Torchvision versions are 2.13.0+cu130 / 0.28.0+cu130; no environment downgrade or installation was performed.
+Keep PyTorch and TensorFlow in separate environments. The historical training used PyTorch/Torchvision 2.13.0+cu130 / 0.28.0+cu130. V2 Windows contract and synthetic gradient checks use a separate CPU environment (2.14.1+cpu / 0.29.1+cpu); the PHOTO TensorFlow and core environments are unchanged. These checks are not a new trained-model evaluation.
 
 Acquire the official torchvision ImageNet checkpoint from:
 
 `https://download.pytorch.org/models/mobilenet_v3_small-047dcff4.pth`
 
-The loader checks the official SHA-256 filename prefix and records the full acquired SHA-256. It never downloads implicitly or silently falls back to random initialization. Weights must remain private/outside Git.
+The loader verifies the complete official SHA-256 `047dcff4addef86ea5bc2eff13c9614dc11f47ab1160d0a71a25e7db994f4e1f`, rather than only its filename prefix. It never downloads implicitly or silently falls back to random initialization. Weights must remain private/outside Git.
 
 ```bash
 /path/to/torch-env/bin/python ai/scripts/train_pad_refinement.py \
@@ -42,7 +46,7 @@ Validation measures full-source masks restored through crop/letterbox geometry a
 
 ## One-shot final test
 
-Do not run GT7 until all folds and final training complete with a hash-bound checkpoint. Freeze architecture, threshold, epoch count and transforms first. Apply that single model version to all seven test images, restore native masks, clip to finger body and report the unchanged metrics/matching rule. No GT7-based re-training or threshold/epoch changes are allowed. The current task did not consume this final test because no pretrained encoder/final checkpoint is available.
+GT7 was already consumed by the historical experiment. Do not treat it or subsequent diagnostic holdouts as a fresh independent test. Future improvements need a separately frozen development protocol and new capture groups with human-reviewed masks. Freeze architecture, threshold, epoch count and transforms before a new final test. No GT7-based re-training or threshold/epoch changes are allowed.
 
 A PHOTO protection adapter remains disabled until quantitative and private visual safety gates pass. Existing frozen PHOTO renderer and scanner are unchanged. Model weights, photos, human GT, crops and overlays must never be committed.
 
@@ -51,3 +55,5 @@ A PHOTO protection adapter remains disabled until quantitative and private visua
 The encoder was subsequently acquired and verified. The unchanged protocol completed all five folds and final training for median 13 epochs. The one-shot GT7 model was rejected: macro IoU 0.4149, coverage 3/10. See [final report](../results/pad_refinement_final_summary.md). Earlier blocked status is retained as a historical preparation record.
 
 `prepare_pad_refinement_inference.py` creates GT-free inference crops from source-identity inputs and verified semantic masks. `infer_pad_refinement.py --one-shot-GT7` requires a completed, hash-bound final model and creates an exclusive test ledger before prediction; no threshold override is provided. `evaluate_pad_refinement_final.py` scores already frozen prediction files and creates private overlays. These are experiment/evaluation tools, not an approved PHOTO protection route.
+
+The evaluator now excludes ambiguous/unresolved annotations from all metric totals, including false-positive components; missing ambiguous masks remain review-only. Historical GT7 annotations were valid positive, so this correction does not revise its reported result. A ledger provides local run control, not a new independent test or permission to repeat a consumed test.

@@ -7,6 +7,7 @@ import torch
 from torch.utils.data import Dataset,DataLoader
 from torchvision.transforms import functional as TF,InterpolationMode
 from pad_refinement_model import build_pretrained,bce_dice
+from pad_refinement_data_contract_v2 import load_crop,read_body,read_gt,check_dataset,verify_source
 
 SEED=20261014
 ALLOWED={'TRN-001','TRN-002','TRN-003','TRN-004','TRN-006','TRN-010','TRN-014','TRN-016','TRN-020','TRN-022'}
@@ -25,10 +26,10 @@ def folds(source_ids):
 
 
 class Crops(Dataset):
-    def __init__(self,root,manifest,ids,augment):self.root=root;self.records=[r for r in manifest['crops'] if r['source_id'] in ids];self.augment=augment
+    def __init__(self,root,manifest,ids,augment):self.root=root;self.records=[r for r in manifest['crops'] if r['source_id'] in ids];self.augment=augment;self.sources={s['source_id']:s for s in manifest['sources']};self.purpose=manifest['purpose']
     def __len__(self):return len(self.records)
     def __getitem__(self,i):
-        record=self.records[i];data=np.load(self.root/record['path']);rgb=torch.from_numpy(data['rgb'].copy()).permute(2,0,1).float()/255;mask=torch.from_numpy(data['coarse'].copy()).float()[None];label=torch.from_numpy(data['label'].copy()).float()[None]
+        record=self.records[i];data=load_crop(self.root,record,self.sources[record['source_id']],self.purpose);rgb=torch.from_numpy(data['rgb'].copy()).permute(2,0,1).float()/255;mask=torch.from_numpy(data['coarse'].copy()).float()[None];label=torch.from_numpy(data['label'].copy()).float()[None]
         if self.augment:
             k=random.randrange(4);rgb=torch.rot90(rgb,k,[1,2]);mask=torch.rot90(mask,k,[1,2]);label=torch.rot90(label,k,[1,2])
             if random.random()<.5:rgb=rgb.flip(2);mask=mask.flip(2);label=label.flip(2)
@@ -42,17 +43,19 @@ class Crops(Dataset):
 
 
 def native_prediction(model,root,manifest,source_id,device):
-    source=next(s for s in manifest['sources'] if s['source_id']==source_id);probability=np.zeros((source['height'],source['width']),np.float32);records=[r for r in manifest['crops'] if r['source_id']==source_id];dataset=Crops(root,manifest,[source_id],False);model.eval()
+    source=next(s for s in manifest['sources'] if s['source_id']==source_id);verify_source(source,manifest['purpose']);body=read_body(source);probability=np.zeros(body.shape,np.float32);records=[r for r in manifest['crops'] if r['source_id']==source_id];dataset=Crops(root,manifest,[source_id],False);model.eval()
     with torch.no_grad():
         for i,record in enumerate(records):
-            x,_=dataset[i];small=model(x[None].to(device)).sigmoid()[0,0].cpu().numpy();g=record['geometry'];window=small[g['top']:g['top']+g['scaled_height'],g['left']:g['left']+g['scaled_width']];native=np.asarray(Image.fromarray(window).resize((g['width'],g['height']),Image.Resampling.BILINEAR));a,b,c,d=record['bbox'];probability[b:d,a:c]=np.maximum(probability[b:d,a:c],native)
-    body=np.asarray(Image.open(source['body_path']))>0;return (probability>=PROTOCOL['threshold'])&body
+            x,_=dataset[i];logits=model(x[None].to(device))
+            if tuple(logits.shape)!=(1,1,256,256) or not torch.isfinite(logits).all():raise ValueError('refinement_logits_contract')
+            small=logits.sigmoid()[0,0].cpu().numpy();g=record['geometry'];window=small[g['top']:g['top']+g['scaled_height'],g['left']:g['left']+g['scaled_width']];native=np.asarray(Image.fromarray(window).resize((g['width'],g['height']),Image.Resampling.BILINEAR));a,b,c,d=record['bbox'];probability[b:d,a:c]=np.maximum(probability[b:d,a:c],native)
+    return (probability>=PROTOCOL['threshold'])&body
 
 
 def validate(model,root,manifest,ids,device):
     rows=[]
     for sid in ids:
-        pred=native_prediction(model,root,manifest,sid,device);source=next(s for s in manifest['sources'] if s['source_id']==sid);gt=np.asarray(Image.open(Path(source['GT_folder'])/'ground_truth_mask.png'))>0;tp=int((pred&gt).sum());fp=int((pred&~gt).sum());fn=int((~pred&gt).sum());p=int(pred.sum());g=int(gt.sum());rows.append(dict(source_id=sid,iou=tp/max(1,tp+fp+fn),dice=2*tp/max(1,p+g),precision=tp/p if p else None,recall=tp/g,leakage=fp/p if p else None))
+        pred=native_prediction(model,root,manifest,sid,device);source=next(s for s in manifest['sources'] if s['source_id']==sid);gt=read_gt(source);tp=int((pred&gt).sum());fp=int((pred&~gt).sum());fn=int((~pred&gt).sum());p=int(pred.sum());g=int(gt.sum());rows.append(dict(source_id=sid,iou=tp/max(1,tp+fp+fn),dice=2*tp/max(1,p+g),precision=tp/p if p else None,recall=tp/g,leakage=fp/p if p else None))
     average={key:float(np.mean([r[key] for r in rows if r[key] is not None])) if any(r[key] is not None for r in rows) else None for key in ['iou','dice','precision','recall','leakage']};return dict(rows=rows,mean=average)
 
 
@@ -72,8 +75,13 @@ def epoch(model,loader,opt,device):
 
 
 def train(root,weights,output):
-    manifest=json.loads((root/'manifest.private.json').read_text());ids=[s['source_id'] for s in manifest['sources']];splits=folds(ids)
-    if manifest['blocked_sources']:raise ValueError('coarse proposals missing for sources: '+','.join(manifest['blocked_sources']))
+    manifest=json.loads((root/'manifest.private.json').read_text(encoding='utf-8-sig'));check_dataset(root,manifest,'training');ids=[s['source_id'] for s in manifest['sources']];splits=folds(ids)
+    blocked=[sid for sid in ids if not any(c['source_id']==sid for c in manifest['crops'])]
+    if blocked:raise ValueError('coarse proposals missing for sources: '+','.join(blocked))
+    reserved=manifest.get('GT7_source_hashes')
+    if (not isinstance(reserved,list) or len(reserved)!=7 or len(set(reserved))!=7 or
+            any(not isinstance(s,str) or len(s)!=64 or any(c not in '0123456789abcdef' for c in s) for s in reserved)):
+        raise ValueError('seven_reserved_test_source_hashes_required_before_training')
     if any(s['source_sha256'] in manifest['GT7_source_hashes'] for s in manifest['sources']):raise ValueError('GT7_train_overlap')
     # Verify mandatory pretrained acquisition before output or any optimizer step.
     seed_all(SEED);probe,encoder_sha=build_pretrained(weights);del probe
@@ -91,7 +99,8 @@ def train(root,weights,output):
     final_epochs=int(np.median([r['best_epoch'] for r in results]));(output/'cross_validation.json').write_text(json.dumps(dict(folds=results,mean_iou=float(np.mean([r['validation']['mean']['iou'] for r in results])),mean_dice=float(np.mean([r['validation']['mean']['dice'] for r in results])),final_epochs=final_epochs),indent=2))
     seed_all(SEED);model,_=build_pretrained(weights);model.to(device);opt=optimizer(model);loader=DataLoader(Crops(root,manifest,ids,True),batch_size=PROTOCOL['batch_size'],shuffle=True,num_workers=0);history=[]
     for step in range(1,final_epochs+1):history.append(dict(epoch=step,loss=epoch(model,loader,opt,device)))
-    torch.save(model.cpu().state_dict(),output/'final_refinement.pt');sha=hashlib.sha256((output/'final_refinement.pt').read_bytes()).hexdigest();(output/'final_config.json').write_text(json.dumps(PROTOCOL|dict(final_epochs=final_epochs,model_sha256=sha,encoder_sha256=encoder_sha,training_source_ids=ids,GT7_train_overlap=0,training_complete=True,GT7_evaluated=False,history=history),indent=2))
+    check_dataset(root,manifest,'training')
+    torch.save(model.cpu().state_dict(),output/'final_refinement.pt');sha=hashlib.sha256((output/'final_refinement.pt').read_bytes()).hexdigest();(output/'final_config.json').write_text(json.dumps(PROTOCOL|dict(dataset_contract=manifest['version'],crop_policy=manifest['crop_policy'],final_epochs=final_epochs,model_sha256=sha,encoder_sha256=encoder_sha,training_source_ids=ids,GT7_train_overlap=0,training_complete=True,GT7_evaluated=False,history=history),indent=2))
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--dataset',type=Path,required=True);p.add_argument('--encoder-weights',type=Path,required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args();train(a.dataset,a.encoder_weights,a.output)
