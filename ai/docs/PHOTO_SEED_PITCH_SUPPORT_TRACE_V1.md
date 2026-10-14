@@ -28,7 +28,7 @@ private_diagnostic = trace.metadata()
 
 37 seed 호출·98 estimator 호출에서 780 profile을 샘플링했다. 반복 호출을 제거하면 508 profile, 126 periodic profile, 최종 pitch 집계 포함 102 profile이다. 지원이 부족한 샘플 12개는 모두 periodic 단계에서 탈락했다. **periodic/선택 profile의 미지원 bilinear 이웃과 고정 지도 직접 변화는 모두 0**이었다. caller에서 seed 포함을 직접 확인한 호출은 30개, 나머지 7개는 앞선 포함 seed와 box·shape·RGB hash가 정확히 일치했다. 이를 anatomical GT로 해석하지 않는다.
 
-선택된 canonical seed 4개의 대조에서 방향/전처리 재계산에 따른 pitch 변화가 있었고 최대 변화는 **0.00015414 canonical px**였다. 따라서 ROI 밖의 모든 간접 영향이 없다고 주장하지 않는다. 합성 isolated API의 누락은 여전히 존재하지만 이번 사진들의 실패 원인으로 확정하지 못했다. 전체 보호 성능이나 보편적 support 안전성을 증명하지 않는다.
+선택된 canonical seed 4개를 대조했으며, 그중 2개에서 방향/전처리 재계산에 따른 pitch 변화가 있었다. 최대 변화는 **0.00015414 canonical px**였다. 따라서 ROI 밖의 모든 간접 영향이 없다고 주장하지 않는다. 합성 isolated API의 누락은 여전히 존재하지만 이번 사진들의 실패 원인으로 확정하지 못했다. 전체 보호 성능이나 보편적 support 안전성을 증명하지 않는다.
 
 검증: core **294 run = 291 PASS / optional Torch 3 SKIP**, public 계측 계약 검사 5개 PASS, 원본·참조·기존 로컬 파일 603개 보존. 기존 tracked Python·frozen renderer·detector/pitch/feature 임계값은 변경하지 않았다. 기본 PHOTO에서 실제 변환된 source는 이 혼합 진단 집합의 1/20에 그쳤으므로 실용성 문제가 해결됐다고 보고하지 않는다. [익명 집계](../results/photo_seed_pitch_support_trace_status.json).
 

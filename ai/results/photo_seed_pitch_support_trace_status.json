@@ -47,6 +47,7 @@
   "canonical_seed_control_instances": 21,
   "canonical_seed_pitch_changed_instances": 9,
   "unique_canonical_seed_inputs_with_controls": 4,
+  "unique_controlled_canonical_seeds_with_pitch_change": 2,
   "canonical_seed_ROI_changed_instances": 6,
   "canonical_seed_max_pitch_change_pixels": 0.00015413761138916016,
   "indirect_orientation_or_preprocessing_independence_proven": false,
