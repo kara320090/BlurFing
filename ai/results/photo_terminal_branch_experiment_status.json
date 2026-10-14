@@ -1,0 +1,90 @@
+{
+  "schema_version": "photo-terminal-branch-experiment-v1",
+  "baseline_commit": "2d98f5d12c4f06c01c8cd0ba720cbb792cd5c68f",
+  "data_role": "training/development",
+  "human_GT_images": 10,
+  "independent_validation": false,
+  "fresh_neural_inference_this_run": false,
+  "semantic_cache_source_hash_and_masks_verified": true,
+  "baselines": {
+    "original_coarse": {
+      "macro_iou": 0.3511169803549435,
+      "macro_recall": 0.8151357915079093,
+      "macro_precision": 0.3845153383999464,
+      "matched_components": 8,
+      "GT_components": 38,
+      "FP_components": 13
+    },
+    "terminal_branch_v1": {
+      "macro_iou": 0.4820360944389138,
+      "macro_recall": 0.6178775850407308,
+      "macro_precision": 0.6392920766198154,
+      "matched_components": 24,
+      "GT_components": 38,
+      "FP_components": 26
+    },
+    "terminal_branch_v2": {
+      "macro_iou": 0.5480633980586527,
+      "macro_recall": 0.7448849453732509,
+      "macro_precision": 0.6687320717247696,
+      "matched_components": 25,
+      "GT_components": 38,
+      "FP_components": 29
+    }
+  },
+  "GT_components_are_connected_masks_not_anatomical_fingers": true,
+  "branch_geometry": {
+    "working_side": 512,
+    "extent_width_multiplier": 1.35,
+    "same_existing_geometry_constants": true,
+    "body_and_tip_masks_modified": false,
+    "tip_force_union": false,
+    "v1_ownership": "reject_all_candidates_with_overlap",
+    "v2_ownership": "equal_distance_pixels_unowned; preserve_each_unique_support",
+    "radius": "existing OpenCV DIST_L2 mask5 approximation; engineering spur rule"
+  },
+  "pitch_diagnostic": {
+    "candidate_crop_count": 55,
+    "any_resolution_observed_candidates": 1,
+    "native_resolution_observed_candidates": 1,
+    "crop_support": "branch proposal, not finger-body segmentation",
+    "resolutions": [
+      512,
+      1024,
+      2048,
+      "native"
+    ],
+    "equal_rasters_deduplicated": true,
+    "observer": "existing external ACF/FFT, shared profile",
+    "frozen_renderer_pitch_or_protection_rate_measured": false
+  },
+  "production_adoption": false,
+  "production_adoption_decision": "REJECT_BOTH_VARIANTS",
+  "reasons": [
+    "Recall remains below existing coarse baseline.",
+    "Free branches also include wrist, folded fingers and non-target skin.",
+    "False-positive connected regions increased.",
+    "Most cropped candidates still lack accepted external pitch.",
+    "Independent generalization and Linux experiment parity are not verified."
+  ],
+  "PHOTO_DETECTOR_APPROVED": false,
+  "PHOTO_PROTECTION_PRODUCTION_READY": false,
+  "default_protection_pipeline_changed": false,
+  "existing_detector_pitch_feature_thresholds_unchanged": true,
+  "frozen_renderer_unchanged": true,
+  "renderer_binding_allowed": false,
+  "protection_applied": false,
+  "post_refactor_training_v1_exact": true,
+  "GT_used_for_estimation_or_pitch": false,
+  "initial_unit_tests": 19,
+  "core_tests_passed": 259,
+  "optional_Torch_tests_skipped": 3,
+  "validation_platform": "Windows; synthetic invariants and cached training diagnostics",
+  "release_verification": {
+    "training_masks_and_metadata_exact_per_variant": 10,
+    "protected_file_hashes_verified": 513,
+    "Python_syntax_files": 134,
+    "default_tracked_source_unchanged": true,
+    "new_Linux_experiment_parity_verified": false
+  }
+}
