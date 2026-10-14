@@ -326,6 +326,7 @@ def test_cancellation_keeps_id_until_worker_finishes(monkeypatch, request_releas
 
     async def cancel_request():
         task = asyncio.create_task(backend_main.protect_image(
+            request=backend_main.Request({"type": "http"}),
             image=UploadFile(io.BytesIO(synthetic_image()), headers=Headers({"content-type": "image/png"})),
             request_id="synthetic-request-001", method="gaussian_blur", strength="0.5",
             regions='[{"x":0,"y":0,"width":1,"height":1}]',
@@ -503,7 +504,7 @@ def synthetic_image():
     return output.getvalue()
 
 
-def protect_request(image_bytes=None, **overrides):
+def protect_request(image_bytes=None, request_client=None, **overrides):
     data = {
         "request_id": "synthetic-request-001",
         "method": "gaussian_blur",
@@ -513,7 +514,8 @@ def protect_request(image_bytes=None, **overrides):
         ),
     }
     data.update(overrides)
-    return client.post(
+    request_client = client if request_client is None else request_client
+    return request_client.post(
         "/v1/protect",
         data=data,
         files={"image": ("synthetic.png", image_bytes if image_bytes is not None else synthetic_image(), "image/png")},
@@ -921,6 +923,190 @@ def test_validation_error_without_string_request_id_is_safe(body):
         "message": "요청 입력 형식이 올바르지 않습니다.",
         "retryable": False,
     }
+
+
+@pytest.mark.parametrize(
+    "content_type, body",
+    [
+        ("multipart/form-data", b"synthetic-private-input"),
+        ("multipart/form-data; boundary=test-boundary",
+         b"--test-boundary\r\nContent-Disposition: form-data\r\n\r\n"
+         b"synthetic-private-input\r\n--test-boundary--\r\n"),
+    ],
+)
+def test_multipart_parsing_errors_use_common_response(content_type, body, monkeypatch):
+    processor_calls = []
+    monkeypatch.setattr(app.state, "protection_processor", lambda *_: processor_calls.append(True))
+    response = client.post("/v1/protect", content=body, headers={"content-type": content_type})
+
+    assert response.status_code == 400
+    assert response.headers["content-type"] == "application/json"
+    assert response.json() == {
+        "request_id": "",
+        "code": "INVALID_REQUEST",
+        "message": "요청 형식이 올바르지 않습니다.",
+        "retryable": False,
+    }
+    assert "synthetic-private-input" not in response.text
+    assert "boundary" not in response.text
+    assert "Content-Disposition" not in response.text
+    assert processor_calls == []
+
+
+@pytest.mark.parametrize(
+    "status_code, headers, retryable",
+    [(401, {"WWW-Authenticate": "Bearer"}, False),
+     (429, {"Retry-After": "10"}, True),
+     (503, {"Retry-After": "5"}, True)],
+)
+def test_other_http_errors_keep_status_id_and_protocol_headers(status_code, headers, retryable):
+    test_app = backend_main.FastAPI(exception_handlers=app.exception_handlers.copy())
+
+    @test_app.get("/failure")
+    async def failure(request: backend_main.Request):
+        request.state.protection_request_id = "  http-error-id  "
+        raise backend_main.HTTPException(status_code, "synthetic-private-detail", headers=headers)
+
+    with TestClient(test_app) as test_client:
+        response = test_client.get("/failure")
+
+    assert response.status_code == status_code
+    assert response.headers["content-type"] == "application/json"
+    assert response.json() == {
+        "request_id": "http-error-id",
+        "code": "HTTP_ERROR",
+        "message": "요청을 처리할 수 없습니다.",
+        "retryable": retryable,
+    }
+    for name, value in headers.items():
+        assert response.headers[name] == value
+    assert "synthetic-private-detail" not in response.text
+
+
+def test_http_error_replaces_stale_body_headers():
+    test_app = backend_main.FastAPI(exception_handlers=app.exception_handlers.copy())
+
+    @test_app.get("/failure")
+    async def failure():
+        raise backend_main.HTTPException(405, "synthetic-private-detail", headers={
+            "Allow": "POST", "Content-Length": "1", "Content-Type": "text/plain",
+            "Content-Encoding": "gzip", "Transfer-Encoding": "chunked",
+        })
+
+    with TestClient(test_app) as test_client:
+        response = test_client.get("/failure")
+
+    assert response.status_code == 405
+    assert response.json()["code"] == "METHOD_NOT_ALLOWED"
+    assert response.headers["allow"] == "POST"
+    assert response.headers["content-type"] == "application/json"
+    assert int(response.headers["content-length"]) == len(response.content)
+    assert "content-encoding" not in response.headers
+    assert "transfer-encoding" not in response.headers
+
+
+def test_non_error_http_exception_keeps_bodyless_response():
+    test_app = backend_main.FastAPI(exception_handlers=app.exception_handlers.copy())
+
+    @test_app.get("/not-modified")
+    async def not_modified():
+        raise backend_main.HTTPException(304, headers={"ETag": '"synthetic-version"'})
+
+    with TestClient(test_app) as test_client:
+        response = test_client.get("/not-modified")
+
+    assert response.status_code == 304
+    assert response.content == b""
+    assert response.headers["etag"] == '"synthetic-version"'
+
+
+@pytest.mark.parametrize("failure_phase", ["read", "close"])
+def test_upload_io_error_is_safe_and_attempts_close(failure_phase, monkeypatch):
+    from starlette.datastructures import UploadFile
+
+    original_close = UploadFile.close
+    closed_uploads = []
+    processor_calls = []
+
+    async def failing_read(self, size=-1):
+        raise OSError("synthetic-private-upload-detail")
+
+    async def close(self):
+        await original_close(self)
+        closed_uploads.append(self)
+        if failure_phase == "close":
+            raise OSError("synthetic-private-upload-detail")
+
+    if failure_phase == "read":
+        monkeypatch.setattr(UploadFile, "read", failing_read)
+    monkeypatch.setattr(UploadFile, "close", close)
+    monkeypatch.setattr(app.state, "protection_processor", lambda *_: processor_calls.append(True))
+    with TestClient(app, raise_server_exceptions=False) as test_client:
+        response = protect_request(request_client=test_client, request_id="  upload-error-id  ")
+
+    assert response.status_code == 500
+    assert response.headers["content-type"] == "application/json"
+    assert response.json() == {
+        "request_id": "upload-error-id",
+        "code": "INTERNAL_SERVER_ERROR",
+        "message": "서버에서 요청을 처리할 수 없습니다.",
+        "retryable": True,
+    }
+    assert "synthetic-private-upload-detail" not in response.text
+    assert closed_uploads and all(upload.file.closed for upload in closed_uploads)
+    assert processor_calls == []
+    assert "upload-error-id" not in backend_main.IN_FLIGHT_REQUEST_IDS
+
+
+@pytest.mark.parametrize("failure_phase", ["input_decode", "result_encoding"])
+def test_error_outside_processing_block_uses_common_response(failure_phase, monkeypatch, request_released):
+    image_bytes = synthetic_image()
+
+    def failure(*_, **__):
+        raise RuntimeError("synthetic-private-server-detail")
+
+    monkeypatch.setattr(app.state, "protection_processor", mock_processor)
+    if failure_phase == "input_decode":
+        monkeypatch.setattr(backend_main.Image, "open", failure)
+    else:
+        monkeypatch.setattr(backend_main.base64, "b64encode", failure)
+
+    with TestClient(app, raise_server_exceptions=False) as test_client:
+        response = protect_request(image_bytes=image_bytes, request_client=test_client)
+
+    assert response.status_code == 500
+    assert response.headers["content-type"] == "application/json"
+    assert response.json() == {
+        "request_id": "synthetic-request-001",
+        "code": "INTERNAL_SERVER_ERROR",
+        "message": "서버에서 요청을 처리할 수 없습니다.",
+        "retryable": True,
+    }
+    assert "synthetic-private-server-detail" not in response.text
+    if failure_phase == "result_encoding":
+        assert request_released.wait(timeout=2)
+    assert "synthetic-request-001" not in backend_main.IN_FLIGHT_REQUEST_IDS
+
+
+def test_unexpected_error_without_request_id_uses_safe_empty_id():
+    test_app = backend_main.FastAPI(exception_handlers=app.exception_handlers.copy())
+
+    @test_app.get("/failure")
+    async def failure():
+        raise RuntimeError("synthetic-private-server-detail")
+
+    with TestClient(test_app, raise_server_exceptions=False) as test_client:
+        response = test_client.get("/failure")
+
+    assert response.status_code == 500
+    assert response.headers["content-type"] == "application/json"
+    assert response.json() == {
+        "request_id": "",
+        "code": "INTERNAL_SERVER_ERROR",
+        "message": "서버에서 요청을 처리할 수 없습니다.",
+        "retryable": True,
+    }
+    assert "synthetic-private-server-detail" not in response.text
 
 
 def test_openapi_defines_protection_success_and_error_responses():

@@ -13,7 +13,7 @@
 | `main.py` | FastAPI 앱, 요청 검사, 처리 함수 호출, 결과 검사, 응답과 중복 차단 |
 | `mock_processor.py` | 지연 가능한 MockProcessor와 기본 인스턴스 |
 | `mock_main.py` | 환경 변수로 지연 시간을 읽고 Mock을 연결하는 개발용 진입점 |
-| `test_main.py` | 테스트 준비 도구와 함수 42개, 매개변수 포함 사례 100개 |
+| `test_main.py` | 테스트 준비 도구와 함수 49개, 매개변수 포함 사례 112개 |
 | `check_mock_http.py` | 실행 중인 Mock 서버에 합성 PNG·JPEG를 보내는 HTTP 확인 도구 |
 | `requirements.txt` | fastapi, pillow, python-multipart, uvicorn |
 | `requirements-dev.txt` | 실행 의존성 포함 및 httpx, pytest 추가 |
@@ -37,9 +37,10 @@
 - 필수 입력값 누락을 포함한 오류 응답 형식 통일
 - 없는 API의 404와 지원하지 않는 HTTP 메서드의 405도 공통 오류 형식으로 반환; 405의 Allow 헤더 유지
 - 프레임워크 요청 검증 오류도 422 VALIDATION_ERROR와 공통 형식으로 반환; 요청 ID 외의 입력값·오류 상세는 비공개
+- multipart 파싱을 포함한 HTTP 예외와 처리 블록 밖의 일반 예외도 공통 형식으로 반환; 업로드 읽기 실패 시 파일 닫기 시도
 - 입력을 PNG로 저장해 반환하는 개발용 Mock과 별도 실행 진입점; 합성 RGB PNG·JPEG의 크기·픽셀 유지는 테스트로 확인
 - 실행 중인 Mock 서버의 상태와 PNG·JPEG 입출력을 검사하는 HTTP 확인 스크립트
-- 백엔드 테스트 100개 (서버 시작 설정·처리기 연결·인자 호환성 검사, 합성 이미지 기반 접수 한도, 실패·시간 초과·취소 후 자리 해제, 지연 Mock, PNG·JPEG 반환, 용량 초과, 강도 경계·잘못된 값, 잘못된 영역, AI 결과 크기 오류, 404·405·422 공통 응답과 검증 오류의 입력 비노출 포함)
+- 백엔드 테스트 112개 (서버 시작 설정·처리기 연결·인자 호환성 검사, 합성 이미지 기반 접수 한도, 실패·시간 초과·취소 후 자리 해제, 지연 Mock, PNG·JPEG 반환, 용량 초과, 강도 경계·잘못된 값, 잘못된 영역, AI 결과 크기 오류, 404·405·422·multipart 파싱·업로드 I/O·처리 블록 밖 오류의 공통 응답, 내부 상세 비노출과 HTTP 헤더 보존 포함)
 
 ## 현재 상태
 
@@ -175,13 +176,15 @@ HTTP 상태는 503입니다. Retry-After 헤더나 자동 재시도는 구현하
 | `health_check` / `GET /` | AI 미연결 상태에서도 `200`과 `{"message":"BlurFing backend is running"}` 반환 |
 | `readiness_check` / `GET /ready` | 처리 함수가 호출 가능한지 확인; 연결 시 `200 ready`, 미연결·호출 불가 시 `503 PROCESSOR_UNAVAILABLE` |
 | `error_response` | 지정된 HTTP 상태와 `request_id`, `code`, `message`, `retryable`을 담은 `JSONResponse` 생성; 재시도 기본값은 false |
-| `routing_error_handler` | HTTP 404·405 예외만 공통 형식으로 반환; 빈 request_id·retryable false 및 405의 Allow 등 예외 헤더 유지 |
+| `error_request_id` | 요청 상태에 저장한 문자열 ID의 공백을 제거해 반환; 확인된 ID가 없으면 빈 문자열이며 본문을 다시 읽지 않음 |
+| `http_error_handler` | HTTP 예외의 상태를 유지해 공통 JSON 반환; 400 INVALID_REQUEST·404 NOT_FOUND·405 METHOD_NOT_ALLOWED, 나머지는 HTTP_ERROR; Allow 등 의미 있는 헤더 보존, 교체된 본문과 맞지 않는 헤더 제외; 400 미만은 기본 처리 유지 |
+| `internal_error_handler` | 별도 처리되지 않은 일반 예외를 500 INTERNAL_SERVER_ERROR와 retryable true로 반환; 확인된 요청 ID만 유지하고 내부 예외 문구 비노출 |
 | `validation_error_handler` | RequestValidationError를 422 VALIDATION_ERROR로 반환; 본문에서 문자열 요청 ID만 추출·공백 제거, 없거나 문자열이 아니면 빈 ID; 나머지 입력값·검증 상세 비노출 |
 | `parse_strength` | 문자열을 실수로 변환하고 0.1~1.0 범위(양 끝값 포함) 및 유한한 숫자인지 검사 |
 | `parse_regions` | 영역 JSON 배열과 좌표 조건을 검사하고 좌표를 실수로 변환; 생략 시 `None` 반환 |
 | `claim_request_id` | 같은 잠금 안에서 중복 → 접수 한도 순서로 검사하고 허용된 ID 등록; accepted·duplicate·busy 반환 |
 | `release_request_id` | 잠금 안에서 ID 제거; ID가 없어도 오류 없이 처리 |
-| `protect_image` / `POST /v1/protect` | 요청 검사, 영역 없음 처리, AI 연결·중복·접수 한도 검사, AI 호출·결과 검사, 정상·오류 응답 및 ID 정리 |
+| `protect_image` / `POST /v1/protect` | 정규화한 요청 ID를 요청 상태에 저장, 요청 검사, 업로드 읽기 및 finally에서 닫기, 영역 없음 처리, AI 연결·중복·접수 한도 검사, AI 호출·결과 검사, 정상·오류 응답 및 ID 정리 |
 
 `/ready` 오류에는 빈 `request_id`와 `retryable: true`가 들어갑니다. 이 API는 실제 AI 처리를 실행하지 않습니다.
 
@@ -242,7 +245,7 @@ AI 함수에 전달하는 값은 `(원본 이미지 바이트, 방식 문자열,
 | HTTP | 오류 코드 | 원인 | retryable |
 |---|---|---|---|
 | 400 | `INVALID_REQUEST_ID` | ID 누락 또는 공백 | false |
-| 400 | `INVALID_REQUEST` | 필수 값 누락, 강도·영역 오류 | false |
+| 400 | `INVALID_REQUEST` | 필수 값 누락, 강도·영역 오류 또는 multipart 파싱 등 HTTP 400 예외 | false |
 | 400 | `UNSUPPORTED_METHOD` | 지원하지 않는 보호 방식 | false |
 | 400 | `EMPTY_IMAGE` | 빈 이미지 파일 | false |
 | 400 | `INVALID_IMAGE` | 실제 형식 오류 또는 이미지 읽기 실패 | false |
@@ -253,15 +256,21 @@ AI 함수에 전달하는 값은 `(원본 이미지 바이트, 방식 문자열,
 | 415 | `UNSUPPORTED_IMAGE_TYPE` | 지원하지 않는 MIME 타입 | false |
 | 422 | `VALIDATION_ERROR` | 파일 대신 일반 문자열을 보낸 경우 등 프레임워크 요청 입력 형식 검증 실패 | false |
 | 500 | `PROCESSING_FAILED` | 작업 제출·실행 또는 결과 검증 블록에서 잡힌 일반 예외 | true |
+| 500 | `INTERNAL_SERVER_ERROR` | 업로드 읽기·닫기, 입력 검사·Base64 변환 등에서 별도 처리되지 않은 일반 예외 | true |
 | 503 | `PROCESSOR_UNAVAILABLE` | AI 함수 미연결 또는 호출 불가 | true |
 | 503 | `SERVER_BUSY` | 실행·대기 작업의 총 접수 한도 초과 | true |
 | 504 | `PROCESSING_TIMEOUT` | 처리 결과 대기 제한 초과 또는 처리 함수의 TimeoutError | true |
+| 기타 4xx·5xx | `HTTP_ERROR` | 400·404·405 이외의 HTTPException; 원래 상태 유지, 상세 문구 비공개 | 429·5xx는 true, 나머지는 false |
 
 `PROTECT_ERROR_RESPONSES`는 400·409·413·415·422·500·503·504의 설명과 `ErrorResponse` 모델을 OpenAPI에 등록합니다. 정상 200 응답에는 `ProtectionResponse` 모델을 사용합니다. 422도 FastAPI 기본 검증 오류 모델 대신 공통 오류 모델로 문서화합니다.
 
-공통 오류 형식은 코드가 `error_response`로 직접 반환하는 응답과 404·405 예외, `RequestValidationError` 처리에 적용됩니다. multipart 파싱 오류·업로드 읽기 오류·처리 블록 밖의 예외 전체를 공통 형식으로 바꾸지는 않습니다. retryable은 재요청 가능 표시이며 자동 재시도나 다음 요청의 성공을 보장하지 않습니다.
+공통 오류 형식은 코드가 `error_response`로 직접 반환하는 응답과 HTTP 예외, `RequestValidationError`, 별도 처리되지 않은 일반 예외에 적용됩니다. multipart 파싱 실패가 HTTP 400 예외로 전달되면 `INVALID_REQUEST`를 반환합니다. 업로드 읽기·닫기 실패와 처리 블록 밖의 예상치 못한 예외는 `500 INTERNAL_SERVER_ERROR`로 반환합니다. 업로드 읽기는 `try/finally`로 감싸 읽기 실패 시에도 파일 닫기를 시도합니다. 기존 처리 블록의 `PROCESSING_FAILED`·`PROCESSING_TIMEOUT`은 유지합니다. retryable은 재요청 가능 표시이며 자동 재시도나 다음 요청의 성공을 보장하지 않습니다.
 
-없는 API 주소는 `404 NOT_FOUND`, 지원하지 않는 HTTP 메서드는 `405 METHOD_NOT_ALLOWED`를 반환합니다. 라우팅 단계에서는 폼의 요청 ID를 검사하지 않으므로 `request_id`는 빈 문자열이며 `retryable`은 false입니다. 예외의 헤더를 보존해 405의 `Allow`로 허용 메서드를 확인할 수 있습니다. 두 상태는 라우팅 단계 응답이므로 보호 API의 개별 OpenAPI 응답 목록에는 등록하지 않습니다.
+보호 핸들러 진입 후 확인한 요청 ID는 요청 상태에 저장해 HTTP·일반 예외 응답에 사용합니다. multipart 파싱 실패나 라우팅 오류처럼 ID를 확인하기 전에 실패하면 빈 문자열입니다. 예외 처리 중 본문을 다시 파싱하지 않습니다. HTTP 예외의 `Allow`, `Retry-After`, `WWW-Authenticate` 등은 보존하지만 원래 본문용 `Content-Length`, `Content-Type`, `Content-Encoding`, `Transfer-Encoding`은 새 JSON에 재사용하지 않습니다. 이는 예외에 이미 있는 헤더를 유지하는 기능이며 인증·요청 빈도 제한을 새로 구현한 것은 아닙니다. 304 등 오류가 아닌 HTTP 예외는 기본 처리로 넘겨 본문 없는 응답을 유지합니다.
+
+공통 500 처리기는 응답 시작 전 ASGI 앱에 전달된 일반 예외를 대상으로 합니다. 이미 응답 전송이 시작된 뒤의 실패, 종료된 연결, 프로세스 종료, 서버 앞단의 프록시 오류는 같은 JSON의 전달을 보장하지 않습니다. `CancelledError` 등 취소·종료 신호를 일반 서버 오류로 바꾸거나 AI 작업을 강제로 중단하지 않습니다. 내부 예외 문구 비노출은 API 응답 기준이며 서버 로그의 별도 보관 정책을 구현한 것은 아닙니다.
+
+없는 API 주소는 `404 NOT_FOUND`, 지원하지 않는 HTTP 메서드는 `405 METHOD_NOT_ALLOWED`를 반환합니다. 라우팅 단계에서는 폼의 요청 ID를 검사하지 않으므로 `request_id`는 빈 문자열이며 `retryable`은 false입니다. 405의 `Allow`로 허용 메서드를 확인할 수 있습니다. 두 상태는 라우팅 단계 응답이므로 보호 API의 개별 OpenAPI 응답 목록에는 등록하지 않습니다.
 
 프레임워크 요청 검증 오류는 HTTP 422를 유지하고 `VALIDATION_ERROR`, `요청 입력 형식이 올바르지 않습니다.`, `retryable: false`를 반환합니다. 이미 파싱된 본문에서 문자열 `request_id`를 읽을 수 있으면 앞뒤 공백을 제거해 반환합니다. 본문이 매핑 형태가 아니거나 ID가 없거나 문자열이 아니면 빈 문자열로 반환합니다. ID 외의 입력값·검증 오류 상세·내부 예외 문구를 응답에 포함하지 않습니다. 기존 핸들러가 직접 처리하는 필수 값 누락·잘못된 강도 등은 계속 400을 반환합니다.
 
@@ -272,14 +281,14 @@ AI 함수에 전달하는 값은 `(원본 이미지 바이트, 방식 문자열,
 - `client = TestClient(app)`: 별도 서버 실행 없이 FastAPI API를 호출합니다.
 - `load_settings_in_new_process()`: 처리기 경로와 두 서버 설정 변수를 정리한 별도 Python 프로세스에서 `main`을 불러와 기본값·지정값·초기화 실패를 검사합니다. 선택한 검사 스크립트를 실행해 처리기 연결과 API 동작도 확인합니다. 부모 프로세스의 앱이나 스레드 풀을 다시 만들지 않습니다.
 - `synthetic_image()`: 흰 배경에 빨강·파랑 패턴이 있는 40×40 PNG를 메모리에서 생성합니다. 개인 사진·실제 지문은 사용하지 않습니다.
-- `protect_request()`: 합성 PNG, 기본 요청 ID, `gaussian_blur`, 강도 0.5, 정규화 영역으로 요청을 만듭니다. 이미지와 폼 값을 덮어써 오류 조건을 재현할 수 있습니다.
+- `protect_request()`: 합성 PNG, 기본 요청 ID, `gaussian_blur`, 강도 0.5, 정규화 영역으로 요청을 만듭니다. 이미지와 폼 값을 덮어써 오류 조건을 재현하고 `request_client`로 다른 TestClient를 지정할 수 있습니다. 공통 500 응답 검사는 `raise_server_exceptions=False`로 프레임워크의 테스트용 예외 재전파 대신 HTTP 응답을 확인합니다.
 - 테스트용 AI 함수를 연결한 테스트는 사용 후 함수를 해제합니다. `monkeypatch`로 변경한 제한 시간은 테스트 종료 시 복원됩니다.
 - 중복 요청은 `ThreadPoolExecutor`와 `Event`로 첫 처리를 대기시키고 후속 요청을 보내 재현합니다.
 - `request_released` fixture는 실제 ID 해제를 이벤트로 관찰합니다. 시간 초과·취소 테스트는 작업 종료 전 차단과 종료 후 재시도를 구분해서 확인합니다.
 
 ### 전체 테스트 목록
 
-테스트 함수 42개이며, 매개변수별 사례를 포함하면 총 100개입니다.
+테스트 함수 49개이며, 매개변수별 사례를 포함하면 총 112개입니다.
 
 | 테스트 함수 | 확인 내용 | 사례 수 |
 |---|---|---|
@@ -324,6 +333,13 @@ AI 함수에 전달하는 값은 `(원본 이미지 바이트, 방식 문자열,
 | `test_routing_errors_use_common_response_and_keep_allow_header` | 없는 주소 GET·POST의 404, 보호 API GET·상태 API POST의 405; 공통 오류 전체 필드·JSON 타입·Allow 헤더·처리기 미호출 | 5 |
 | `test_framework_validation_error_uses_common_response` | 실제 요청의 422 공통 필드·JSON 타입·ID 유지/공백 제거/누락/공백뿐인 값, 입력값 비노출·처리기 미호출 | 4 |
 | `test_validation_error_without_string_request_id_is_safe` | 본문 없음·비문자열 ID·파싱되지 않은 바이트 본문의 안전한 빈 ID 및 고정 오류 응답 | 3 |
+| `test_multipart_parsing_errors_use_common_response` | boundary 누락·파트 name 누락의 실제 multipart 요청에서 400 공통 필드·빈 ID·내부 상세 비노출·AI 미호출 | 2 |
+| `test_other_http_errors_keep_status_id_and_protocol_headers` | 테스트 전용 앱에서 401·429·503 HTTP 예외의 상태·확인된 ID·WWW-Authenticate/Retry-After 유지와 고정 오류 응답 | 3 |
+| `test_http_error_replaces_stale_body_headers` | 새 JSON의 길이·타입 유지, 기존 Content-Encoding·Transfer-Encoding 제외, Allow 보존 | 1 |
+| `test_non_error_http_exception_keeps_bodyless_response` | 304의 빈 본문과 ETag 유지 | 1 |
+| `test_upload_io_error_is_safe_and_attempts_close` | 업로드 read·close 예외 각각 공통 500·정규화 ID·내부 상세 비노출·닫기 시도·AI 미호출·접수 ID 미등록 | 2 |
+| `test_error_outside_processing_block_uses_common_response` | 입력 디코딩·결과 Base64 변환의 예상치 못한 예외에서 공통 500·ID·내부 상세 비노출·처리 ID 정리 | 2 |
+| `test_unexpected_error_without_request_id_uses_safe_empty_id` | 테스트 전용 앱의 일반 예외에서 빈 ID와 공통 500·내부 상세 비노출 | 1 |
 | `test_openapi_defines_protection_success_and_error_responses` | 정상 200과 여덟 오류 상태 등록, 422를 포함한 공통 응답 모델 참조 | 1 |
 
 ### 검증 범위
@@ -345,6 +361,8 @@ AI 함수에 전달하는 값은 `(원본 이미지 바이트, 방식 문자열,
 2026-10-12 404·405 오류 응답 형식 통일 후 같은 환경·명령으로 실행한 결과는 `94 passed, 2 warnings`입니다. 없는 주소의 GET·POST와 정상 API의 잘못된 메서드에서 공통 오류 전체 필드, JSON 타입, Allow 헤더, 처리기 미호출을 확인했습니다. 프레임워크 422의 기존 detail 형식과 기존 백엔드 테스트도 통과했습니다. 실제 HTTP 서버·Android 기기·실제 AI 보호 성능 검증은 실행하지 않았습니다.
 
 2026-10-13 요청 검증 오류의 공통 응답 처리 추가 후 같은 환경·명령으로 실행한 결과는 `100 passed, 2 warnings`입니다. 422 VALIDATION_ERROR의 전체 필드, 요청 ID 유지·공백 제거·빈 ID 처리, 입력값·오류 상세 비노출과 처리기 미호출을 확인했습니다. OpenAPI의 422 응답도 ErrorResponse를 참조하며 기존 400·404·405 및 정상 동작 테스트가 통과했습니다. 실제 HTTP 서버·Android 기기·실제 AI 보호 성능 검증은 실행하지 않았습니다.
+
+2026-10-15 BF-52의 남은 오류 공통화를 실제 구현하고 같은 환경·명령으로 실행한 결과는 `112 passed, 2 warnings`입니다. multipart 파싱 실패, 업로드 읽기·닫기 실패, 처리 블록 밖 예외의 공통 응답과 내부 상세 비노출을 확인했습니다. HTTP 예외의 상태·헤더 보존, 새 JSON 본문의 헤더 정합성, 304의 빈 본문도 검사했으며 기존 취소·접수 한도·정상 처리 테스트가 통과했습니다. 이 날짜는 커밋 메타데이터와 별개인 실제 구현·테스트 실행일입니다. 검증은 TestClient·합성 이미지·오류 주입 기준이며 실제 HTTP 서버·Android 기기·실제 AI 보호 성능 검증은 실행하지 않았습니다. 두 경고는 기존 의존성 사용 중단 경고입니다.
 
 코드에 구현됐지만 현재 전용 테스트가 없는 항목에는 공백 ID, 빈 이미지, 화소 제한 초과, 영역 생략, 영역 키·타입·y 경계 검사, 비PNG AI 결과, 설정 경로가 아닌 런타임에서 직접 등록된 호출 불가능한 처리기 등이 있습니다. 실행 1개·대기 1개의 동시 접수는 위 테스트로 확인하지만 실제 AI 작업 여러 개를 병렬 실행하는 부하 시험은 하지 않았습니다. 구현된 기능과 테스트로 확인한 범위는 구분해야 합니다.
 
@@ -385,7 +403,7 @@ uvicorn mock_main:app --reload
 
 ## 실제 HTTP 이미지 입출력 확인
 
-`check_mock_http.py`는 `TestClient` 대신 실제로 실행 중인 서버에 HTTP 요청을 보냅니다. pytest 100개와 별도로 실행하는 확인 도구이며, 합성 이미지와 반환 PNG는 메모리에서만 처리하고 파일로 저장하지 않습니다.
+`check_mock_http.py`는 `TestClient` 대신 실제로 실행 중인 서버에 HTTP 요청을 보냅니다. pytest 112개와 별도로 실행하는 확인 도구이며, 합성 이미지와 반환 PNG는 메모리에서만 처리하고 파일로 저장하지 않습니다.
 
 `backend` 폴더의 첫 번째 터미널에서 개발 의존성을 설치하고 지연 없는 Mock 서버를 실행합니다.
 

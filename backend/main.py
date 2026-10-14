@@ -14,8 +14,9 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Literal
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
+from fastapi.exception_handlers import http_exception_handler as default_http_exception_handler
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException
@@ -118,7 +119,7 @@ PROTECT_ERROR_RESPONSES = {
     413: {"model": ErrorResponse, "description": "이미지 용량 또는 해상도 제한 초과"},
     415: {"model": ErrorResponse, "description": "지원하지 않는 이미지 형식"},
     422: {"model": ErrorResponse, "description": "요청 입력 형식 검증 실패"},
-    500: {"model": ErrorResponse, "description": "AI 처리 결과 검증 실패"},
+    500: {"model": ErrorResponse, "description": "AI 처리 실패 또는 서버 내부 오류"},
     503: {"model": ErrorResponse, "description": "AI 처리 모듈 미연결 또는 작업 접수 한도 초과"},
     504: {"model": ErrorResponse, "description": "AI 처리 제한 시간 초과"},
 }
@@ -147,18 +148,43 @@ def error_response(
     )
 
 
+def error_request_id(request: Request) -> str:
+    request_id = getattr(request.state, "protection_request_id", "")
+    return request_id.strip() if isinstance(request_id, str) else ""
+
+
 @app.exception_handler(404)
 @app.exception_handler(405)
-async def routing_error_handler(_request: Request, exc: HTTPException) -> JSONResponse:
+@app.exception_handler(HTTPException)
+async def http_error_handler(request: Request, exc: HTTPException) -> Response:
+    if exc.status_code < 400:
+        return await default_http_exception_handler(request, exc)
+
     errors = {
+        400: ("INVALID_REQUEST", "요청 형식이 올바르지 않습니다."),
         404: ("NOT_FOUND", "요청한 API를 찾을 수 없습니다."),
         405: ("METHOD_NOT_ALLOWED", "지원하지 않는 HTTP 요청 방식입니다."),
     }
-    code, message = errors[exc.status_code]
-    response = error_response("", exc.status_code, code, message)
+    code, message = errors.get(exc.status_code, ("HTTP_ERROR", "요청을 처리할 수 없습니다."))
+    response = error_response(
+        error_request_id(request), exc.status_code, code, message,
+        exc.status_code == 429 or exc.status_code >= 500,
+    )
     if exc.headers:
-        response.headers.update(exc.headers)
+        # 새 JSON 본문과 맞지 않는 원래 본문 헤더는 재사용하지 않는다.
+        body_headers = {"content-length", "content-type", "content-encoding", "transfer-encoding"}
+        response.headers.update({
+            name: value for name, value in exc.headers.items() if name.lower() not in body_headers
+        })
     return response
+
+
+@app.exception_handler(Exception)
+async def internal_error_handler(request: Request, _exc: Exception) -> JSONResponse:
+    return error_response(
+        error_request_id(request), 500, "INTERNAL_SERVER_ERROR",
+        "서버에서 요청을 처리할 수 없습니다.", True,
+    )
 
 
 @app.exception_handler(RequestValidationError)
@@ -251,6 +277,7 @@ def parse_regions(value: str | None) -> list[dict[str, float]] | None:
     responses=PROTECT_ERROR_RESPONSES,
 )
 async def protect_image(
+    request: Request,
     image: UploadFile | None = File(None),
     request_id: str | None = Form(None),
     method: str | None = Form(None),
@@ -259,6 +286,7 @@ async def protect_image(
 ):
     started = time.monotonic()
     request_id = (request_id or "").strip()
+    request.state.protection_request_id = request_id
     if not request_id:
         return error_response("", 400, "INVALID_REQUEST_ID", "request_id를 입력해야 합니다.")
 
@@ -302,8 +330,10 @@ async def protect_image(
             "PNG 또는 JPEG 이미지만 전송할 수 있습니다.",
         )
 
-    image_bytes = await image.read(MAX_IMAGE_SIZE_BYTES + 1)
-    await image.close()
+    try:
+        image_bytes = await image.read(MAX_IMAGE_SIZE_BYTES + 1)
+    finally:
+        await image.close()
     if not image_bytes:
         return error_response(request_id, 400, "EMPTY_IMAGE", "이미지 파일이 비어 있습니다.")
     if len(image_bytes) > MAX_IMAGE_SIZE_BYTES:
