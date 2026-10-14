@@ -8,6 +8,15 @@ from photo_coarse_adapter import orient,seed_square,square_scope
 from photo_coarse_renderer_adapter_v1 import transform
 
 class CoarseAdapterTests(unittest.TestCase):
+    def test_EXIF_permutations_match_explicit_pixel_positions(self):
+        from photo_coarse_adapter_v2 import orient as orient_v2
+        rgb=np.arange(7*11*3,dtype=np.uint8).reshape(7,11,3)
+        transposed=rgb.transpose(1,0,2)
+        expected={1:rgb,2:rgb[:,::-1],3:rgb[::-1,::-1],4:rgb[::-1],
+                  5:transposed,6:np.rot90(rgb,-1),7:transposed[::-1,::-1],8:np.rot90(rgb)}
+        for adapter in [orient,orient_v2]:
+            for orientation,pixels in expected.items():
+                np.testing.assert_array_equal(adapter(rgb,orientation),pixels)
     def test_all_EXIF_permutations_roundtrip(self):
         rgb=np.arange(7*11*3,dtype=np.uint8).reshape(7,11,3)
         for orientation in range(1,9):np.testing.assert_array_equal(orient(orient(rgb,orientation),orientation,True),rgb)

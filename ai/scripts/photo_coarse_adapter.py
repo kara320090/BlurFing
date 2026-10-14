@@ -19,7 +19,7 @@ def orient(array,orientation,inverse=False):
     forward={2:Image.Transpose.FLIP_LEFT_RIGHT,3:Image.Transpose.ROTATE_180,4:Image.Transpose.FLIP_TOP_BOTTOM,5:Image.Transpose.TRANSPOSE,6:Image.Transpose.ROTATE_270,7:Image.Transpose.TRANSVERSE,8:Image.Transpose.ROTATE_90}
     backward=forward|{6:Image.Transpose.ROTATE_90,8:Image.Transpose.ROTATE_270}
     im=Image.fromarray(array);method=(backward if inverse else forward).get(orientation)
-    return np.asarray(im.transpose(method) if method else im).copy()
+    return np.asarray(im.transpose(method) if method is not None else im).copy()
 
 
 def seed_square(mask):
