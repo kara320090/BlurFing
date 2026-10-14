@@ -103,6 +103,8 @@ Use `scripts/protect_fingerprint.py --input /path/to/image --output /path/to/new
 
 2026-10-15의 [실험용 PHOTO 연결](docs/PHOTO_BODY_OWNER_PROTECTION.md)은 작은 예측 조각에 따른 배율 오류, 손가락 소속별 처리와 원본 경계 연결을 보강하고 실제 반환 RGB의 구조를 재검사합니다. `scripts/protect_photo_learned_v1.py`로 새 사진 한 장을 검출 → 학습 모델 → 보호 변환까지 실행할 수 있습니다. 기존 기본 GUI는 유지하며, 모델과 보호 성능은 아직 제품용으로 승인하지 않았습니다.
 
+별도 `--experimental-whole-region-gate` [실험](docs/PHOTO_WHOLE_REGION_GATE_V1.md)은 작은 피치 관측 사각형 대신 실제 처리 마스크 전체의 구조를 검사합니다. 같은 개발 사진 38장에서 적용 사진이 2장에서 5장으로 늘었지만, 전체 지문 검출·보호 성능과 Linux 실행은 아직 검증되지 않았습니다.
+
 [PHOTO pad refinement 학습 준비](docs/PAD_REFINEMENT_TRAINING.md): 지정된 10개 annotation을 검증하고 coarse-guided crop 27개와 source 단위 5-fold 학습 코드를 준비했습니다. 학습과 최종 평가는 완료됐으나 GT7 IoU 0.4149, coverage 3/10으로 회귀하여 모델을 거절했습니다. 기본 inference에는 사용하지 않습니다.
 
 [Refinement 최종 학습·GT7 결과](results/pad_refinement_final_summary.md): pretrained encoder 확보 후 고정 5-fold와 최종 13 epoch 학습을 완료했습니다. GT7 macro IoU 0.4149, coverage 3/10으로 coarse baseline보다 나빠져 모델을 채택하지 않았습니다. 보호 변환에는 연결하지 않았으며 GT7을 보고 설정을 바꾸거나 재학습하지 않았습니다.

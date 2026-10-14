@@ -59,7 +59,8 @@ class ReturnedRGBTests(unittest.TestCase):
         self.original=np.zeros((80,100,3),np.uint8);self.candidate=self.original.copy();self.candidate[20:60,30:70]=100
         self.artifact=dict(working_shape=[160,200],working_scale=2.,exif_orientation=1,body=np.ones((80,100),bool),
             regions=[dict(working_seed=[50,30,150,130],padding=dict(bottom=0,right=0))])
-        self.report=dict(regions=[dict(applied=True,structure_check=dict(structure_change_passed=True))],transformed_pad_count=1)
+        self.report=dict(regions=[dict(applied=True,structure_check=dict(structure_change_passed=True))],transformed_pad_count=1,
+            applied=True,transformation_function_passed=True,transformed_candidate_count=1,all_detected_candidates_transformed=True)
 
     def test_native_return_is_reprojected_for_check_and_failed_output_is_rolled_back(self):
         import fingerprint_structure_check as structure
@@ -75,7 +76,10 @@ class ReturnedRGBTests(unittest.TestCase):
             self.assertEqual(result['regions'][0]['applied'],passed)
             np.testing.assert_array_equal(out,self.candidate if passed else self.original)
             self.assertEqual((structure.estimate_finger_width,structure.OUT,structure.run_matcher_job),previous)
-            if not passed:self.assertEqual(result['changed_pixels'],0);self.assertEqual(result['transformed_pad_count'],0)
+            if not passed:
+                self.assertEqual(result['changed_pixels'],0);self.assertEqual(result['transformed_pad_count'],0)
+                self.assertFalse(result['applied']);self.assertFalse(result['transformation_function_passed'])
+                self.assertFalse(result['all_detected_candidates_transformed']);self.assertEqual(result['transformed_candidate_count'],0)
 
     def test_rejected_output_does_not_enter_extractor_and_observer_restores_on_error(self):
         import fingerprint_structure_check as structure

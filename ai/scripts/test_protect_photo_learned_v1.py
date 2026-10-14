@@ -7,6 +7,10 @@ import protect_photo_learned_v1 as pipeline
 
 
 class PhotoEntryTests(unittest.TestCase):
+    def test_truthy_gate_strings_cannot_change_feature_domain(self):
+        with self.assertRaisesRegex(ValueError,'flag_must_be_boolean'):
+            pipeline.run('unused.png','unused','unused','unused',experimental_whole_region_gate='false')
+
     def test_RGB_L_RGBA_canonicalization_preserves_original_and_EXIF(self):
         with tempfile.TemporaryDirectory() as tmp:
             for mode in ['RGB','L','RGBA']:

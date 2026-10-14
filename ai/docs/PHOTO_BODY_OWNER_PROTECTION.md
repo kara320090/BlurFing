@@ -2,6 +2,8 @@
 
 The original PHOTO connection rejected all ten saved group-heldout developmental predictions. Two implementation contracts caused many failures: a predicted fragment's inscribed diameter was treated as finger width, and disconnected prediction fragments were treated as separate fingers. Native body edges could also disappear during 512-pixel geometry down/up sampling. These failures are separate from the model's recall loss and unavailable ridge evidence.
 
+The later [whole-region gate experiment](PHOTO_WHOLE_REGION_GATE_V1.md) addresses the feature sampling domain in a separate explicit flag. V4 remains the default learned experimental connection; V7 is not frozen-gate behavior equivalence or production approval.
+
 `photo_learned_pad_pipeline_v4.py` is the current opt-in experimental connection. The default unified API/GUI and frozen `natural_auto_04` / `boundaryblend_02` remain unchanged. V4 is **not production approved**.
 
 - Measure a native body cross-section using an observed axis; normalize that body width to the existing 400-pixel reference. Never use fragment thickness as body width, clamp scale, or remove fragments. Missing source-frame boundaries reject before resampling.

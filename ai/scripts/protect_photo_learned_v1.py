@@ -22,7 +22,7 @@ PROTECTION_FILES=['protect_photo_learned_v1.py','photo_learned_pad_pipeline_v1.p
     'photo_region_pipeline_v1.py','photo_region_pipeline_v3.py','photo_coarse_renderer_adapter_v1.py',
     'contactless_finger_width_body_v1.py','protect_visible_pad_checked_v2.py','contactless_ridge_pitch.py',
     'fingerprint_structure_check.py','whole_pad_skin_relief.py','transform_automatic_fingerprint_poc_v4.py',
-    'transform_automatic_fingerprint_poc_v4_boundaryblend_02.py']
+    'transform_automatic_fingerprint_poc_v4_boundaryblend_02.py','photo_learned_pad_pipeline_v7.py','photo_whole_region_structure_v1.py']
 
 
 def protection_code_hashes():
@@ -48,7 +48,11 @@ def canonical_rgb(source):
         canonical_RGB_sha256=hashlib.sha256(rgb.tobytes()).hexdigest())
 
 
-def run(source,model,registry_path,output,*,photo_semantics=None,detect_only=False):
+def run(source,model,registry_path,output,*,photo_semantics=None,detect_only=False,experimental_whole_region_gate=False):
+    if type(experimental_whole_region_gate) is not bool:raise ValueError('whole_region_flag_must_be_boolean')
+    backend=protect_bundle
+    if experimental_whole_region_gate:
+        from photo_learned_pad_pipeline_v7 import protect_bundle as backend
     source=Path(source);model=Path(model);output=Path(output);registry_path=Path(registry_path)
     if output.exists():raise FileExistsError('fresh_output_required')
     protection_hashes=protection_code_hashes()
@@ -78,7 +82,7 @@ def run(source,model,registry_path,output,*,photo_semantics=None,detect_only=Fal
     inputs=[dict(source_id='INPUT',source_path=str(inference_source.resolve()),source_sha256=digest(inference_source),
                  semantics=str(Path(photo_semantics).resolve()),acquisition_group='unknown',group_provenance='user_input_unverified')]
     prepare(inputs,registry,private/'dataset',purpose='inference')
-    results=protect_bundle(model,private/'dataset',private/'protection',detect_only)
+    results=backend(model,private/'dataset',private/'protection',detect_only)
     report=results['rows'][0]
     with Image.open(private/'protection/INPUT/returned.png') as image:returned=np.asarray(image).copy()
     # Decode/compare rather than copying a possibly unrelated cached file.
@@ -92,6 +96,7 @@ def run(source,model,registry_path,output,*,photo_semantics=None,detect_only=Fal
         output_path=str((output/'returned.png').resolve()),model_sha256=results['model_sha256'],
         protection_code_sha256=protection_hashes,
         GT_used=False,privacy_validated=False,complete_photo_protection_verified=False,
+        experimental_whole_region_gate=experimental_whole_region_gate,
         unprotected_pixels_returned_original=report['fingerprints_rejected']>0)
     (output/'result.private.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
     return returned,report
@@ -102,9 +107,12 @@ if __name__=='__main__':
     p=JSONArgumentParser(description=__doc__);p.add_argument('--input',type=Path,required=True)
     p.add_argument('--model',type=Path,required=True);p.add_argument('--consumed-registry',type=Path,required=True)
     p.add_argument('--output',type=Path,required=True);p.add_argument('--photo-semantics',type=Path)
-    p.add_argument('--detect-only',action='store_true');a=p.parse_args()
+    p.add_argument('--detect-only',action='store_true')
+    p.add_argument('--experimental-whole-region-gate',action='store_true',help='Opt-in changed feature ROI/domain; not frozen-gate equivalence')
+    a=p.parse_args()
     try:
-        with cli_progress_to_stderr():_,result=run(a.input,a.model,a.consumed_registry,a.output,photo_semantics=a.photo_semantics,detect_only=a.detect_only)
+        with cli_progress_to_stderr():_,result=run(a.input,a.model,a.consumed_registry,a.output,photo_semantics=a.photo_semantics,
+            detect_only=a.detect_only,experimental_whole_region_gate=a.experimental_whole_region_gate)
         print(json.dumps(result,indent=2))
     except Exception as error:
         print(json.dumps(dict(status='error',error=type(error).__name__,reason=str(error))))

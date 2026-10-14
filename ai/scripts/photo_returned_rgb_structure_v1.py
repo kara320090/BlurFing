@@ -35,7 +35,9 @@ def returned_structure_check(original,candidate,artifact,axis,report):
     report['structure_checked_on_actual_native_return']=True
     if check.get('structure_change_passed') is not True:
         region.update(applied=False,status='returned_RGB_structure_rejected')
-        report.update(transformed_pad_count=0,changed_pixels=0,returned_rgb_sha256=hashlib.sha256(original.tobytes()).hexdigest())
+        report.update(applied=False,transformation_function_passed=False,transformed_candidate_count=0,
+            all_detected_candidates_transformed=False,transformed_pad_count=0,changed_pixels=0,
+            status='returned_RGB_structure_rejected_original_returned',returned_rgb_sha256=hashlib.sha256(original.tobytes()).hexdigest())
         return original.copy(),report
     if np.array_equal(original,candidate):raise ValueError('renderer_success_without_native_RGB_change')
     return candidate,report

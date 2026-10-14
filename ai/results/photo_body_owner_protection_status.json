@@ -51,7 +51,7 @@
     "source_count": 10,
     "adopted": false
   },
-  "AI_unit_tests_passed": 381,
+  "AI_unit_tests_passed": 395,
   "Windows_GUI_regression_tests_passed": 9,
   "unchanged_original_private_files": 257,
   "algorithm_thresholds_unchanged": true,
@@ -64,5 +64,75 @@
     "multiple-owner native boundary ambiguity",
     "fresh human annotations and final validation",
     "new experimental path Linux execution"
-  ]
+  ],
+  "full_unlabelled_development_V4": {
+    "source_count": 38,
+    "sources_with_transform": 2,
+    "pipeline_errors": 0,
+    "rejection_reasons": {
+      "insufficient_features": 5,
+      "body_supported_pitch_unobserved": 56,
+      "learned_body_owner_unavailable": 16,
+      "learned_body_axis_unavailable:distal_endpoint_ambiguous_without_class_2": 5,
+      "original_width_unavailable": 2,
+      "learned_body_axis_unavailable:finger_too_short": 2,
+      "adapter_memory_limit_exceeded": 2
+    },
+    "independent_final_test": false,
+    "human_GT_available": false
+  },
+  "explicit_whole_region_gate_V7": {
+    "source_count": 38,
+    "sources_with_transform": 5,
+    "all_predicted_groups_pass": 5,
+    "old_sources_with_transform": 2,
+    "reasons": {
+      "body_supported_pitch_unobserved": 56,
+      "insufficient_features": 2,
+      "learned_body_owner_unavailable": 16,
+      "learned_body_axis_unavailable:distal_endpoint_ambiguous_without_class_2": 5,
+      "original_width_unavailable": 2,
+      "learned_body_axis_unavailable:finger_too_short": 2,
+      "adapter_memory_limit_exceeded": 2
+    },
+    "exterior_and_rejected_preserved": true,
+    "GT_used": false,
+    "privacy_proof": false,
+    "independent_final_test": false
+  },
+  "saved_group_heldout_development_V7": {
+    "source_count": 10,
+    "sources_with_transform": 2,
+    "transformed_components": 2,
+    "rejected_components": 32,
+    "rejection_reasons": {
+      "body_supported_pitch_unobserved": 19,
+      "insufficient_features": 3,
+      "learned_body_owner_unavailable": 8,
+      "original_width_unavailable": 2
+    },
+    "all_exterior_preserved": true,
+    "all_rejected_pixels_preserved": true,
+    "mean_GT_covered_by_applied_fraction": 0.08459352203158753,
+    "development_only": true,
+    "independent_final_test": false,
+    "privacy_proof": false,
+    "approved_for_protection": false
+  },
+  "V7_feature_domain_changed": true,
+  "V7_frozen_gate_equivalence": false,
+  "V7_production_approved": false,
+  "V6_first14_source_quality": {
+    "old_transformed": 2,
+    "new_transformed": 2,
+    "adopted": false
+  },
+  "strict_alternate_pitch_diagnostic": {
+    "remaining_first14_groups": 10,
+    "permission_centered_agreeing_six_patch_cases": 0,
+    "original_renderer_run": false,
+    "diagnostic_only": true
+  },
+  "repaired_initial_V7_run_retained": true,
+  "originals_and_model_unchanged": true
 }
