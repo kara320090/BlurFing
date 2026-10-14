@@ -57,3 +57,11 @@ The encoder was subsequently acquired and verified. The unchanged protocol compl
 `prepare_pad_refinement_inference.py` creates GT-free inference crops from source-identity inputs and verified semantic masks. `infer_pad_refinement.py --one-shot-GT7` requires a completed, hash-bound final model and creates an exclusive test ledger before prediction; no threshold override is provided. `evaluate_pad_refinement_final.py` scores already frozen prediction files and creates private overlays. These are experiment/evaluation tools, not an approved PHOTO protection route.
 
 The evaluator now excludes ambiguous/unresolved annotations from all metric totals, including false-positive components; missing ambiguous masks remain review-only. Historical GT7 annotations were valid positive, so this correction does not revise its reported result. A ledger provides local run control, not a new independent test or permission to repeat a consumed test.
+
+## Historical GT7 source recovery (2026-10-15)
+
+A private transfer restored seven original GT7 photos and hash-bound human-declared annotations. Archive SHA-256, CRC, internal file checksums, encoded dimensions/EXIF and binary masks passed. Export names beginning with `NEW-` do not change their consumed historical role. Participant/finger/session separation is unconfirmed. Prior source identities were matched; identical historical mask bytes were not independently established. The JPG-named MPO sources are recorded with their existing first-frame interpretation.
+
+The verified seven reserved source hashes now bind a fresh V2 preparation of the original ten training sources, with no raw-source overlap and the same 27 RGB/coarse/label arrays and geometry. These GT7 samples are excluded from training and cannot supply a fresh independent final test. No model was fitted or GT7 scores rerun. Real improvements still need separately grouped, unused human annotations and a new reserved test cohort.
+
+The import exposed a Windows locale error in the shared annotation reader for unescaped Korean UTF-8 JSON. Source metadata and CLI roster reads now explicitly accept UTF-8 with or without BOM. The original files, hashes and numerical annotation/metric rules are unchanged. A synthetic Korean-filename regression and 325 tests in the isolated CPU PyTorch environment passed.

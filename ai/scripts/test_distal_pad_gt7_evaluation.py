@@ -16,6 +16,17 @@ class AnnotationTests(unittest.TestCase):
         (self.folder/'source.json').write_text(json.dumps(m))
     def test_absent_status_nonempty_human_legacy(self):
         self.write();_,m=validate_annotation(self.folder,self.source);self.assertEqual(m['status'],'valid_positive');self.assertIsNone(m['declared_annotation_status'])
+    def test_Korean_UTF8_metadata_with_or_without_BOM(self):
+        self.source=self.source.rename(self.root/'손가락 사진.JPG');self.write()
+        path=self.folder/'source.json';metadata=json.loads(path.read_text(encoding='utf-8'))
+        metadata.update(source_filename=self.source.name,notes='사람이 확인한 정답 마스크')
+        for encoding in ['utf-8','utf-8-sig']:
+            with self.subTest(encoding=encoding):
+                path.write_text(json.dumps(metadata,ensure_ascii=False),encoding=encoding)
+                mask,status=validate_annotation(self.folder,self.source)
+                np.testing.assert_array_equal(mask,self.mask==255)
+                self.assertEqual(status['status'],'valid_positive')
+                self.assertEqual(status['source_sha256'],digest(self.source))
     def test_ambiguous_nonempty_never_forced_positive(self):
         self.write('ambiguous_unusable');_,m=validate_annotation(self.folder,self.source);self.assertEqual(m['status'],'ambiguous_unusable')
     def test_ambiguous_missing_mask_allowed(self):

@@ -13,7 +13,7 @@ def component_count(mask):return int(cv2.connectedComponents(mask.astype(np.uint
 
 
 def validate_annotation(folder,source):
-    meta=json.loads((folder/'source.json').read_text());before=digest(source)
+    meta=json.loads((folder/'source.json').read_text(encoding='utf-8-sig'));before=digest(source)
     if meta.get('source_sha256')!=before:raise ValueError('GT_source_hash_mismatch')
     if meta.get('human_annotation') is not True or meta.get('annotation_type')!='human_reviewed_fingerprint_pad':raise ValueError('GT_not_human')
     if meta.get('coordinate_system')!='encoded_original_pixels':raise ValueError('GT_coordinate_mismatch')
@@ -87,4 +87,4 @@ def benchmark(item):
     return dict(warmup=1,measured=10,deterministic=True,scope='saved SAM masks; no neural SAM inference',stats={k:{name:float(f([r[k] for r in rows])) for name,f in [('mean',np.mean),('median',np.median),('min',np.min),('max',np.max),('std',np.std),('p95',lambda v:np.percentile(v,95))]} for k in rows[0]})
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--roster',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--benchmark-sample',default='CAP-042');a=p.parse_args();roster=json.loads(a.roster.read_text());evaluate(roster,a.output);b=benchmark(next(r for r in roster if r['sample_id']==a.benchmark_sample));(a.output/'benchmark.json').write_text(json.dumps(b,indent=2))
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--roster',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--benchmark-sample',default='CAP-042');a=p.parse_args();roster=json.loads(a.roster.read_text(encoding='utf-8-sig'));evaluate(roster,a.output);b=benchmark(next(r for r in roster if r['sample_id']==a.benchmark_sample));(a.output/'benchmark.json').write_text(json.dumps(b,indent=2))
