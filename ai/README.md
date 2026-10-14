@@ -75,6 +75,8 @@ See [SAM_PAD_PIPELINE.md](docs/SAM_PAD_PIPELINE.md) for native-coordinate privat
 
 [영역별 PHOTO geometry adapter](docs/PHOTO_REGION_PIPELINE_V1.md)는 별도 opt-in CLI로 구현했다. 기본 GUI/quality gate는 기존 v2를 유지하며, 새 adapter의 실제 a/b 진단은 모두 거절됐다. 기본 채택이나 보호 성능 개선으로 보고하지 않는다.
 
+[순서별 후속 감사](docs/ORDERED_AI_AUDIT_20261014.md)는 scale/component·coverage·feature gate·pitch의 구현과 한계를 구분한다. 마지막 widening window 누락을 수정했으며 core192 PASS/3 SKIP, GUI9 PASS와 cached-semantics 10-case exact 회귀를 확인했다. 보호 성능 승인과 후속 알고리즘 개발은 별도다.
+
 Use `scripts/protect_fingerprint.py --input /path/to/image --output /path/to/new-result`. Content routes to PHOTO, FINGERPRINT_IMAGE or UNKNOWN; failures return unchanged pixels. Scanner detection is development-validated on 21 fixtures with structure-guarded scanner transformation. The configured COLFISPOOF body/distal PHOTO branch now has a fail-closed quality gate and partial-success response; it remains detector/production-unapproved. MediaPipe/SAM and legacy are optional, not primary. [Architecture and setup](docs/UNIFIED_FINGERPRINT_FRONTEND.md), [measured validation](results/unified_frontend_validation.md). No general protection or final-independent-validation claim.
 
 ## Raw COLFISPOOF pretrained PHOTO evaluation
