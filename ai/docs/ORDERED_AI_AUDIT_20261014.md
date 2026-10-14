@@ -1,5 +1,7 @@
 # 순서별 AI 후속 감사 완료
 
+후속 후보 ID/full-body 보존은 [PHOTO_CANDIDATE_CONTEXT_V1.md](PHOTO_CANDIDATE_CONTEXT_V1.md)의 opt-in v3로 구현·검증했다. 아래 수치와 당시 다음 과제는 역사적 기록이며 현재 남은 과제는 새 문서를 따른다.
+
 후속 body-mask-associated width 개발은 [PHOTO_BODY_WIDTH_V1.md](PHOTO_BODY_WIDTH_V1.md)를 따른다. opt-in v2와 계약 회귀·실제 개발 진단을 완료했으며 아래 audit 시점의 다음 후보가 구현됐다. 현재 다음 개발 대상은 union 전에 estimator candidate ID와 full body 범위를 보존하는 연결이다. 이 문서의 수치는 기존 audit 실행 기록으로 보존한다.
 
 2026-10-14에 scale/component → 보호 범위 → feature gate → pitch 순서로 현재 기본 PHOTO 경로와 별도 region adapter를 점검했다. 확정한 구현 오류를 수정하고 각 단계의 계약을 회귀·실제 개발 사례로 확인한 뒤 다음 단계로 진행했다. 이 완료는 지정한 호출 경로의 코드 감사와 재현 범위이며 모든 알고리즘의 수학적 정확성·독립 보호 성능 승인을 뜻하지 않는다.

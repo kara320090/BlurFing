@@ -1,5 +1,7 @@
 # Body mask와 RGB 폭 관측 연결 실험
 
+후속 후보 ID/full-body 보존은 [PHOTO_CANDIDATE_CONTEXT_V1.md](PHOTO_CANDIDATE_CONTEXT_V1.md)의 opt-in v3로 구현·검증했다. 아래 수치와 당시 다음 과제는 역사적 기록이며 현재 남은 과제는 새 문서를 따른다.
+
 `contactless_finger_width_body_v1`과 `photo_region_pipeline_v2`를 opt-in 경로로 구현했다. 한 native connected body와 한 distal estimator parent를 연결하고, 손가락 축에 수직인 RGB 피부색 구간을 body mask 안으로 제한한다. 기본 GUI/API는 기존 PHOTO adapter를 유지한다. 실제 a에서 기존 region v1의 폭 관측 실패가 해소됐지만 검출 mask와 처리 면적은 그대로다.
 
 ## 버전과 설계 계약
