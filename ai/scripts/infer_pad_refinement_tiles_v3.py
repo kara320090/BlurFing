@@ -4,7 +4,7 @@ from pathlib import Path
 from PIL import Image
 import numpy as np
 from train_pad_refinement_tiles_v3 import (PROTOCOL,PROTOCOL_SHA256,load_checkpoint,
-    predict_source,finite_model,code_hashes)
+    predict_source,finite_model,code_hashes,seed_all)
 from pad_refinement_tiles_v3 import (check_tiles,hash_json,CROP_POLICY,MERGE,json_snapshot,unchanged)
 from pad_refinement_experiment_plan_v2 import POLICY_SHA256
 from pad_refinement_data_contract_v2 import digest
@@ -19,6 +19,9 @@ def load_model(folder):
             cfg.get('merge_policy')!=MERGE or cfg.get('tile_policy_sha256')!=POLICY_SHA256 or
             cfg.get('source_code_sha256')!=code_hashes()):
         raise ValueError('completed_V3_development_checkpoint_contract')
+    # A fresh CLI starts with different Torch thread/determinism defaults.
+    # Configure the declared CPU protocol before any checkpoint forward.
+    seed_all(PROTOCOL['seed'])
     model=load_checkpoint(folder/'final_tiles.pt',cfg['model_sha256'])
     unchanged(folder/'final_config.private.json',cfg_sha);return model,cfg
 

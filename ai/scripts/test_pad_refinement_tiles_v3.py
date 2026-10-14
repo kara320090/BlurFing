@@ -78,6 +78,23 @@ except ImportError:TORCH=False
 
 @unittest.skipUnless(TORCH,'isolated Torch runtime required')
 class TileTrainingTests(TileFixture):
+    def test_fresh_inference_process_applies_declared_cpu_settings(self):
+        import infer_pad_refinement_tiles_v3 as infer
+        from train_pad_refinement_tiles_v3 import PROTOCOL,PROTOCOL_SHA256,code_hashes
+        from pad_refinement_tiles_v3 import CROP_POLICY,MERGE
+        from pad_refinement_experiment_plan_v2 import POLICY_SHA256
+        cfg=dict(training_complete=True,development_only=True,independent_final_test=False,approved_for_inference=False,
+                 protocol=dict(PROTOCOL),protocol_sha256=PROTOCOL_SHA256,crop_policy=CROP_POLICY,merge_policy=MERGE,
+                 tile_policy_sha256=POLICY_SHA256,source_code_sha256=code_hashes(),model_sha256='0'*64)
+        (self.root/'final_config.private.json').write_text(json.dumps(cfg),encoding='utf-8')
+        previous=torch.get_num_threads();deterministic=torch.are_deterministic_algorithms_enabled()
+        try:
+            torch.set_num_threads(2);torch.use_deterministic_algorithms(False)
+            def load(*args):
+                self.assertEqual(torch.get_num_threads(),PROTOCOL['threads'])
+                self.assertTrue(torch.are_deterministic_algorithms_enabled());return torch.nn.Identity()
+            with patch.object(infer,'load_checkpoint',side_effect=load):infer.load_model(self.root)
+        finally:torch.set_num_threads(previous);torch.use_deterministic_algorithms(deterministic)
     def test_replaced_manifest_cannot_publish_successful_prediction_report(self):
         import infer_pad_refinement_tiles_v3 as infer
         from train_pad_refinement_tiles_v3 import code_hashes

@@ -14,6 +14,8 @@ Official SHA-verified MobileNetV3-small ImageNet weights are mandatory. The hist
 
 Overlapping tile probabilities are restored with explicit bilinear interpolation, summed and divided by actual native overlap counts. Threshold 0.5 is applied after averaging. Endpoint anchoring can create more than four overlaps; the implementation counts actual windows. Manifest snapshots, code hashes, runtime versions, official weights and model checkpoint SHA are recorded. Changed inputs/code prevent publication of a completed training or inference report. A failed run leaves diagnostic artifacts without a success report.
 
+The standalone checkpoint loader applies the same eight-thread deterministic CPU settings before prediction. A synthetic audit found that fresh process defaults (16 threads on the audited machine) could change logits by about `3.6e-6` and flip a deliberately boundary-centered synthetic pixel. The incomplete initial training record was retained; the completed experiment is restarted under the corrected code hashes. This is a runtime reproducibility fix, with no threshold or protection-math change.
+
 ## Commands
 
 Run using the isolated CPU PyTorch environment. All private inputs, masks, manifests and weights must remain outside Git. Output folders must be fresh.
