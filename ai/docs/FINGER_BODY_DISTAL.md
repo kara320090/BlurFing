@@ -32,6 +32,8 @@ Inputs must have equal shape and every tip pixel must be inside body. GT, source
 
 Class-1-only candidates require a uniquely truncated proximal side at the actual image frame and a sufficiently elongated major axis. If that direction is ambiguous, the component is rejected. Class-2 candidates use its position to select the distal axis endpoint. The fixed pad extent is 1.35 reference widths; sustained widening above 1.45 reference widths can shorten it. No parameter was selected by GT score. The confidence is an engineering score, not a probability or observed crease. No ridge threshold gates the candidate.
 
+The 2026-10-14 audit corrected an off-by-one in this sustained-widening scan: the last complete window beginning at `N-K` is included. A synthetic terminal six-row widening now shortens the extent from 119 to 114.5, with identical masks after inverse quarter-turns; an incomplete five-row run still does not qualify. Native body/tip preservation and detector integration are tested. The existing 10-case Windows matrix and a/b default results remained exact when rerun with validated, source-bound semantic caches and the actual renderer/appropriate matcher. This rerun did not perform fresh TensorFlow inference or establish new independent protection performance. Parameters, model, frozen renderer and existing Linux references are preserved.
+
 ## Private quantitative evaluation
 
 Use a private roster with `sample_id`, `source` and `GT_folder`, matching the existing human-annotation format. Semantic folders must be named by sample ID.

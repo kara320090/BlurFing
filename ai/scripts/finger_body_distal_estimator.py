@@ -75,7 +75,8 @@ def component_pad(component,tip):
     if tip.any():
         tip_points=np.argwhere(tip);tip_extent=float(np.quantile((tip_points-mean)@axis-origin,.99));extent=max(extent,min(length,tip_extent))
     wide=widths>PALM_WIDENING_RATIO*width;minimum_run=max(3,round(.05*length))
-    for i in range(len(arc)-minimum_run):
+    # Include the last complete window; range(N-K) would skip its start N-K.
+    for i in range(len(arc)-minimum_run+1):
         if arc[i]>.7*width and arc[i]>tip_extent and wide[i:i+minimum_run].all():extent=min(extent,float(arc[i]));break
     middle=np.interp(longitudinal,arc,(line-mean)@normal);chosen=(longitudinal<=extent)&(np.abs(lateral-middle)<=.75*width)
     pad=np.zeros(component.shape,bool);pad[points[chosen,0],points[chosen,1]]=True;pad|=tip&component

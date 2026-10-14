@@ -1,7 +1,7 @@
 import unittest
 import cv2
 import numpy as np
-from finger_body_distal_estimator import estimate
+from finger_body_distal_estimator import estimate,component_pad
 
 class BodyDistalTests(unittest.TestCase):
     def masks(self):
@@ -21,5 +21,33 @@ class BodyDistalTests(unittest.TestCase):
         body,tip=self.masks();original=estimate(body,tip)['mask']
         for k in [1,2,3]:
             rotated=estimate(np.rot90(body,k).copy(),np.rot90(tip,k).copy())['mask'];back=np.rot90(rotated,-k);intersection=(back&original).sum();union=(back|original).sum();self.assertGreater(intersection/union,.95)
+
+    def terminal_widening(self,rows):
+        body=np.zeros((120,160),bool);body[:,30:130]=True
+        if rows:body[-rows:,:]=True
+        tip=np.zeros_like(body);tip[:10,50:110]=True
+        return body,tip
+
+    def test_last_complete_widening_window_trims_proximal_rows(self):
+        body,tip=self.terminal_widening(6)
+        mask,meta=component_pad(body,tip)
+        self.assertAlmostEqual(meta['distal_extent'],114.5)
+        self.assertTrue(mask[114].any());self.assertFalse(mask[115:].any())
+        self.assertFalse((mask&~body).any());self.assertFalse((tip&~mask).any())
+        np.testing.assert_array_equal(estimate(body,tip)['mask'],mask)
+
+    def test_terminal_window_preserves_quarter_turns_and_native_contract(self):
+        body,tip=self.terminal_widening(6);expected=estimate(body,tip)['mask']
+        for turn in [1,2,3]:
+            result=estimate(np.rot90(body,turn).copy(),np.rot90(tip,turn).copy())
+            np.testing.assert_array_equal(np.rot90(result['mask'],-turn),expected)
+
+    def test_incomplete_run_is_not_accepted_as_complete(self):
+        for rows in [0,5]:
+            body,tip=self.terminal_widening(rows);mask,meta=component_pad(body,tip)
+            self.assertAlmostEqual(meta['distal_extent'],119.)
+            self.assertTrue(mask[-1].any())
+        body,tip=self.terminal_widening(7);_,meta=component_pad(body,tip)
+        self.assertAlmostEqual(meta['distal_extent'],113.5)
 
 if __name__=='__main__':unittest.main()
