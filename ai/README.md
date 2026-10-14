@@ -83,6 +83,8 @@ See [SAM_PAD_PIPELINE.md](docs/SAM_PAD_PIPELINE.md) for native-coordinate privat
 
 [국소 융선 주기·방향 감사](docs/PHOTO_LOCAL_PERIODICITY_V1.md)는 ±89° 축의 선형 median 오류를 수정했다. 기본 보호10건 RGB와55후보의 mask/pitch/판정은 유지됐고 orientation metadata만 보정됐다. 작은창 관측의 stable spacing은1/55에 그쳐 기본 적용을 거절했다. frozen pitch 함수의 ROI 밖 배경 주기 혼입도 isolated API로 재현·기록했다. core286 PASS/3 SKIP다.
 
+[실제 PHOTO pitch 지원 범위 추적](docs/PHOTO_SEED_PITCH_SUPPORT_TRACE_V1.md)은 원래 API·renderer를 바꾸지 않고 실제 remap 지도를 기록했다. 사진20장과 scanner 대조를 포함한24회에서 계측 전후 결과가 exact였으며, 관측된 periodic/선택 profile의 내부ROI 밖 직접 혼입은0이었다. 간접 방향장 영향과 합성 isolated 누락은 별도이며, 실제 보호 성능 개선으로 보고하지 않는다. frozen·임계값을 보존했고 core291 PASS/3 SKIP다.
+
 [후보 ID와 전체 body 보존 실험](docs/PHOTO_CANDIDATE_CONTEXT_V1.md)은 opt-in region v3다. union 후 부모 정보 손실을 피하고 후보별 pad/body/scale/합성을 검증했다. core227 PASS/3 SKIP, GUI9 PASS, 기본10-case exact이며 보호 범위와 독립 성능은 아직 승인하지 않았다.
 
 [Body-associated width 실험](docs/PHOTO_BODY_WIDTH_V1.md)은 별도 `photo_region_pipeline_v2.py`로 구현했다. 기존 region v1의 a 폭 관측 실패는 해소됐지만 default a와 반환 RGB가 같고 b는 거절이 유지됐다. core209 PASS/3 SKIP와 기본10-case cached 회귀를 확인했으며 기본 경로에는 채택하지 않았다.
