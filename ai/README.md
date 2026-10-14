@@ -73,6 +73,8 @@ See [SAM_PAD_PIPELINE.md](docs/SAM_PAD_PIPELINE.md) for native-coordinate privat
 
 ## Unified photo/scanner front-end (experimental)
 
+[Body-associated width 실험](docs/PHOTO_BODY_WIDTH_V1.md)은 별도 `photo_region_pipeline_v2.py`로 구현했다. 기존 region v1의 a 폭 관측 실패는 해소됐지만 default a와 반환 RGB가 같고 b는 거절이 유지됐다. core209 PASS/3 SKIP와 기본10-case cached 회귀를 확인했으며 기본 경로에는 채택하지 않았다.
+
 [영역별 PHOTO geometry adapter](docs/PHOTO_REGION_PIPELINE_V1.md)는 별도 opt-in CLI로 구현했다. 기본 GUI/quality gate는 기존 v2를 유지하며, 새 adapter의 실제 a/b 진단은 모두 거절됐다. 기본 채택이나 보호 성능 개선으로 보고하지 않는다.
 
 [순서별 후속 감사](docs/ORDERED_AI_AUDIT_20261014.md)는 scale/component·coverage·feature gate·pitch의 구현과 한계를 구분한다. 마지막 widening window 누락을 수정했으며 core192 PASS/3 SKIP, GUI9 PASS와 cached-semantics 10-case exact 회귀를 확인했다. 보호 성능 승인과 후속 알고리즘 개발은 별도다.

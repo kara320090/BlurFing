@@ -127,7 +127,7 @@ def prepare_region(rgb, gray, mask, body, orientation, source_sha, plan, associa
     return artifact, geometry | dict(reject_reason=None, observed_pitch_native=float(pitch/scale))
 
 
-def render_region(rgb, artifact, axis_yx):
+def render_region(rgb, artifact, axis_yx, *, _width_observer=None):
     """Keep frozen files intact; restore the observer even if rendering fails."""
     import fingerprint_structure_check as structure
     observations = []
@@ -135,7 +135,7 @@ def render_region(rgb, artifact, axis_yx):
     def observe(image, box):
         if list(box) != expected_seed:
             raise ValueError('axis_width_seed_contract_mismatch')
-        measurement = estimate_finger_width_axis(image, box, axis_yx)
+        measurement = (_width_observer or estimate_finger_width_axis)(image, box, axis_yx)
         observations.append(measurement)
         return measurement
     # Default renderer structure calls hold this same RLock. No observer leak
@@ -176,7 +176,7 @@ def load_semantics(source, rgb, semantics):
     return body, tip, inference
 
 
-def evaluate_regions(source, semantics=None, detect_only=False):
+def evaluate_regions(source, semantics=None, detect_only=False, *, _region_renderer=None, _pipeline_version=VERSION):
     start = time.perf_counter()
     source_sha = digest(source)
     with Image.open(source) as image:
@@ -184,13 +184,18 @@ def evaluate_regions(source, semantics=None, detect_only=False):
             raise ValueError('only 8-bit RGB/L inputs supported')
         rgb = np.asarray(image.convert('RGB')).copy()
         orientation = image.getexif().get(274, 1)
-    # Validate EXIF before either worker or renderer runs.
-    orient_axis([1, 0], orientation)
+    # Undefined/nonstandard EXIF cannot establish an axis transform. Reject
+    # normally before worker/rendering; preserve encoded RGB and source bytes.
+    valid_orientation = type(orientation) is int and orientation in range(1, 9)
     returned = rgb.copy()
     mask = np.zeros(rgb.shape[:2], bool)
     route = route_input(rgb)
     regions, inference, failure = [], 0., None
-    if route['input_type'] != 'PHOTO':
+    if not valid_orientation:
+        failure = dict(reject_reason='invalid_source_exif_orientation',
+                       source_exif_orientation_repr=repr(orientation),
+                       output_exif_orientation=1, exif_orientation_valid=False)
+    elif route['input_type'] != 'PHOTO':
         failure = dict(reject_reason='experimental_photo_input_required')
     else:
         try:
@@ -222,7 +227,11 @@ def evaluate_regions(source, semantics=None, detect_only=False):
                         if detect_only:
                             row['reason'] = 'detect_only'
                         else:
-                            candidate, details = render_region(rgb, artifact, geometry['axis_working_yx'])
+                            if _region_renderer is None:
+                                candidate, details = render_region(rgb, artifact, geometry['axis_working_yx'])
+                            else:
+                                candidate, details = _region_renderer(rgb, artifact, geometry['axis_working_yx'],
+                                                                       row['association'], result['regions'])
                             row['renderer_details'] = details
                             if len(details['regions']) != 1 or details['regions'][0].get('candidate_id') != f"coarse-{plan['component']}":
                                 raise ValueError('region_renderer_identity_contract_mismatch')
@@ -252,11 +261,12 @@ def evaluate_regions(source, semantics=None, detect_only=False):
             failure = dict(reject_reason=str(error), error=type(error).__name__)
     if not np.array_equal(returned[~mask], rgb[~mask]) or digest(source) != source_sha:
         raise RuntimeError('source_or_exterior_changed')
-    metadata = summarize(regions) | dict(quality_gate_version=VERSION, default_pipeline_enabled=False,
+    metadata = summarize(regions) | dict(quality_gate_version=_pipeline_version, default_pipeline_enabled=False,
         PHOTO_FAIL_CLOSED_PIPELINE_READY=False,
         axis_width_experimental=True, algorithm_thresholds_unchanged=True, frozen_files_unchanged=True,
         independent_validation_complete=False, input_type='photo', route=route, source_sha256=source_sha,
-        image_width=rgb.shape[1], image_height=rgb.shape[0], source_exif_orientation=orientation,
+        image_width=rgb.shape[1], image_height=rgb.shape[0],
+        source_exif_orientation=orientation if type(orientation) is int else None,
         coordinate_system='encoded_original_pixels', exterior_preserved=True,
         changed_pixels=int(np.any(returned != rgb, axis=2).sum()),
         returned_RGB_sha256=hashlib.sha256(returned.tobytes()).hexdigest(),
@@ -267,16 +277,18 @@ def evaluate_regions(source, semantics=None, detect_only=False):
     return returned, mask, metadata
 
 
-def protect_photo_regions(source, output=None, *, photo_semantics=None, detect_only=False, strength=.5):
+def protect_photo_regions(source, output=None, *, photo_semantics=None, detect_only=False, strength=.5,
+                          _region_renderer=None, _pipeline_version=VERSION):
     if isinstance(strength, bool) or strength not in (0., .5):
         raise ValueError('strength must be 0 or 0.5')
     output = Path(tempfile.mkdtemp(prefix='blurfing_photo_regions_')) if output is None else Path(output)
     if output.exists() and (not output.is_dir() or any(output.iterdir())):
         raise FileExistsError('fresh output directory required')
-    returned, mask, metadata = evaluate_regions(source, photo_semantics, detect_only or strength == 0)
+    returned, mask, metadata = evaluate_regions(source, photo_semantics, detect_only or strength == 0,
+                                                _region_renderer=_region_renderer, _pipeline_version=_pipeline_version)
     output.mkdir(parents=True, exist_ok=True)
     exif = Image.Exif()
-    exif[274] = metadata['source_exif_orientation']
+    exif[274] = metadata.get('output_exif_orientation', metadata['source_exif_orientation'])
     Image.fromarray(returned).save(output/'returned.png', exif=exif)
     Image.fromarray(mask.astype(np.uint8)*255).save(output/'fingerprint_mask.png')
     labels, _ = ndimage.label(mask)

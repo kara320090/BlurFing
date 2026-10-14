@@ -1,5 +1,7 @@
 # PHOTO 영역별 geometry adapter 실험
 
+후속 [body-associated width v2](PHOTO_BODY_WIDTH_V1.md)는 a의 폭 관측을 회복했다. v1은 이전 관측/재현 경로로 유지하며 아래 결과는 v1 시점의 기록이다. 기본 GUI/API는 기존 coarse adapter를 유지한다.
+
 `photo_region_pipeline_v1`은 영역별 scale과 손가락 축의 폭 관측을 기존 pitch 검사·frozen renderer·구조 검사·원본 좌표 합성까지 연결한 **opt-in 실험**이다. unified API/GUI의 기본 PHOTO adapter는 v2를 유지한다. 이 실험은 기존 성공 사례도 거절하므로 기본 경로로 채택하지 않는다.
 
 ## 연결 계약
