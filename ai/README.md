@@ -79,6 +79,8 @@ See [SAM_PAD_PIPELINE.md](docs/SAM_PAD_PIPELINE.md) for native-coordinate privat
 
 [후보 맥락·경계 관측 점검](docs/PHOTO_TERMINAL_CONTEXT_DIAGNOSTIC.md)은 빈 마스크 구간/배경 혼입을 appearance 변화로 오인하는 오류를 수정했다. training55개 후보 중12개에서 기존 경계 단서를 관측했지만 해부학적 정확도·보호 성공률을 확정하지 않는다. 기존 pad와 기본 보호10건 RGB는 그대로이며 core271 PASS/3 SKIP를 확인했다. frame 접촉만으로 손목을 판정하지 않는다.
 
+[관측 경계 pad 실험](docs/PHOTO_OBSERVED_BOUNDARY_PROPOSALS.md)은 관측12개의 native halfplane proposal을 전체GT와 비교했다. 같은 후보 집합의 IoU는0.1746→0.1882지만 precision 감소·관측 부족 때문에 기본 적용을 거절했다. class2 존재만 요구하는 조건도 매칭25/38→19/38로 줄어 채택하지 않았다. core277 PASS/3 SKIP이며 보호 동작·임계값은 유지한다.
+
 [후보 ID와 전체 body 보존 실험](docs/PHOTO_CANDIDATE_CONTEXT_V1.md)은 opt-in region v3다. union 후 부모 정보 손실을 피하고 후보별 pad/body/scale/합성을 검증했다. core227 PASS/3 SKIP, GUI9 PASS, 기본10-case exact이며 보호 범위와 독립 성능은 아직 승인하지 않았다.
 
 [Body-associated width 실험](docs/PHOTO_BODY_WIDTH_V1.md)은 별도 `photo_region_pipeline_v2.py`로 구현했다. 기존 region v1의 a 폭 관측 실패는 해소됐지만 default a와 반환 RGB가 같고 b는 거절이 유지됐다. core209 PASS/3 SKIP와 기본10-case cached 회귀를 확인했으며 기본 경로에는 채택하지 않았다.

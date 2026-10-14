@@ -1,0 +1,120 @@
+{
+  "schema_version": "photo-observed-boundary-proposals-v1",
+  "baseline_commit": "f5a94fc6d69a7e9693b947c4afc135a4bcefcd74",
+  "data_role": "training/development",
+  "human_GT_images": 10,
+  "independent_validation": false,
+  "fresh_neural_inference": false,
+  "semantic_cache_source_hash_verified": true,
+  "GT_used_for_inference": false,
+  "code_and_protocol_frozen_before_evaluation": true,
+  "threshold_tuning_after_evaluation": false,
+  "total_branch_candidates": 55,
+  "observed_boundary_candidates": 12,
+  "retained_observed_proposals": 12,
+  "baselines": {
+    "full_branch": {
+      "macro_iou": 0.5480633980586527,
+      "macro_recall": 0.7448849453732509,
+      "mean_precision_nonempty": 0.6687320717247696,
+      "nonempty_images": 10,
+      "empty_images": 0,
+      "matched_components": 25,
+      "GT_components": 38,
+      "FP_components": 29
+    },
+    "same_observed_parent_union": {
+      "macro_iou": 0.1745862450262532,
+      "macro_recall": 0.17983092037887347,
+      "mean_precision_nonempty": 0.6519079471001072,
+      "nonempty_images": 7,
+      "empty_images": 3,
+      "matched_components": 9,
+      "GT_components": 38,
+      "FP_components": 4
+    },
+    "observed_boundary_proposal_union": {
+      "macro_iou": 0.18817936434945323,
+      "macro_recall": 0.2200004237094466,
+      "mean_precision_nonempty": 0.5479360449227557,
+      "nonempty_images": 7,
+      "empty_images": 3,
+      "matched_components": 10,
+      "GT_components": 38,
+      "FP_components": 2
+    }
+  },
+  "aggregate_GT": "entire verified pad GT in all 10 images, including missed/empty/unmatched cases",
+  "precision_denominator": "nonempty prediction images only; empty precision is null",
+  "candidate_diagnostic": {
+    "parent_associated_candidates": 10,
+    "parent_GT_disjoint_observed_candidates": 2,
+    "multiple_GT_component_intersections": 0,
+    "conditional_parent_associated_mean_iou": 0.7685662180088426,
+    "conditional_proposal_associated_mean_iou": 0.7625226798148159,
+    "association": "parent-mask maximum IoU; optimistic evaluation-only correspondence, not one-to-one finger identity"
+  },
+  "axial_extent_consistency_proxy": {
+    "count": 10,
+    "signed_min": -0.027222615304403328,
+    "signed_max": 0.6043987621671142,
+    "median_absolute": 0.07388931948198436,
+    "three_largest_positive": [
+      0.6043987621671142,
+      0.5668571024594318,
+      0.5647484446595059
+    ],
+    "units": "analysis_widths",
+    "positive_means": "selected row proximal to maximum projected GT pad extent",
+    "semantic_limit": "pad-mask extent consistency proxy, not annotated crease-line accuracy"
+  },
+  "class2_hint_counterfactual": {
+    "counts": {
+      "class2_present_GT_intersecting": 28,
+      "class2_absent_GT_intersecting": 9,
+      "class2_present_GT_disjoint": 1,
+      "class2_absent_GT_disjoint": 17
+    },
+    "selection": "presence only; evaluated, never adopted",
+    "baseline_macro_recall": 0.7448849453732509,
+    "present_only_macro_recall": 0.626296730319907,
+    "baseline_matched_components": 25,
+    "present_only_matched_components": 19,
+    "GT_components": 38,
+    "class2_absence_authorizes_wrist_classification": false
+  },
+  "ownership": "all eligible contexts participate in overlap exclusion before selecting observed boundaries",
+  "unobserved_policy": "no proposal; no geometry fallback",
+  "anatomy_classification": "unknown",
+  "production_adoption": false,
+  "production_adoption_decision": "REJECT_VARIANT",
+  "reasons": [
+    "Only 12/55 eligible contexts have observed boundaries.",
+    "Two observed boundaries have no parent/context intersection with pad GT.",
+    "Observed-only union recall is below the full branch baseline and precision decreases versus paired parent union.",
+    "The conditional associated candidate IoU does not improve; some cuts extend beyond annotated pad extent.",
+    "Independent generalization and Linux experiment parity are not verified."
+  ],
+  "PHOTO_DETECTOR_APPROVED": false,
+  "PHOTO_PROTECTION_PRODUCTION_READY": false,
+  "renderer_binding_allowed": false,
+  "protection_applied": false,
+  "default_pipeline_changed": false,
+  "existing_detector_pitch_feature_thresholds_unchanged": true,
+  "frozen_renderer_unchanged": true,
+  "core_tests_run": 280,
+  "core_tests_passed": 277,
+  "optional_Torch_tests_skipped": 3,
+  "release_verification": {
+    "original_v2_branch_masks_exact_images": 10,
+    "repeated_proposal_masks_and_metadata_exact_images": 10,
+    "source_GT_semantic_file_hashes_verified": 73,
+    "private_source_GT_cache_existing_checkout_hashes_preserved": 513,
+    "original_tracked_Python_sources_exact": 136,
+    "Python_syntax_files": 138,
+    "private_files_changed": [],
+    "new_Linux_experiment_parity": false,
+    "new_GUI_smoke": false,
+    "default_regression_rerun_this_step": false
+  }
+}
