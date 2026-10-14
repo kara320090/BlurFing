@@ -81,6 +81,8 @@ See [SAM_PAD_PIPELINE.md](docs/SAM_PAD_PIPELINE.md) for native-coordinate privat
 
 [관측 경계 pad 실험](docs/PHOTO_OBSERVED_BOUNDARY_PROPOSALS.md)은 관측12개의 native halfplane proposal을 전체GT와 비교했다. 같은 후보 집합의 IoU는0.1746→0.1882지만 precision 감소·관측 부족 때문에 기본 적용을 거절했다. class2 존재만 요구하는 조건도 매칭25/38→19/38로 줄어 채택하지 않았다. core277 PASS/3 SKIP이며 보호 동작·임계값은 유지한다.
 
+[국소 융선 주기·방향 감사](docs/PHOTO_LOCAL_PERIODICITY_V1.md)는 ±89° 축의 선형 median 오류를 수정했다. 기본 보호10건 RGB와55후보의 mask/pitch/판정은 유지됐고 orientation metadata만 보정됐다. 작은창 관측의 stable spacing은1/55에 그쳐 기본 적용을 거절했다. frozen pitch 함수의 ROI 밖 배경 주기 혼입도 isolated API로 재현·기록했다. core286 PASS/3 SKIP다.
+
 [후보 ID와 전체 body 보존 실험](docs/PHOTO_CANDIDATE_CONTEXT_V1.md)은 opt-in region v3다. union 후 부모 정보 손실을 피하고 후보별 pad/body/scale/합성을 검증했다. core227 PASS/3 SKIP, GUI9 PASS, 기본10-case exact이며 보호 범위와 독립 성능은 아직 승인하지 않았다.
 
 [Body-associated width 실험](docs/PHOTO_BODY_WIDTH_V1.md)은 별도 `photo_region_pipeline_v2.py`로 구현했다. 기존 region v1의 a 폭 관측 실패는 해소됐지만 default a와 반환 RGB가 같고 b는 거절이 유지됐다. core209 PASS/3 SKIP와 기본10-case cached 회귀를 확인했으며 기본 경로에는 채택하지 않았다.

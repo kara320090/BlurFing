@@ -1,0 +1,120 @@
+{
+  "schema_version": "photo-local-periodicity-v1",
+  "baseline_commit": "611fcc8ea11ee8b392cda788bdee20e389c74d68",
+  "data_role": "training/development",
+  "human_GT_images": 10,
+  "independent_validation": false,
+  "fresh_neural_inference": false,
+  "semantic_cache_source_hash_verified": true,
+  "GT_used_for_inference": false,
+  "experiment_code_and_policies_recorded_before_evaluation": true,
+  "candidate_count": 55,
+  "old_native": {
+    "observed_candidates": 1,
+    "reason_counts": {
+      "unstable_orientation": 25,
+      "insufficient_patches": 2,
+      "no_periodicity": 27,
+      "observed": 1
+    },
+    "grid_capacity_below_minimum_patches": 37,
+    "GT_intersecting_grid_capacity_below_minimum_patches": 24,
+    "zero_grid_capacity_candidates": 18,
+    "accepted_patch_total": 11
+  },
+  "local_native": {
+    "status_counts": {
+      "no_accepted_local_periodicity": 40,
+      "insufficient_local_patches": 5,
+      "not_testable_geometry": 8,
+      "local_periodicity_unstable": 1,
+      "observed_local_periodicity": 1
+    },
+    "stable_GT_intersecting": 1,
+    "stable_GT_disjoint": 0,
+    "accepted_patch_total": 65,
+    "candidates_with_any_local_patch": 7,
+    "any_local_patch_GT_disjoint": 1,
+    "grid_capacity_below_minimum_patches": 13,
+    "central_mask_eligible_below_minimum_patches": 17
+  },
+  "original_parent_metrics": {
+    "macro_iou": 0.5480633980586527,
+    "macro_recall": 0.7448849453732509,
+    "mean_precision_nonempty": 0.6687320717247696,
+    "nonempty_images": 10,
+    "empty_images": 0,
+    "matched_components": 25,
+    "GT_components": 38,
+    "FP_components": 29
+  },
+  "stable_local_counterfactual_metrics": {
+    "macro_iou": 0.05367408649632176,
+    "macro_recall": 0.05440515057833252,
+    "mean_precision_nonempty": 0.9755762696497264,
+    "nonempty_images": 1,
+    "empty_images": 9,
+    "matched_components": 1,
+    "GT_components": 38,
+    "FP_components": 0
+  },
+  "aggregate_GT": "entire pad GT of all 10 images; empty precision is null with defined image counts",
+  "exploratory_old_or_local_spacing_agreement_candidates": 2,
+  "exploratory_union_is_not_a_new_gate_or_independent_evidence": true,
+  "local_policy": {
+    "profile_length": 64,
+    "tangential_height": 24,
+    "stride": 32,
+    "margin": 36,
+    "minimum_complete_cycles": 2,
+    "maximum_period_pixels": 31.5,
+    "minimum_accepted_patches": 6,
+    "existing_support_coherence_contrast_ACF_FFT_agreement_criteria_reused": true,
+    "actual_remapped_profile_mask_coverage_minimum": 0.95,
+    "overlapping_windows": true,
+    "global_orientation_assumed": false,
+    "source_resolution_native_only": true
+  },
+  "fixed_logical_bug": "Linear median of modulo-pi orientation could collapse +89/-89 axes to 0.",
+  "corrected_orientation_semantics": "doubled-angle pooled mean; gradient normal/radians in resized analysis pixel space; no quality gate",
+  "orientation_numerical_cancellation": "unknown; machine precision only",
+  "orientation_metadata_changed_native_candidates": 10,
+  "isolated_profile_support_issue": {
+    "function": "contactless_ridge_pitch.estimate_ridge_pitch",
+    "target_uniform_and_only_background_periodic_can_return_pitch": true,
+    "validation_scope": "isolated API; not whole frozen protection pipeline",
+    "frozen_function_source_changed": false,
+    "new_local_control_rejected": true,
+    "remaining_work": "versioned support-contract improvement; frozen behavior change not included"
+  },
+  "production_adoption": false,
+  "production_adoption_decision": "REJECT_LOCAL_SPACING_GATE",
+  "reasons": [
+    "Aggregate stable spacing remains available for only one of 55 candidates.",
+    "Using local agreement as a gate discards most annotated pads and all candidates in nine images.",
+    "Periodic local windows do not establish anatomical fingerprint identity.",
+    "Independent generalization and Linux numeric/metadata parity are not verified."
+  ],
+  "PHOTO_DETECTOR_APPROVED": false,
+  "PHOTO_PROTECTION_PRODUCTION_READY": false,
+  "renderer_binding_allowed": false,
+  "protection_applied": false,
+  "default_change_scope": "orientation metadata corrected; detection/quality gates/pitch and output RGB preserved",
+  "detector_pitch_feature_thresholds_unchanged": true,
+  "frozen_renderer_unchanged": true,
+  "core_tests_run": 289,
+  "core_tests_passed": 286,
+  "optional_Torch_tests_skipped": 3,
+  "release_verification": {
+    "native_candidate_nonorientation_fields_and_masks_exact": 55,
+    "native_local_repeat_masks_and_metadata_exact": 55,
+    "training_parent_masks_exact_images": 10,
+    "overflow_guard_valid_observations_exact": 55,
+    "default_matrix_outcome_regions_RGB_exact": 10,
+    "default_matrix_orientation_metadata_exact_claimed": false,
+    "protected_file_hashes_verified": 552,
+    "Python_syntax_files": 142,
+    "new_GUI_smoke": false,
+    "new_Linux_experiment_or_metadata_parity": false
+  }
+}
