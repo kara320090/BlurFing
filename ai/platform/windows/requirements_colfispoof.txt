@@ -1,0 +1,6 @@
+# Isolated Python 3.10 DeepLab worker. Keep separate from ai/requirements.txt.
+# Matches the evaluated Linux model environment, including upstream ANTIALIAS.
+numpy==1.21.6
+opencv-python-headless==4.6.0.66
+tensorflow==2.10.0
+Pillow==9.3.0
