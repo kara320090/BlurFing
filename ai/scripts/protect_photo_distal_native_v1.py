@@ -14,6 +14,7 @@ from protect_photo_whole_pad_context_native_v1 import canonical_rgb,protection_c
 from photo_learned_pad_pipeline_v12 import evaluate_learned_mask,VERSION as GATE_VERSION
 from photo_learned_pad_pipeline_v1 import pixel_hash,save_result
 import photo_region_pipeline_v1 as shared
+from protection_runtime_sources_v1 import capture_runtime_sources,assert_runtime_sources_unchanged
 
 VERSION='photo_distal_native_v13_experimental'
 PERMISSION='existing_COLFISPOOF_body_distal_v2'
@@ -37,6 +38,7 @@ def protect_prepared(dataset,output,*,detect_only=False):
     if type(detect_only) is not bool:raise ValueError('detect_only_flag_must_be_boolean')
     dataset,output=Path(dataset),Path(output)
     if output.exists():raise FileExistsError('fresh_distal_protection_output_required')
+    source_snapshot=capture_runtime_sources()
     manifest,sha=tiles.json_snapshot(dataset/'manifest.input.private.json')
     tiles.check_tiles(dataset,manifest,'inference')
     usage=usage_metadata(manifest.get('development_replay',False));code=code_hashes()
@@ -46,11 +48,14 @@ def protect_prepared(dataset,output,*,detect_only=False):
         mask=read_mask(source['coarse_path'],source['coarse_sha256'],native_shape(source))
         returned,report=evaluate_learned_mask(source,mask,pixel_hash(mask),detect_only=detect_only)
         report.update(**usage,version=VERSION,protection_gate=GATE_VERSION,
-            permission_file_sha256=source['coarse_sha256'],runtime_code_sha256=code)
+            permission_file_sha256=source['coarse_sha256'],runtime_code_sha256=code,
+            runtime_source_snapshot=source_snapshot.provenance())
         save_result(output/source['source_id'],returned,report);rows.append(report)
     tiles.check_tiles(dataset,manifest,'inference');tiles.unchanged(dataset/'manifest.input.private.json',sha)
     if code_hashes()!=code:raise RuntimeError('distal_runtime_code_changed_during_run')
-    result=dict(version=VERSION,rows=rows,**usage)
+    runtime_sources=assert_runtime_sources_unchanged(source_snapshot)
+    result=dict(version=VERSION,rows=rows,runtime_source_snapshot=runtime_sources,
+        runtime_source_snapshot_verified=True,**usage)
     (output/'protection.private.json').write_text(json.dumps(result,indent=2),encoding='utf-8')
     return result
 
@@ -60,6 +65,7 @@ def run(source,registry_path,output,*,photo_semantics=None,detect_only=False,dev
     usage=usage_metadata(development_replay)
     source,registry_path,output=Path(source),Path(registry_path),Path(output)
     if output.exists():raise FileExistsError('fresh_output_required')
+    source_snapshot=capture_runtime_sources()
     code=code_hashes();registry,registry_sha=tiles.json_snapshot(registry_path);tiles.validate_registry(registry)
     original_identity=tiles.image_identity(source)
     if not development_replay:tiles.exclude_consumed(original_identity,registry)
@@ -99,9 +105,11 @@ def run(source,registry_path,output,*,photo_semantics=None,detect_only=False,dev
         if not np.array_equal(np.asarray(image),returned):raise RuntimeError('saved_RGB_roundtrip_mismatch')
     tiles.unchanged(source,identity['original_source_sha256']);tiles.unchanged(registry_path,registry_sha)
     if code_hashes()!=code:raise RuntimeError('distal_runtime_code_changed_during_run')
+    runtime_sources=assert_runtime_sources_unchanged(source_snapshot)
     report.update(**usage,input_identity=identity,single_photo_entrypoint=VERSION,input_type='photo',route=route,
         image_width=rgb.shape[1],image_height=rgb.shape[0],output_path=str((output/'returned.png').resolve()),
-        runtime_code_sha256=code,RGB_outside_accepted_permission_preserved=True)
+        runtime_code_sha256=code,RGB_outside_accepted_permission_preserved=True,
+        runtime_source_snapshot=runtime_sources,runtime_source_snapshot_verified=True)
     (output/'result.private.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
     return returned,report
 
@@ -119,4 +127,3 @@ if __name__=='__main__':
         print(json.dumps(result,indent=2))
     except Exception as error:
         print(json.dumps(dict(status='error',error=type(error).__name__,reason=str(error))));raise SystemExit(1)
-

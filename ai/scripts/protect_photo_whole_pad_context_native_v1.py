@@ -20,6 +20,7 @@ from photo_learned_pad_pipeline_v12 import evaluate_learned_mask,VERSION as PIPE
 import photo_region_pipeline_v1 as shared
 from photo_consumed_replay_v1 import development_replay as replay_scope,consumed_roles
 import pad_refinement_tiles_v3 as tiles
+from protection_runtime_sources_v1 import capture_runtime_sources,assert_runtime_sources_unchanged
 
 VERSION='single_photo_whole_pad_context_native_v1_experimental'
 
@@ -35,6 +36,7 @@ def protect_bundle(folder,root,output,detect_only=False):
     folder,root,output=Path(folder),Path(root),Path(output)
     if type(detect_only) is not bool:raise ValueError('detect_only_flag_must_be_boolean')
     if output.exists():raise FileExistsError('fresh_context_protection_output_required')
+    source_snapshot=capture_runtime_sources()
     code=protection_code_hashes();predictions=infer(folder,root,output/'predictions')
     manifest,sha=json_snapshot(root/'manifest.input.private.json')
     if sha!=predictions['input_manifest_sha256']:raise ValueError('prediction_manifest_binding_mismatch')
@@ -47,12 +49,15 @@ def protect_bundle(folder,root,output,detect_only=False):
         sid=source['source_id'];path=output/'predictions'/(sid+'.png')
         mask=read_mask(path,indexed[sid]['prediction_sha256'],native_shape(source))
         returned,report=evaluate_learned_mask(source,mask,pixel_hash(mask),detect_only=detect_only)
-        report.update(model_sha256=predictions['model_sha256'],model_training_version=PROTOCOL['version'],GT_used=False,**usage)
+        report.update(model_sha256=predictions['model_sha256'],model_training_version=PROTOCOL['version'],GT_used=False,
+                      runtime_source_snapshot=source_snapshot.provenance(),**usage)
         save_result(output/sid,returned,report);rows.append(report)
     unchanged(root/'manifest.input.private.json',sha);check_tiles(root,manifest,'inference')
     if protection_code_hashes()!=code:raise ValueError('context_protection_code_changed')
+    runtime_sources=assert_runtime_sources_unchanged(source_snapshot)
     report=dict(version=PIPELINE_VERSION,rows=rows,model_sha256=predictions['model_sha256'],
-        default_pipeline_enabled=False,approved_for_protection=False,**usage)
+        default_pipeline_enabled=False,approved_for_protection=False,runtime_source_snapshot=runtime_sources,
+        runtime_source_snapshot_verified=True,**usage)
     (output/'protection.private.json').write_text(json.dumps(report,indent=2),encoding='utf-8');return report
 
 def canonical_rgb(source):
@@ -79,6 +84,7 @@ def run(source,model,registry_path,output,*,photo_semantics=None,detect_only=Fal
     if type(development_replay) is not bool:raise ValueError('development_replay_flag_must_be_boolean')
     source=Path(source);model=Path(model);output=Path(output);registry_path=Path(registry_path)
     if output.exists():raise FileExistsError('fresh_output_required')
+    source_snapshot=capture_runtime_sources()
     protection_hashes=protection_code_hashes()
     registry,registry_sha=json_snapshot(registry_path);validate_registry(registry)
     # Strict by default; replay is explicit and never new evaluation data.
@@ -125,9 +131,11 @@ def run(source,model,registry_path,output,*,photo_semantics=None,detect_only=Fal
         if not np.array_equal(np.asarray(image),returned):raise RuntimeError('saved_RGB_roundtrip_mismatch')
     unchanged(source,identity['original_source_sha256']);unchanged(registry_path,registry_sha)
     if protection_code_hashes()!=protection_hashes:raise RuntimeError('protection_code_changed_during_run')
+    runtime_sources=assert_runtime_sources_unchanged(source_snapshot)
     report|=dict(single_photo_entrypoint=VERSION,input_type='photo',input_identity=identity,
         output_path=str((output/'returned.png').resolve()),model_sha256=results['model_sha256'],
         protection_code_sha256=protection_hashes,
+        runtime_source_snapshot=runtime_sources,runtime_source_snapshot_verified=True,
         GT_used=False,privacy_validated=False,complete_photo_protection_verified=False,**usage,
         model_probability_calibrated=False,detector_decision_boundary_equivalent_to_V4=False,
         experimental_global_context=True,experimental_multiscale_observation=True,experimental_component_local_gate=True,
