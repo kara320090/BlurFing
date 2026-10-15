@@ -45,6 +45,10 @@ change; this comparison does not isolate context as the sole causal factor.
 Probability calibration and unchanged effective decision boundaries are not
 claimed.
 
+The local augmentation function is exact against the old implementation under
+matching RNG states. Extra model initialization consumes random numbers, so
+the actual noise realizations across different architectures need not match.
+
 GT-free context features are cached from the same official encoder snapshot
 before fold seeds are reset. Cache/checkpoint encoder identities, source/body,
 RGB context, tile grids, protocol, code and original assets remain hash-bound,
@@ -85,3 +89,69 @@ unverified. Report OOF early-stopping scores separately from final training fit
 and actual returned RGB. Body omissions and unobservable pitch/features remain
 limitations. Production detection, complete-photo protection and new Linux
 runtime validation remain unapproved.
+
+All ten legacy GT previews were also inspected. They broadly mark visible pads;
+no obvious rotation/overlay fault or confirmed policy contradiction was found.
+Their exact crease/ambiguity policy remains undocumented. This is not evidence
+that incorrect human labels caused the regression, and legacy GT is preserved.
+
+## Completed learning checks
+
+Fold best epochs are 4, 1 and 12, giving four final epochs. OOF source-macro IoU
+is 0.483604 and equal-group IoU is 0.470537, versus V4's 0.552743 and 0.500480.
+Legacy/new-policy OOF IoU is 0.455595/0.505149. These are developmental
+early-stopping scores, including a new-cohort fold trained only on legacy ten.
+The context experiment does not establish improved group generalization.
+
+Final all-source training-fit IoU is 0.824281; legacy ten score 0.728937 and
+new whole-pad thirteen score 0.897622. Improved fit must not be reported as
+unseen-photo performance. Full-cohort cached forward equals isolated-source
+forward and saved masks on two fixed sources. Final checkpoint audit confirms
+all 38 trainable parameters changed, complete unique optimizer membership,
+unchanged frozen encoder/BatchNorm states, finite tensors, the median epoch
+rule and all code/model/manifest/context bindings. All 1,478 bound private assets
+remain unchanged. Actual returned-RGB protection is evaluated separately.
+
+## Actual returned RGB on the consumed thirteen
+
+All thirteen complete the V10 evaluation. Eight have changed RGB; five return
+the original unchanged. With the complete human GT as denominator, permission
+covers 90.15%, accepted regions cover 52.43%, and changed RGB covers 49.53%.
+The last quantity is a pixel-change diagnostic, not a security success rate.
+There are 15,680 changed pixels outside human GT. All C-subset-A-subset-P,
+rejected-pixel and permission-exterior preservation checks pass.
+
+| Final training-cohort replay | Photos with changed RGB | Changed GT area | Changed outside GT |
+| --- | ---: | ---: | ---: |
+| V4 plus V10 | 6/13 | 18.35% | 646 pixels |
+| V5 plus V10 | 9/13 | 56.57% | 798,901 pixels |
+| V6 plus V10 | 8/13 | 49.53% | 15,680 pixels |
+
+All three models trained on this cohort. V6 reduces V5's extensive overgrowth
+and changes more GT area than V4, but it does not dominate V4 on exterior-to-GT
+changes. The human GT boundary is not an independent certification of every
+false-positive pixel. This comparison is consumed-development training fit,
+and the weaker grouped score prevents an improved-default generalization claim.
+
+Four unchanged photos have dominant component-local unobserved-pitch rejection;
+the fifth has dominant insufficient-feature rejection. Small unowned/seedless
+fragments and one adapter memory-limit rejection also remain. Region counts
+include fragments and must not be presented as actual finger counts. Better
+detector fit does not automatically satisfy the unchanged transform contracts.
+No pitch, feature or detector threshold was relaxed to force acceptance.
+
+The two-worker evaluation uses process-isolated renderer state and unique source
+outputs, with parent-only aggregates in fixed acquisition order. It is not a
+latency benchmark. An actual single-photo CLI and Windows PowerShell launcher,
+including a fresh COLFISPOOF worker and a Unicode/space input path, exactly match
+the cached batch mask and returned RGB on one fixed source. Original bytes,
+EXIF and GT-free inputs are preserved. The full AI suite passes 481 tests, with
+four additional context-entry tests; Android merge validation passes 136 tests
+and builds application/test APKs. Device instrumentation and new Linux runtime
+equivalence were not rerun here.
+
+Complete anonymous metrics are in
+[the V6 status](PHOTO_WHOLE_PAD_CONTEXT_V6_STATUS.json). V6 remains opt-in,
+unapproved and outside existing defaults. Further independent validation needs
+untouched acquisition groups, consistent human whole-pad labels and a frozen
+model/preprocessing protocol before their first evaluation.

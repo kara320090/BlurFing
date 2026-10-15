@@ -1,0 +1,84 @@
+{
+  "version": "whole_pad_context_v6_development_20261015",
+  "human_reviewed_new_sources": 13,
+  "legacy_sources": 10,
+  "training_sources": 23,
+  "GT_free_native_body_tiles": 657,
+  "conservative_development_groups": 3,
+  "acquisition_and_person_independence_verified": false,
+  "independent_final_test": false,
+  "context_encoder_sha256": "e9af93a43c2e6e9b3e77ca5118a58fb68017d24b5ae7b1c6f12524e799aabb53",
+  "context_feature_channels": 648,
+  "context_feature_size": [
+    32,
+    32
+  ],
+  "context_bbox_from_GT": false,
+  "context_encoder_and_BN_frozen": true,
+  "development_validation": {
+    "OOF_source_macro_iou": 0.48360381221798826,
+    "equal_group_macro_iou": 0.47053687888363965,
+    "policy_macro_iou": {
+      "whole_visible_palmar_distal_pad_v1": 0.5051486985194689,
+      "legacy_visible_pad_boundary_unspecified": 0.4555954600260635
+    },
+    "best_epochs": [
+      4,
+      1,
+      12
+    ],
+    "final_epochs": 4,
+    "new_cohort_fold_training": "legacy ten only; new 13 used for developmental early stopping"
+  },
+  "final_model_training_fit": {
+    "source_macro_iou": 0.8242806270655977,
+    "policy_macro_iou": {
+      "legacy_visible_pad_boundary_unspecified": 0.7289369130736315,
+      "whole_visible_palmar_distal_pad_v1": 0.8976219455209566
+    },
+    "full_cohort_cache_matches_isolated_source_and_saved_mask": true,
+    "real_sources_checked": 2
+  },
+  "final_model_actual_V10_protection": {
+    "sources": 13,
+    "sources_changed": 8,
+    "sources_with_transformed_regions": 8,
+    "GT_pixels": 3817798,
+    "permission_GT_pixels": 3441566,
+    "accepted_GT_pixels": 2001743,
+    "changed_GT_pixels": 1891118,
+    "changed_outside_GT": 15680,
+    "macro_iou": 0.8976219455209566,
+    "macro_recall": 0.9261059446390285,
+    "macro_precision": 0.9672117277585858,
+    "precision_defined_sources": 13,
+    "permission_GT_fraction": 0.9014531413133958,
+    "accepted_GT_fraction": 0.5243187303257009,
+    "changed_GT_fraction": 0.49534260324930757,
+    "all_preservation_checks_passed": true,
+    "evaluation_workers": 2,
+    "latency_benchmark": false
+  },
+  "final_model_sha256": "0c9d057ab220daadc369ed425a67f732d44e32a9da63155cc53842c2a545e14b",
+  "actual_single_photo_CLI_verified": true,
+  "CLI_matches_batch_mask_and_RGB": true,
+  "fresh_COLFISPOOF_Windows_launcher_verified": true,
+  "Unicode_space_input_path_passed": true,
+  "CLI_GT_free": true,
+  "EXIF_and_original_source_preserved": true,
+  "full_AI_suite_tests_pass": 481,
+  "additional_photo_entry_tests_pass": 4,
+  "android_merge_unit_tests_pass": 136,
+  "android_merge_APK_build_pass": true,
+  "model_probability_calibrated": false,
+  "V6_default_enabled": false,
+  "V6_model_adopted_as_improved_default": false,
+  "algorithm_numeric_thresholds_unchanged": true,
+  "architecture_and_observation_geometry_changed": true,
+  "frozen_renderer_and_compositor_files_unchanged": true,
+  "PHOTO_DETECTOR_APPROVED": false,
+  "PHOTO_PROTECTION_PRODUCTION_READY": false,
+  "new_experiments_Linux_runtime_verified": false,
+  "private_inputs_and_weights_published": false,
+  "interpretation": "Consumed development and final training fit. Context and capacity both change. Changed RGB and candidate counts are not privacy/security proof."
+}
