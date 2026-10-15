@@ -100,9 +100,38 @@ external deployment and actual Linux runtime verification remain separate
 work. A changed image alone does not establish complete fingerprint
 protection.
 
-The full PHOTO pipeline showed rotation sensitivity in development diagnostics,
-not an accuracy/IoU measurement; the first divergent stage, including raw body
-segmentation, remains unresolved and is not attributed to V6 alone.
-Static ROI/grid-coordinate review found no confirmed error; whole-image joint
-augmentation and tile-rotation consistency evaluation are candidates for the
-next version, not adopted fixes.
+## Automatic-only follow-up — 2026-10-16
+
+The code at `f772ff1` was audited without new human annotations or training.
+The following are development diagnostics, not detection accuracy or privacy
+measurements. Existing unit-test counts above do not include these private probes.
+
+- One photo and its exact integer quarter-turn reproduced both saved V6
+  predictions. All four corresponding COLFISPOOF raw class maps and native
+  BODY/TIP masks were pixel-identical after inverse rotation. The first
+  divergence was the distal estimator's 512-side `INTER_NEAREST` resize:
+  BODY/TIP differed by 1,521/329 pixels. Coarse masks differed by 34,949 pixels;
+  V6 permissions differed by 202,860 pixels (rotation-consistency IoU 0.5913).
+  Tile, coarse-input and neural contributions to the final difference remain
+  unseparated; this is not a V6-only root-cause claim.
+- A private CPU-only `INTER_NEAREST_EXACT` alternative made the working masks
+  and working pad/owner unions exact for that photo, but native enlargement
+  left 237 coarse pixels different. It also had eight counterexamples among
+  88 synthetic size/rotation comparisons. It was not adopted: changing learned
+  preprocessing requires a versioned contract and validation. The tested core
+  OpenCV build reported 5.0.0; the separate COLFISPOOF runtime reported 4.6.0.
+- Two saved desktop/raw-RGB cases had 4/13 raw predicted components and 64/64
+  permission partitions. Their 58/49 unbound pieces contained 8,110/6,011
+  pixels, all explained by native-to-working-to-native owner-boundary loss.
+  Predictions outside native BODY were zero; partition hashes were exactly
+  reconstructed. Unbound pieces skip pitch/rendering. Candidate counts are
+  neither finger counts nor raw model fragment counts. No area filter was added.
+- Thirty synthetic pitch cases and six invariant checks found no coordinate,
+  EXIF-axis or caller/512-pixel conversion error; the largest error in the
+  valid geometry controls was 0.23%. Short-period harmonic ambiguity and
+  fractional lag-boundary policy differences remain algorithm limitations.
+  Seven component-contract checks and seven rotation-helper checks also passed.
+
+Originals, model weights, frozen protection code and numeric thresholds were
+unchanged. The new seven-photo human boundary review remains deferred; automated
+diagnostics do not supply human GT, independent accuracy or Linux parity.
