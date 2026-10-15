@@ -79,27 +79,24 @@ RGBA/EXIF dispatch, no alternate-engine retry, fresh output, GUI job identity,
 and actual Windows PowerShell argument transport. These tests do not measure
 detector accuracy, matcher security, runtime latency, or Linux parity.
 
-## Backend and Android integration boundary
+## Backend and Android integration boundary — 2026-10-16
 
-The existing backend processor returns bytes only, supports `gaussian_blur`,
-and reports every requested rectangle as applied. Android accepts only
-`succeeded`. Connecting a partially rejecting PHOTO engine through that
-contract would overstate which regions were processed. The current
-experimental desktop integration does not activate that backend path.
+The existing V1 bytes/rectangle `gaussian_blur` contract remains separate.
+The opt-in [V2 server](../../backend/README-photo-v2.md) and
+[Android experimental flow](../../android/docs/EXPERIMENTAL_PHOTO_V2.md) now
+carry actual status, accepted/rejected masks and unapproved flags. They
+validate source binding, output shape, mask hashes and changed pixels inside
+accepted permissions. Display bounds do not replace masks. No native engine
+is labeled `gaussian_blur`, and there is no engine or Mock fallback.
 
-A separate integration must introduce all of the following together:
+Desktop PHOTO output preserves valid source RGB ICC without changing RGB
+samples; the GUI converts only its preview for display. HTTP instead requires
+client-normalized sRGB/EXIF1 pixels in a canonical RGB8 PNG without color
+chunks. Both paths preserve the original file.
 
-- An explicit experimental method and automatic-detection versus manual
-  permission contract. Do not label the native renderer `gaussian_blur` or
-  silently ignore the user's selected regions.
-- A structured processor result containing returned PNG, actual status,
-  accepted permissions, rejected candidates/reasons, engine/model/runtime
-  provenance and unapproved privacy flags. A bounding box alone does not
-  guarantee that all its pixels were protected.
-- Backend validation of returned size/format, actual accepted masks and
-  source binding; no echoing requested regions as proof of application.
-- Android presentation of partial/rejected output and exposed regions,
-  preserving the source and clearly labeling unvalidated protection.
-- New contract, timeout/concurrency and end-to-end tests using actual
-  configured runtimes. Authentication, deployed servers and real devices
-  remain external verification requirements.
+Actual configured local HTTP and Android Repository-to-MediaStore readback
+were verified on one development photo; see the
+[dated checks](PHOTO_DESKTOP_VALIDATION_20261016.md). These checks do not
+approve detector accuracy, general privacy protection, independent final
+testing or Linux equivalence. Authentication, external deployment and broad
+physical-device validation remain separate requirements.

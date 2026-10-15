@@ -9,7 +9,9 @@ BlurFing 지문 변환 알고리즘 및 NBIS / SourceAFIS 기반 검증 파트.
 
 통합 CLI/API·Windows GUI에서 `native_v12`(V6 학습 마스크), `distal_v13`(기존 말단 기하), `pose_v14`(관측한 한 손 자세)를 명시적으로 선택할 수 있습니다. [설정 방법](docs/PHOTO_EXPLICIT_ENGINE_INTEGRATION.md), [Windows 실제 처리·저장 검증](docs/PHOTO_DESKTOP_VALIDATION_20261016.md), [자세 실험 및 한계](docs/PHOTO_POSE_NATIVE_V14.md)를 참고하세요. 기본 엔진은 그대로이며 세 실험 모두 보호 성능 승인 전입니다.
 
-최신 Windows 자동 검사는 AI 606개·GUI 17개가 통과했습니다. 새 자세 경로의 실제 fresh 처리 결과도 고정 진단 RGB와 exact 일치했습니다. 기존 촬영의 추가 사진 7장은 독립 평가 자료가 아니며, 미처리 손가락과 지문 간격 관측 실패가 남습니다. 아래 기존 10-case 플랫폼 동등성 기록은 그 당시의 기본 파이프라인 범위이며, 새 V12/V14의 Linux 동등성을 의미하지 않습니다.
+2026-10-16 최종 통합 검사는 AI scripts 665개·Windows GUI 22개가 통과했습니다. 별도 [PHOTO V2 전송](docs/PHOTO_EXPERIMENTAL_TRANSPORT_V2.md)과 Android 단위 170개·UI 11개 및 실제 Repository→loopback HTTP→V14→MediaStore 저장/readback 1회도 확인했습니다. PC V12 실제 HTTP와 Android V14는 같은 개발 사진의 부분 처리 관측이며 일반 성공률이 아닙니다. Windows 새 PHOTO 출력의 원본 RGB ICC 보존과 HTTP canonical sRGB 입력을 구분합니다. 원본·모델·frozen 수학/기준을 보존했습니다. 이전 AI 606개·GUI 17개는 통합 전 검증 기록입니다.
+
+새 자세 경로의 실제 fresh 처리 결과도 고정 진단 RGB와 exact 일치했습니다. 기존 촬영의 추가 사진 7장은 독립 평가 자료가 아니며, 미처리 손가락과 지문 간격 관측 실패가 남습니다. 아래 기존 10-case 플랫폼 동등성 기록은 그 당시의 기본 파이프라인 범위이며, 새 V12/V14의 Linux 동등성을 의미하지 않습니다.
 
 ## 고정 기준 구성
 렌더러: natural_auto_04. 합성기: boundaryblend_02. 지문 매칭 엔진: NBIS 5.0.0 / SourceAFIS 3.18.1.

@@ -1,15 +1,42 @@
 # Experimental desktop PHOTO validation — 2026-10-16
 
 The unified library, JSON CLI, Windows launcher and development GUI now accept
-an explicit `native_v12` or `distal_v13` PHOTO engine. The legacy default and
-scanner route are preserved. See [configuration](PHOTO_EXPLICIT_ENGINE_INTEGRATION.md).
+an explicit `native_v12`, `distal_v13` or `pose_v14` PHOTO engine. The legacy
+default and scanner route are preserved. See [configuration](PHOTO_EXPLICIT_ENGINE_INTEGRATION.md).
 
 Native V12 uses the existing V6 learned permissions and the actual returned
 RGB decision gate. Distal V13 uses existing COLFISPOOF distal geometry with the
-same gate. Neither engine has production approval or independent privacy
-validation. V13 is a boundary-review experiment, not an automatic fallback.
+same gate. Pose V14 uses observed hand geometry with that gate. All three
+remain experimental, without production approval or independent privacy
+validation. V13/V14 require boundary review and are not automatic fallbacks.
 
-## Executed checks
+## Final integration checks — 2026-10-16
+
+AI scripts **665**, Windows GUI **22**, Android unit **170** and emulator UI
+**11** tests passed. The older counts below describe earlier stages.
+Actual configured inference also passed these local integration checks:
+
+| Path | Applied / rejected candidate components | Changed RGB pixels |
+| --- | ---: | ---: |
+| PC canonical sRGB → HTTP → native V12 | 4 / 92 | 271,567 |
+| Android Repository → loopback HTTP → pose V14 → MediaStore readback | 4 / 3 | 438,554 |
+
+Both observations use the same development photo, not seven independent
+photos or anatomical finger counts. Rejected permissions and pixels outside
+accepted permissions were unchanged. Android saved PNG bytes matched the
+response exactly; canonical upload RGB and original source file bytes were
+preserved, and server temporary
+files were cleaned. Actual HTTP inference and save/readback do not establish
+complete detection or protection; rejected fingerprints remain exposed.
+
+Desktop PHOTO serialization preserves valid original RGB ICC while keeping
+returned RGB samples unchanged; GUI sRGB conversion is display-only. HTTP
+uses client-normalized sRGB/EXIF1 canonical PNG without color/ancillary chunks.
+The source file is never overwritten. Private models, frozen protection math
+and thresholds were preserved. Independent human-GT performance, new-engine
+Linux equivalence and general privacy protection remain unverified.
+
+## Earlier desktop checks
 
 - AI scripts: **563 tests passed**, no failures, errors or skips.
 - Windows GUI: **16 tests passed**, no failures, errors or skips.
@@ -23,8 +50,9 @@ validation. V13 is a boundary-review experiment, not an automatic fallback.
   between routing and execution, malformed returned RGB, fresh output and
   actual PowerShell argument transport.
 
-These checks validate contracts and this Windows configuration. They do not
-establish Linux equivalence, Android integration or detector accuracy.
+These earlier checks validated contracts and this Windows configuration.
+Android integration was verified later as described above; neither stage
+establishes Linux equivalence or detector accuracy.
 
 ## Additional development photos
 
@@ -66,7 +94,15 @@ proposal also produced harmonic ambiguity and was not adopted.
 
 No frozen renderer/compositor mathematics, numeric quality thresholds,
 private inputs, human annotations or Linux references were changed.
-Backend/Android partial-rejection transport, new human boundary review,
-independent capture validation and actual Linux runtime verification remain
-separate work. A changed image alone does not establish complete fingerprint
+Backend/Android partial-rejection transport now has the local integration
+checks above. New human boundary review, independent capture validation,
+external deployment and actual Linux runtime verification remain separate
+work. A changed image alone does not establish complete fingerprint
 protection.
+
+The full PHOTO pipeline showed rotation sensitivity in development diagnostics,
+not an accuracy/IoU measurement; the first divergent stage, including raw body
+segmentation, remains unresolved and is not attributed to V6 alone.
+Static ROI/grid-coordinate review found no confirmed error; whole-image joint
+augmentation and tile-rotation consistency evaluation are candidates for the
+next version, not adopted fixes.

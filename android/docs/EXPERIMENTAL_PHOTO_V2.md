@@ -15,3 +15,7 @@
 단위 테스트는 Pillow가 생성·독립 확인한 합성 RGB/L PNG, 필터 0~4, 비정상 PNG·중복 JSON, 실제 HTTP multipart, 취소·늦은 결과·저장 ticket 수명을 검사한다. 실제 사진·모델·정답 자료는 APK에 포함하지 않는다. `tools/generate_experimental_png_fixtures.py`는 합성 fixture만 재생성한다.
 
 선택적 기기 검사는 `ExperimentalWireInstrumentedTest`를 사용한다. 로컬 자료는 adb로 앱의 private filesDir에 일시 배치하고 `private_input`, `expected_rgb_sha256`을 인자로 준다. `private_response`는 기존 실제 응답을 다시 검증하며, `real_backend_url`/`photo_engine`은 Repository→실제 HTTP 경로를 실행한다. 실제 응답·비교 영수증·PNG는 앱 private filesDir에만 기록한다. provider 검사는 숨겨진 임시 MediaStore record를 읽기 검증 후 삭제한다. 이 검사는 AI의 일반 성능이나 보안 증명이 아니다.
+
+## 2026-10-16 통합 검증
+
+Android 단위 170개·에뮬레이터 UI 11개가 통과했다. 별도 실제 모델 시험 1회에서 Repository→loopback HTTP→pose V14→MediaStore 저장/readback을 완료했다. 후보 component 7개 중 4개 적용·3개 거절, 변경 438,554픽셀을 관측했으며 거절 영역과 A 밖 RGB 변경은 0이었다. 저장 PNG는 응답과 byte-identical했고 source 보존과 임시 자료 정리를 확인했다. 이는 같은 개발 사진 1장의 통합 검증이며 모든 손가락 검출·일반 보호 성능·독립 최종 평가·Linux 동등성·실물 휴대폰 전반을 승인하지 않는다. [상세 범위](../../ai/docs/PHOTO_DESKTOP_VALIDATION_20261016.md)를 따른다.

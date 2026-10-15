@@ -16,6 +16,14 @@ Android 앱 → 백엔드 API → 영역 추출·보호 알고리즘의 흐름�
 ## 앱 구조 초안
 화면은 입력, 영역 확인, 처리 진행, 전후 비교·저장으로 구성한다. UI 상태와 API 통신을 분리하고 Repository 인터페이스로 Mock 구현과 실제 API 구현을 교체할 수 있게 한다. 플랫폼·SDK·라이브러리 버전은 설치 환경을 확인해 고정한다.
 
+## 사진 AI V2 경계 — 2026-10-16
+
+기존 `backend/main:app`·`/v1/protect`·`gaussian_blur`는 유지한다. 별도 `experimental_photo_main:app`의 `/v2/photo/protect`와 Android 실험 화면에서 V12/V13/V14 중 하나를 명시적으로 선택한다. 다른 엔진·블러·Mock으로 자동 대체하지 않는다. [V2 계약과 실행](../backend/README-photo-v2.md)을 따른다.
+
+HTTP 입력은 클라이언트가 sRGB 및 EXIF 방향을 정규화한 불투명 RGB8 PNG다. 색상 chunk는 허용하지 않으며 서버가 색상을 재변환하지 않는다. Windows 새 PHOTO 경로는 RGB 샘플을 유지하며 유효한 원본 RGB ICC를 출력에 결합하고, GUI만 표시용 sRGB 변환을 한다. 두 입출력 계약은 구분한다. 원본 파일은 보존하고 사본만 저장한다.
+
+응답은 `success`·`partial_success`·`rejected`와 원본 좌표의 적용 A/거절 R 마스크를 전달한다. 실제 변경 C는 A 안에만 있어야 하며 R과 A 밖 RGB는 입력과 같아야 한다. 후보 component 수는 손가락 수가 아니고 표시 사각형은 보호 마스크를 대신하지 않는다. Android는 응답 결합·마스크·픽셀 보존을 검증하고 저장 PNG를 다시 읽어 확인한다. 실제 로컬 모델 연결·저장은 검증했지만 Linux 동등성·독립 검출/보호 성능·외부 배포는 별도 검증 대상이다.
+
 ## 구현 순서
 1. 외부 모듈이 없어도 합성 사진과 Mock 응답으로 앱 흐름을 구현한다.
 2. 영역 좌표·방향·오류 계약을 검증하고 실제 백엔드 어댑터를 연결한다.

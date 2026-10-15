@@ -73,4 +73,6 @@ Set-Location '<저장소>\backend'
 & '<서버 Python 절대 경로>' -m pytest test_main.py test_native_photo_result_contract_v1.py test_experimental_photo_v2.py -q
 ```
 
-기존 V1 회귀, native component/최종 RGB 증거, V2 typed 계약, 실제 subprocess, 실제 로컬 HTTP transport, 과부하·중복·timeout·연결 종료·chunked 상한·spool 정리를 합성 입력으로 검사한다. 실제 모델의 fresh HTTP 동작과 Android 실제 기기의 사진 선택/저장까지 통과했다는 뜻은 아니며 각각 별도 검증 기록을 남겨야 한다.
+이 명령은 기존 V1 회귀, native component/최종 RGB 증거, V2 typed 계약, 실제 subprocess, 로컬 HTTP transport, 과부하·중복·timeout·연결 종료·chunked 상한·spool 정리를 합성 입력으로 검사한다.
+
+2026-10-16에는 별도로 실제 canonical sRGB 개발 사진의 native V12 HTTP 부분 처리와 Android Repository→loopback HTTP→pose V14→MediaStore 저장/readback 1회를 확인했다. 거절 영역·A 밖 RGB 보존, Android 저장 PNG byte 일치, source 보존과 임시 폴더 정리를 검증했다. 같은 사진의 통합 동작 관측이며 독립 보호 성능·Linux 동등성·외부 서버 배포·실물 휴대폰 전반의 승인은 아니다. [실제 검증 범위](../ai/docs/PHOTO_DESKTOP_VALIDATION_20261016.md)를 따른다.
