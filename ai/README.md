@@ -111,6 +111,8 @@ Use `scripts/protect_fingerprint.py --input /path/to/image --output /path/to/new
 
 [V5 클래스 가중치 실험](docs/PHOTO_WHOLE_PAD_BALANCED_V5.md)은 과도한 영역 확장과 개발 교차검증 회귀로 기본 경로에 채택하지 않았습니다. [V6 전체 문맥 실험](docs/PHOTO_WHOLE_PAD_CONTEXT_V6.md)은 정답 없이 얻은 전체 body 영상의 고정 인코더 특징과 국소 타일을 결합해 학습 자료 13장에서 IoU 0.8976과 8장의 실제 변환을 확인했습니다. 다만 그룹 검증 IoU는 0.4836으로 회귀했고 5장은 미적용이므로 기본 경로에 채택하지 않았습니다. 별도 `scripts/protect_photo_whole_pad_context_v4.py`를 제공하며, 기존 보호 수학·품질 임계값을 유지합니다. 새 독립 촬영 그룹의 검증과 전체 지문 보호 성능 확인이 필요합니다.
 
+[방향 잡음 분리 간격 관측 실험](docs/PHOTO_ORIENTATION_SEPARATED_PITCH_V1.md)은 V10의 간격 관측 실패 때만 방향 계산용 필터와 원본 주기 측정을 분리합니다. 문제 사진의 간격 관측은 회복했지만 후속 특징점 검사에서 거절되므로 실제 보호 완료로 보고하지 않습니다. 별도 `scripts/protect_photo_whole_pad_context_noise_v1.py`로 실행하며 V6 모델·기존 수치 기준·frozen 수학·기본 경로는 보존합니다.
+
 [PHOTO pad refinement 학습 준비](docs/PAD_REFINEMENT_TRAINING.md): 지정된 10개 annotation을 검증하고 coarse-guided crop 27개와 source 단위 5-fold 학습 코드를 준비했습니다. 학습과 최종 평가는 완료됐으나 GT7 IoU 0.4149, coverage 3/10으로 회귀하여 모델을 거절했습니다. 기본 inference에는 사용하지 않습니다.
 
 [Refinement 최종 학습·GT7 결과](results/pad_refinement_final_summary.md): pretrained encoder 확보 후 고정 5-fold와 최종 13 epoch 학습을 완료했습니다. GT7 macro IoU 0.4149, coverage 3/10으로 coarse baseline보다 나빠져 모델을 채택하지 않았습니다. 보호 변환에는 연결하지 않았으며 GT7을 보고 설정을 바꾸거나 재학습하지 않았습니다.

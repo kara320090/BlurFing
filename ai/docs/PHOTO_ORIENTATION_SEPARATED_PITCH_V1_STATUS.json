@@ -1,0 +1,149 @@
+{
+  "version": "orientation_separated_pitch_v1_V11_development_20261016",
+  "default_pipeline_enabled": false,
+  "approved_for_protection": false,
+  "independent_final_test": false,
+  "detector_model": "whole_pad_context_v6",
+  "model_retrained": false,
+  "model_sha256": "0c9d057ab220daadc369ed425a67f732d44e32a9da63155cc53842c2a545e14b",
+  "algorithm_contract": {
+    "complete_V10_first": true,
+    "feature_failure_retry": false,
+    "default_pitch_allowed": false,
+    "direction_references_sigma512": [
+      2.0,
+      4.0
+    ],
+    "profiles_from_original_raw": true,
+    "independent_biometric_evidence": false,
+    "preprocessing_context_independence_claimed": false,
+    "existing_numeric_thresholds_unchanged": true,
+    "frozen_renderer_source_and_math_unchanged": true,
+    "frozen_gate_equivalence": false,
+    "permission_connected_component_local": true
+  },
+  "reproduced_failure": {
+    "development_source": "006",
+    "exact_legacy_observation_replays": 24,
+    "patch_examinations_including_repeats": 7128,
+    "coherence_rejected": 6512,
+    "ROI_rejected": 556,
+    "ACF_rejected": 43,
+    "contrast_rejected": 12,
+    "periodic_candidates": 5,
+    "strict_credible_patches": 1,
+    "coordinate_and_pitch_unit_error_found": false
+  },
+  "synthetic_observer": {
+    "cases": 128,
+    "known_period_signals": 90,
+    "signals_accepted": 54,
+    "accepted_signal_errors_above_10_percent": 0,
+    "nonperiodic_controls": 38,
+    "controls_accepted": 0,
+    "public_private_exact_measurement_matches": 128,
+    "known_signal_is_not_security_validation": true
+  },
+  "recovered_observations": [
+    {
+      "source": "006",
+      "region": 1,
+      "status": "rejected",
+      "reason": "insufficient_features",
+      "working_pitch": 10.743632195808459,
+      "native_pitch": 10.689010516862531
+    },
+    {
+      "source": "011",
+      "region": 1,
+      "status": "transformed",
+      "reason": null,
+      "working_pitch": 8.535072965518339,
+      "native_pitch": 6.410836078460234
+    }
+  ],
+  "orientation_fallback_attempted_components": 26,
+  "source006_followup": {
+    "pitch512": 16.66890813410282,
+    "sourceafis_extraction_succeeded": true,
+    "original_features_inside_permission": 13,
+    "candidate_features_inside_permission": 9,
+    "current_minimum_per_image": 10,
+    "structure_gate": "insufficient_features",
+    "returned_original": true,
+    "gate_is_functional_prototype": true,
+    "privacy_proof": false
+  },
+  "source011_new_actual_transform": {
+    "accepted_permission_pixels": 145327,
+    "accepted_GT_pixels": 144188,
+    "changed_pixels": 132882,
+    "changed_GT_pixels": 132348,
+    "changed_outside_GT": 534,
+    "original_features_inside_permission": 93,
+    "candidate_features_inside_permission": 45,
+    "structure_check_passed": true,
+    "privacy_validated": false
+  },
+  "same_model_training_fit_cohort": {
+    "before": {
+      "sources": 13,
+      "sources_changed": 8,
+      "accepted_GT_pixels": 2001743,
+      "changed_GT_pixels": 1891118,
+      "changed_outside_GT": 15680,
+      "accepted_GT_fraction": 0.5243187303257009,
+      "changed_GT_fraction": 0.49534260324930757
+    },
+    "after": {
+      "version": "photo_learned_pad_pipeline_v11_orientation_separated_fallback_experimental",
+      "sources": 13,
+      "sources_changed": 9,
+      "sources_with_transformed_regions": 9,
+      "data_role": "training_fit_only",
+      "independent_final_test": false,
+      "approved_for_protection": false,
+      "all_preservation_checks_passed": true,
+      "all_legacy_accepted_RGB_identical": true,
+      "evaluation_workers": 2,
+      "latency_benchmark": false,
+      "changed_RGB_is_not_security_proof": true,
+      "GT_pixels": 3817798,
+      "permission_GT_pixels": 3441566,
+      "accepted_GT_pixels": 2145931,
+      "changed_GT_pixels": 2023466,
+      "changed_outside_GT": 16214,
+      "permission_GT_fraction": 0.9014531413133958,
+      "accepted_GT_fraction": 0.5620860506501392,
+      "changed_GT_fraction": 0.5300086594419087
+    }
+  },
+  "verification": {
+    "AI_unit_tests_passed": 506,
+    "AI_unit_failures": 0,
+    "AI_unit_errors": 0,
+    "AI_unit_skipped": 0,
+    "renderer_exception_and_scope_binding_tests_passed": true,
+    "actual_fresh_COLFISPOOF_Windows_launcher_passed": true,
+    "unicode_space_path_and_EXIF_preserved": true,
+    "actual_cached_CLI_final_metadata_passed": true,
+    "legacy_success_prediction_and_returned_RGB_exact": true,
+    "protected_existing_source_files_unchanged": 53,
+    "whole_cohort_rejected_and_exterior_RGB_preserved": true,
+    "all_legacy_accepted_region_RGB_exact": true,
+    "independent_cohort_pixel_audit_passed": true,
+    "new_Linux_runtime_executed": false,
+    "new_final_independent_acquisition_group_evaluated": false,
+    "independent_cohort_sources_checked": 13,
+    "legacy_success_sources_checked": 8,
+    "legacy_success_regions_checked": 10,
+    "post_metadata_cleanup_targeted_tests_passed": 6
+  },
+  "boundary_only_fallback_enabled": false,
+  "remaining_work": [
+    "Review prototype feature-gate purpose under a separate protocol; do not lower the cutoff to fit source006.",
+    "Validate whole-pad detection and the observer on a new person/acquisition group.",
+    "Re-run Windows/Linux parity for the opt-in observer before any default adoption.",
+    "Verify actual ridge coverage and protection beyond changed pixels or functional feature checks."
+  ]
+}
