@@ -10,6 +10,10 @@ class PhotoEntryTests(unittest.TestCase):
     def test_truthy_gate_strings_cannot_change_feature_domain(self):
         with self.assertRaisesRegex(ValueError,'flag_must_be_boolean'):
             pipeline.run('unused.png','unused','unused','unused',experimental_whole_region_gate='false')
+        with self.assertRaisesRegex(ValueError,'flag_must_be_boolean'):
+            pipeline.run('unused.png','unused','unused','unused',experimental_component_local_gate='false')
+        with self.assertRaisesRegex(ValueError,'mutually_exclusive'):
+            pipeline.run('unused.png','unused','unused','unused',experimental_whole_region_gate=True,experimental_component_local_gate=True)
 
     def test_RGB_L_RGBA_canonicalization_preserves_original_and_EXIF(self):
         with tempfile.TemporaryDirectory() as tmp:

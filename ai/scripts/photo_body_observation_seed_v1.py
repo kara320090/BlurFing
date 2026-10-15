@@ -40,7 +40,7 @@ def seeds(mask,body):
     return selected
 
 
-def prepare_region(rgb,gray,mask,body,orientation,source_sha,plan,association,*,_proposals=None,_width_preflight=False):
+def prepare_region(rgb,gray,mask,body,orientation,source_sha,plan,association,*,_proposals=None,_width_preflight=False,_pitch_observer=None):
     scale=plan['working_scale'];upright=shared.orient(rgb,orientation)
     shape,audit=shared.validate_resize(*upright.shape[:2],scale)
     axis=shared.orient_axis(association['axis_native_yx'],orientation,[shape[0]/upright.shape[0],shape[1]/upright.shape[1]])
@@ -57,7 +57,8 @@ def prepare_region(rgb,gray,mask,body,orientation,source_sha,plan,association,*,
             width=estimate_finger_width_body(working,box,axis,working_body)
             if width['status']!='estimated':
                 attempts.append(proposal|dict(width_preflight=width,observed_pitch_working=None));width_failure=True;continue
-        pitch,measurement,_=shared.observed_seed_pitch(working,box)
+        pitch,measurement,_=(shared.observed_seed_pitch(working,box) if _pitch_observer is None
+                             else _pitch_observer(working,box,working_mask))
         attempts.append(proposal|dict(observed_pitch_working=pitch,measurement=measurement,
                         seed_RGB_sha256=hashlib.sha256(working[box[1]:box[3],box[0]:box[2]].tobytes()).hexdigest()))
         if width is not None:attempts[-1]['width_preflight']=width

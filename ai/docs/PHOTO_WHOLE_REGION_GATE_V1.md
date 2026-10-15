@@ -1,5 +1,7 @@
 # Whole-permission-region PHOTO structure experiment
 
+V7 is historical: a later diagnostic found that disconnected false-positive fragments under the same unverified owner could borrow another fragment's pitch and aggregate features. The [component-local V8 experiment](PHOTO_COMPONENT_LOCAL_EVIDENCE_V1.md) addresses that authorization gap. Neither path establishes anatomical pad accuracy or complete-photo protection.
+
 The seed square measures pitch/photometry but can omit most of the transformed fingerprint pad. A controlled diagnostic kept baseline output unchanged and compared the generated candidate in both domains: two rejected seed crops had before/after counts 14/4 and 7/17, while their complete permission masks had 66/56 and 77/91. Points and skeleton pixels outside permission were excluded. This establishes a sampling-domain limitation, not privacy/security proof.
 
 `photo_learned_pad_pipeline_v7.py` is a separate, opt-in experiment. It retains V4 detection, native body geometry, masks, resource/width/pitch rules and original frozen renderer mathematics. The existing functional predicate still requires both >=10 extracted points, same-coordinate/type Dice <=0.9, >=2 point changes and skeleton XOR/union >=0.05. **Its feature ROI and coordinate domain change to the whole permission square normalized to 512 pixels; frozen-gate behavior equivalence is false.** The numeric 6-pixel matching distance now refers to this different 512-pixel domain. Default unified/GUI and default learned V4 entry remain intact.

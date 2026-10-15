@@ -1,0 +1,52 @@
+{
+  "version": "photo_component_local_evidence_v8_experimental",
+  "status": "development_only_not_adopted",
+  "bug": "disconnected_false_positive_permission_shared_other_fragment_pitch_and_union_features",
+  "correction": "per_connected_permission_source_profile_and_actual_native_structure_evidence",
+  "model_false_positives_resolved": false,
+  "connected_false_positives_resolved": false,
+  "original_v7_new_photo_sources_changed": 4,
+  "v8": {
+    "new_count": 13,
+    "new_sources_changed": 3,
+    "new_components_applied": 3,
+    "new_statuses": {
+      "rejected": 10,
+      "partial_success": 2,
+      "success": 1
+    },
+    "new_reasons": {
+      "component_local_pitch_unobserved": 33,
+      "adapter_memory_limit_exceeded": 5,
+      "learned_body_owner_unavailable": 69,
+      "insufficient_features": 1,
+      "native_body_width_boundary_unobserved": 2,
+      "component_local_seed_unavailable": 1
+    },
+    "prior_selected_positive_count": 5,
+    "prior_still_changed": 5,
+    "all_native_return_checks_pass": true,
+    "weights_changed": false,
+    "numeric_thresholds_changed": false,
+    "anatomical_accuracy_verified": false
+  },
+  "new_cohort_consumed_as_diagnostic_development": true,
+  "human_GT_present": false,
+  "independent_final_validation": false,
+  "implementation_unit_tests_pass": 406,
+  "python_AST_pass": 172,
+  "historical_v4_v7_selected_RGB_exact": true,
+  "fresh_worker_model_entry_matches_cached_RGB": true,
+  "qualitative_disconnected_nail_example_unchanged_after": true,
+  "frozen_original_source_files_and_renderer_math_unchanged": true,
+  "numeric_thresholds_unchanged": true,
+  "evidence_geometry_changed": true,
+  "frozen_gate_equivalence": false,
+  "model_checkpoint_unchanged": true,
+  "native_exterior_and_rejected_components_preserved": true,
+  "Linux_new_path_execution_verified": false,
+  "metadata_only_reason_mapping_and_hash_coverage_followup_after_replay": true,
+  "PHOTO_DETECTOR_APPROVED": false,
+  "PHOTO_PROTECTION_PRODUCTION_READY": false,
+  "privacy_proof": false
+}
