@@ -107,6 +107,8 @@ Use `scripts/protect_fingerprint.py --input /path/to/image --output /path/to/new
 
 이후 새 사진에서 V7의 서로 떨어진 오검출 조각이 다른 지문의 검사 증거를 공유하는 문제가 발견됐습니다. 별도 `--experimental-component-local-gate` [V8 실험](docs/PHOTO_COMPONENT_LOCAL_EVIDENCE_V1.md)은 각 연결 조각 안의 주기 관측과 실제 반환 특징점을 각각 검사합니다. 모델의 손톱 오검출이나 연결된 오검출을 해결한 것은 아니며, 전체 지문 보호와 기본 경로 채택은 계속 미승인 상태입니다.
 
+사람이 검토한 손끝 첫 마디 전체 마스크의 [검증·V4 학습 실험](docs/PHOTO_WHOLE_PAD_TARGET_V4.md)은 기존 GT10과 새 정답 13장을 구분해 그룹별로 검증합니다. 별도 단일 사진 진입점 `scripts/protect_photo_whole_pad_v2.py`와 V9 위치·V10 크기 관측 실험을 제공하며, 기존 기본 경로·임계값·frozen 보호 수학은 유지합니다. 모델과 전체 사진 보호 성능은 계속 미승인 상태입니다.
+
 [PHOTO pad refinement 학습 준비](docs/PAD_REFINEMENT_TRAINING.md): 지정된 10개 annotation을 검증하고 coarse-guided crop 27개와 source 단위 5-fold 학습 코드를 준비했습니다. 학습과 최종 평가는 완료됐으나 GT7 IoU 0.4149, coverage 3/10으로 회귀하여 모델을 거절했습니다. 기본 inference에는 사용하지 않습니다.
 
 [Refinement 최종 학습·GT7 결과](results/pad_refinement_final_summary.md): pretrained encoder 확보 후 고정 5-fold와 최종 13 epoch 학습을 완료했습니다. GT7 macro IoU 0.4149, coverage 3/10으로 coarse baseline보다 나빠져 모델을 채택하지 않았습니다. 보호 변환에는 연결하지 않았으며 GT7을 보고 설정을 바꾸거나 재학습하지 않았습니다.

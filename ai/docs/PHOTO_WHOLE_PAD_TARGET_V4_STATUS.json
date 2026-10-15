@@ -1,0 +1,121 @@
+{
+  "version": "whole_pad_target_v4_development_20261015",
+  "human_reviewed_new_sources": 13,
+  "legacy_sources": 10,
+  "training_sources": 23,
+  "GT_free_native_body_tiles": 657,
+  "conservative_development_groups": 3,
+  "acquisition_and_person_independence_verified": false,
+  "independent_final_test": false,
+  "development_validation": {
+    "OOF_source_macro_iou": 0.5527427104908441,
+    "equal_group_macro_iou": 0.500480406823531,
+    "policy_macro_iou": {
+      "whole_visible_palmar_distal_pad_v1": 0.6739104170109218,
+      "legacy_visible_pad_boundary_unspecified": 0.39522469201474275
+    },
+    "best_epochs": [
+      19,
+      2,
+      12
+    ],
+    "final_epochs": 12,
+    "new_cohort_fold_training": "legacy ten only; new 13 used for developmental early stopping"
+  },
+  "earlier_model_fixed_cohort": [
+    {
+      "sources": 13,
+      "sources_changed": 3,
+      "GT_pixels": 3817798,
+      "permission_GT_pixels": 1794034,
+      "accepted_GT_pixels": 363713,
+      "changed_GT_pixels": 334949,
+      "changed_outside_GT": 1297,
+      "all_preservation_checks_passed": true,
+      "model_sha256": "b168c8af175018d83ae796a97af7fad34ba16c28ec19332976057a373fbc143c",
+      "protection_version": 8,
+      "data_role": "consumed_development; no GT13 model training",
+      "independent_final_test": false,
+      "permission_GT_fraction": 0.469913285092611,
+      "accepted_GT_fraction": 0.09526774334315226,
+      "changed_GT_fraction": 0.08773355740665169
+    },
+    {
+      "sources": 13,
+      "sources_changed": 4,
+      "GT_pixels": 3817798,
+      "permission_GT_pixels": 1794034,
+      "accepted_GT_pixels": 477013,
+      "changed_GT_pixels": 439418,
+      "changed_outside_GT": 1378,
+      "all_preservation_checks_passed": true,
+      "model_sha256": "b168c8af175018d83ae796a97af7fad34ba16c28ec19332976057a373fbc143c",
+      "protection_version": 9,
+      "data_role": "consumed_development; no GT13 model training",
+      "independent_final_test": false,
+      "permission_GT_fraction": 0.469913285092611,
+      "accepted_GT_fraction": 0.12494453609122326,
+      "changed_GT_fraction": 0.11509723667936334
+    },
+    {
+      "sources": 13,
+      "sources_changed": 6,
+      "GT_pixels": 3817798,
+      "permission_GT_pixels": 1794034,
+      "accepted_GT_pixels": 721981,
+      "changed_GT_pixels": 665907,
+      "changed_outside_GT": 1565,
+      "all_preservation_checks_passed": true,
+      "model_sha256": "b168c8af175018d83ae796a97af7fad34ba16c28ec19332976057a373fbc143c",
+      "protection_version": 10,
+      "data_role": "consumed_development; no GT13 model training",
+      "independent_final_test": false,
+      "permission_GT_fraction": 0.469913285092611,
+      "accepted_GT_fraction": 0.18910927188918847,
+      "changed_GT_fraction": 0.1744217478242694
+    }
+  ],
+  "final_model_training_fit": {
+    "policy_macro_iou": {
+      "legacy_visible_pad_boundary_unspecified": 0.2057682827701966,
+      "whole_visible_palmar_distal_pad_v1": 0.5749846438798523
+    },
+    "source_macro_iou": 0.41445579122348025,
+    "cached_forward_matches_common": true,
+    "cached_forward_real_sources_checked": 2
+  },
+  "final_model_actual_V10_protection": {
+    "sources": 13,
+    "sources_changed": 6,
+    "GT_pixels": 3817798,
+    "permission_GT_pixels": 1852603,
+    "accepted_GT_pixels": 767557,
+    "changed_GT_pixels": 700634,
+    "changed_outside_GT": 646,
+    "macro_iou": 0.5749846438798523,
+    "macro_recall": 0.5998659663319252,
+    "macro_precision": 0.9515389658619104,
+    "precision_defined_sources": 13,
+    "all_preservation_checks_passed": true,
+    "data_role": "training_fit_only",
+    "protection_version": 10,
+    "independent_final_test": false,
+    "approved_for_protection": false,
+    "changed_RGB_is_not_security_proof": true,
+    "permission_GT_fraction": 0.485254327232609,
+    "accepted_GT_fraction": 0.20104704334802417,
+    "changed_GT_fraction": 0.18351782886365386
+  },
+  "final_model_sha256": "29944be4bb3fea1e557230ff36ce37caf8135185960a1d85e684c1666024f415",
+  "V10_prior_V9_accepted_entire_region_RGB_identical": true,
+  "unit_tests_pass": 470,
+  "V4_model_adopted_as_improvement": false,
+  "V4_rejection_reason": "full-pad undercoverage and legacy fit regression",
+  "algorithm_numeric_thresholds_unchanged": true,
+  "frozen_renderer_and_compositor_files_unchanged": true,
+  "PHOTO_DETECTOR_APPROVED": false,
+  "PHOTO_PROTECTION_PRODUCTION_READY": false,
+  "new_experiments_Linux_runtime_verified": false,
+  "private_inputs_and_weights_published": false,
+  "interpretation": "Consumed development diagnostics and final training fit. Changed RGB and candidate counts are not privacy/security proof."
+}
