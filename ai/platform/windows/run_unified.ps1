@@ -5,7 +5,7 @@ param(
     [string]$ColfispoofModel = $env:BLURFING_COLFISPOOF_MODEL,
     [string]$InputImage = "",
     [string]$OutputDirectory = "",
-    [ValidateSet('legacy','native_v12','distal_v13')][string]$PhotoEngine = 'legacy',
+    [ValidateSet('legacy','native_v12','distal_v13','pose_v14')][string]$PhotoEngine = 'legacy',
     [string]$PhotoModel = "",
     [string]$ConsumedRegistry = "",
     [switch]$DevelopmentReplay,
@@ -29,14 +29,14 @@ if (@($workerValues | Where-Object { $_ }).Count -gt 0) {
 }
 $photoArguments = @()
 if ($PhotoEngine -eq 'legacy') {
-    if ($PhotoModel -or $ConsumedRegistry -or $DevelopmentReplay) { throw 'Experimental PHOTO options require an explicit native_v12 or distal_v13 engine' }
+    if ($PhotoModel -or $ConsumedRegistry -or $DevelopmentReplay) { throw 'Experimental PHOTO options require an explicit native_v12, distal_v13 or pose_v14 engine' }
 } else {
     if (-not $ConsumedRegistry -or -not (Test-Path -LiteralPath $ConsumedRegistry -PathType Leaf)) { throw 'Experimental PHOTO engine requires a private consumed registry JSON' }
     $photoArguments = @('--photo-engine',$PhotoEngine,'--consumed-registry',$ConsumedRegistry)
     if ($PhotoEngine -eq 'native_v12') {
         if (-not $PhotoModel -or -not (Test-Path -LiteralPath $PhotoModel -PathType Container)) { throw 'native_v12 requires a completed private V6 model folder' }
         $photoArguments += @('--photo-model',$PhotoModel)
-    } elseif ($PhotoModel) { throw 'distal_v13 uses no learned pad model; do not supply PhotoModel' }
+    } elseif ($PhotoModel) { throw 'Geometry PHOTO engines use no learned pad model; do not supply PhotoModel' }
     if ($DevelopmentReplay) { $photoArguments += '--development-replay' }
 }
 if ($Gui) {

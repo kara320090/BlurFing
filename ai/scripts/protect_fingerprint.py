@@ -25,8 +25,8 @@ def cli_progress_to_stderr():
 
 def validate_photo_options(photo_engine,photo_model,consumed_registry,development_replay):
     """Explicit experimental selection; optional runtimes stay lazy by default."""
-    if type(photo_engine) is not str or photo_engine not in ('legacy','native_v12','distal_v13'):
-        raise ValueError('photo_engine_must_be_legacy_native_v12_or_distal_v13')
+    if type(photo_engine) is not str or photo_engine not in ('legacy','native_v12','distal_v13','pose_v14'):
+        raise ValueError('photo_engine_must_be_legacy_native_v12_distal_v13_or_pose_v14')
     if type(development_replay) is not bool:
         raise ValueError('development_replay_flag_must_be_boolean')
     if photo_engine=='legacy':
@@ -36,6 +36,8 @@ def validate_photo_options(photo_engine,photo_model,consumed_registry,developmen
         raise ValueError('native_v12_requires_photo_model_and_consumed_registry')
     elif photo_engine=='distal_v13' and (photo_model is not None or consumed_registry is None):
         raise ValueError('distal_v13_requires_registry_and_forbids_learned_photo_model')
+    elif photo_engine=='pose_v14' and (photo_model is not None or consumed_registry is None):
+        raise ValueError('pose_v14_requires_registry_and_forbids_learned_photo_model')
     for value in (photo_model,consumed_registry):
         if value is not None and (not isinstance(value,(str,os.PathLike)) or not str(value).strip()):
             raise ValueError('experimental_photo_paths_must_be_nonempty_paths')
@@ -46,8 +48,10 @@ def native_photo_result(source,output,photo_engine,photo_model,consumed_registry
     entrypoint_sha256=digest(Path(__file__))
     if photo_engine=='native_v12':
         from protect_photo_whole_pad_context_native_v1 import canonical_rgb,run
-    else:
+    elif photo_engine=='distal_v13':
         from protect_photo_distal_native_v1 import canonical_rgb,run
+    else:
+        from protect_photo_pose_native_v1 import canonical_rgb,run
     rgb,identity=canonical_rgb(source)
     route=route_input(rgb)
     if route['input_type']!='PHOTO':return None
@@ -158,7 +162,7 @@ class JSONArgumentParser(argparse.ArgumentParser):
 
 if __name__=='__main__':
     p=JSONArgumentParser(description=__doc__);p.add_argument('--input',type=Path,required=True);p.add_argument('--output',type=Path);p.add_argument('--photo-semantics',type=Path);p.add_argument('--hand-model',type=Path);p.add_argument('--sam-checkpoint',type=Path);p.add_argument('--experimental-scanner-transform',action='store_true',help='compatibility alias: scanner transform is attempted by default');p.add_argument('--detect-only',action='store_true');p.add_argument('--strength',type=float,default=.5)
-    p.add_argument('--photo-engine',choices=['legacy','native_v12','distal_v13'],default='legacy')
+    p.add_argument('--photo-engine',choices=['legacy','native_v12','distal_v13','pose_v14'],default='legacy')
     p.add_argument('--photo-model',type=Path);p.add_argument('--consumed-registry',type=Path)
     p.add_argument('--development-replay',action='store_true',help='Explicit experimental consumed-photo retest, never independent evaluation.')
     a=p.parse_args();runtime=None

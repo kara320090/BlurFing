@@ -53,5 +53,11 @@ class LauncherPhotoEngineTests(unittest.TestCase):
                 result,arguments=self.call(extra);self.assertNotEqual(result.returncode,0)
                 self.assertIsNone(arguments);self.assertEqual(result.stdout,'')
 
+    def test_pose_CLI_transport_is_explicit_registry_only(self):
+        result,arguments=self.call(['-InputImage','photo.png','-OutputDirectory','fresh',
+            '-PhotoEngine','pose_v14','-ConsumedRegistry',str(self.registry)])
+        self.assertEqual(result.returncode,0,result.stderr)
+        self.assertEqual(arguments,['--input','photo.png','--output','fresh','--photo-engine','pose_v14','--consumed-registry',str(self.registry)])
+
 
 if __name__=='__main__':unittest.main()

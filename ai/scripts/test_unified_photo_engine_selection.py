@@ -42,7 +42,8 @@ class PhotoEngineTests(unittest.TestCase):
         return entry
 
     def invoke(self,engine,entry,**options):
-        module=('protect_photo_whole_pad_context_native_v1' if engine=='native_v12' else 'protect_photo_distal_native_v1')
+        module={'native_v12':'protect_photo_whole_pad_context_native_v1',
+            'distal_v13':'protect_photo_distal_native_v1','pose_v14':'protect_photo_pose_native_v1'}[engine]
         config=dict(photo_engine=engine,consumed_registry=self.registry)
         if engine=='native_v12':config['photo_model']=self.models
         config.update(options)
@@ -72,6 +73,21 @@ class PhotoEngineTests(unittest.TestCase):
         entry=self.fake_entry();_,result=self.invoke('native_v12',entry,development_replay=True)
         self.assertTrue(entry.run.call_args.kwargs['development_replay']);self.assertFalse(result['independent_final_test'])
 
+    def test_pose_is_explicit_registry_only_and_does_not_try_other_engines(self):
+        entry=self.fake_entry()
+        with patch.dict(sys.modules,{'protect_photo_whole_pad_context_native_v1':None,'protect_photo_distal_native_v1':None}):
+            _,result=self.invoke('pose_v14',entry)
+        self.assertEqual(entry.run.call_args.args,(self.source,self.registry,self.root/'output'))
+        self.assertEqual(result['photo_engine'],'pose_v14');self.assertFalse(result['V6_learned_pad_model_used'])
+        self.assertFalse(result['privacy_validated']);self.assertEqual(result['status'],'partial_success')
+        self.assertFalse(entry.run.call_args.kwargs['development_replay'])
+
+    def test_pose_failure_cannot_fall_back_to_learned_or_distal_rendering(self):
+        entry=self.fake_entry();entry.run.side_effect=RuntimeError('pose_runtime_missing')
+        with patch.dict(sys.modules,{'protect_photo_whole_pad_context_native_v1':None,'protect_photo_distal_native_v1':None}),self.assertRaisesRegex(RuntimeError,'pose_runtime_missing'):
+            self.invoke('pose_v14',entry)
+        self.assertEqual(entry.run.call_count,1)
+
     def test_detect_only_and_zero_strength_are_forwarded(self):
         for options in (dict(detect_only=True),dict(strength=0.)):
             with self.subTest(options=options):
@@ -93,8 +109,9 @@ class PhotoEngineTests(unittest.TestCase):
 
     def test_missing_config_wrong_types_and_implicit_options_rejected_before_decode(self):
         cases=[dict(photo_engine='bad'),dict(photo_engine=True),dict(development_replay=1),
-            dict(photo_engine='native_v12'),dict(photo_engine='distal_v13'),
+            dict(photo_engine='native_v12'),dict(photo_engine='distal_v13'),dict(photo_engine='pose_v14'),
             dict(photo_engine='distal_v13',photo_model='model',consumed_registry='registry'),
+            dict(photo_engine='pose_v14',photo_model='model',consumed_registry='registry'),
             dict(photo_engine='native_v12',photo_model=True,consumed_registry='registry'),
             dict(photo_engine='native_v12',photo_model='model',consumed_registry=''),
             dict(photo_model='model'),dict(development_replay=True),dict(detect_only=1)]

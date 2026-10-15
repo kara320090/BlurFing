@@ -5,6 +5,12 @@
 ## 담당 범위
 BlurFing 지문 변환 알고리즘 및 NBIS / SourceAFIS 기반 검증 파트.
 
+## 2026-10-16 PHOTO 추가 검증
+
+통합 CLI/API·Windows GUI에서 `native_v12`(V6 학습 마스크), `distal_v13`(기존 말단 기하), `pose_v14`(관측한 한 손 자세)를 명시적으로 선택할 수 있습니다. [설정 방법](docs/PHOTO_EXPLICIT_ENGINE_INTEGRATION.md), [Windows 실제 처리·저장 검증](docs/PHOTO_DESKTOP_VALIDATION_20261016.md), [자세 실험 및 한계](docs/PHOTO_POSE_NATIVE_V14.md)를 참고하세요. 기본 엔진은 그대로이며 세 실험 모두 보호 성능 승인 전입니다.
+
+최신 Windows 자동 검사는 AI 606개·GUI 17개가 통과했습니다. 새 자세 경로의 실제 fresh 처리 결과도 고정 진단 RGB와 exact 일치했습니다. 기존 촬영의 추가 사진 7장은 독립 평가 자료가 아니며, 미처리 손가락과 지문 간격 관측 실패가 남습니다. 아래 기존 10-case 플랫폼 동등성 기록은 그 당시의 기본 파이프라인 범위이며, 새 V12/V14의 Linux 동등성을 의미하지 않습니다.
+
 ## 고정 기준 구성
 렌더러: natural_auto_04. 합성기: boundaryblend_02. 지문 매칭 엔진: NBIS 5.0.0 / SourceAFIS 3.18.1.
 공통 알고리즘은 scripts/ 아래 한 벌입니다. 플랫폼별 차이는 실행 환경 경로, 프로세스, Java·네이티브 입출력 및 설치·빌드뿐입니다. 계산 파라미터와 구조 검사 기준은 유지합니다.

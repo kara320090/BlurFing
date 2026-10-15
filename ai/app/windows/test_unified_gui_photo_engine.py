@@ -41,6 +41,11 @@ class PhotoEngineGUI(unittest.TestCase):
         with patch.object(self.app,'job') as job,patch.object(unified_gui.messagebox,'showerror') as dialog:self.app.process()
         job.assert_not_called();dialog.assert_called_once()
 
+    def test_pose_selection_does_not_forward_stale_V6_model_and_warns_single_hand(self):
+        self.native();self.app.photo_engine.set('pose_v14');arguments=self.app.photo_arguments()
+        self.assertEqual(arguments,['--photo-engine','pose_v14','--consumed-registry','registry.json'])
+        self.assertNotIn('--photo-model',arguments);self.assertIn('one full hand',self.app.engine_notice())
+
     def test_configuration_change_invalidates_preview_and_save(self):
         self.app.job=lambda work,complete:complete(work())
         with patch.object(self.app,'execute',return_value=self.payload):self.app.process()
