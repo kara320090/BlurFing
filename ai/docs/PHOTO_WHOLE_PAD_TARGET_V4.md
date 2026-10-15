@@ -111,6 +111,8 @@ half-size. Bboxes are deduplicated, with at most 24 sequential observations.
 The body crop, halo, working raster, permission and all quality criteria remain
 unchanged. Actual body slices, including holes and raster edges, determine
 containment. No RGB, GT, pitch or renderer outcome selects the geometry.
+Unchanged numeric thresholds refer to detector and quality decisions, not an
+identical algorithm: observation positions, sizes and search budget change.
 
 This addresses a confirmed geometric limitation: every observation is resized
 to 512 pixels, so the unchanged 4--24 normalized pitch band represents different
@@ -191,6 +193,7 @@ foreground pixels 6.965% before augmentation. Source weighting does not balance
 foreground/background classes. Empty-target smoothed Dice can have high scalar
 loss despite background probabilities already being below the binary threshold;
 scalar loss is not evidence of pad accuracy. This is an improvement hypothesis,
-not proof of the sole cause. A future separately frozen objective could balance
-classes using train-fold statistics and distinguish positive-target Dice from
-empty-target BCE while preserving negative examples for nail/background errors.
+not proof of the sole cause. The separate V5 objective balances classes using
+train-fold statistics and distinguishes positive-target Dice from empty-target
+BCE while preserving negative examples for nail/background errors. Its results
+and adoption decision are reported separately.

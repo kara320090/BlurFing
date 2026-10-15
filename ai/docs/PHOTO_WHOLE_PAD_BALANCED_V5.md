@@ -58,3 +58,43 @@ legacy/new annotation policies. All results remain consumed development or
 training fit, not independent final validation. This loss cannot recover
 finger pixels outside observed body or establish anatomical ownership. Model
 and complete-photo protection approval remain false.
+
+## Completed group-development comparison
+
+V5 selects fold epochs 1, 3 and 3, giving three final epochs under the frozen
+median rule. OOF source-macro IoU is 0.527446 versus V4's 0.552743;
+equal-group macro IoU is 0.468405 versus 0.500480. Legacy GT10 is 0.344607
+versus 0.395225, and new whole-pad GT13 is 0.668092 versus 0.673910.
+OOF participates in developmental early stopping. The new-cohort fold trains
+only on legacy GT10, so its score does not measure learning from new labels.
+The balanced loss does not establish an improvement and is not adopted as the
+default. Final all-source fit and actual returned RGB are separate diagnostics.
+
+An independent completed-checkpoint audit recomputed every fold's class
+statistics from its training IDs, verified no heldout IDs enter those statistics,
+and matched the final all-23-source statistics. The epoch history, strict-best
+checkpoint hashes, protocol/code and final checkpoint hashes match. All 35
+trainable parameters actually changed; optimizer membership is complete and
+unique, while frozen encoder parameters and BatchNorm buffers remain identical
+to official initialization. The V5 loader rejects the actual V4 model folder.
+No checkpoint, gradient or final-epoch wiring fault was found.
+
+## Remaining context limitation
+
+The detector receives independent 256x256 RGB/coarse inputs made from native
+512-pixel body tiles. Finger axis, first crease, full finger context and global
+position are not explicit network inputs. Distal geometry is available only
+indirectly through the coarse channel; native probability merging is an average,
+not a learned model of relationships between tiles. Encoder pooling also stays
+inside each tile. V4 changes labels and V5 changes the objective; neither removes
+this limitation. In the new cohort, 16 of 20 eight-connected GT regions have a
+bbox side larger than 512 native pixels. This demonstrates a context constraint,
+not proof that it is the sole cause of poor coverage or that GT is incorrect.
+
+A separate future ablation can combine GT-free whole-finger/body context with
+the local detail stream, retaining this model and protocol as controls. Existing
+development annotations can support that experiment. Independent final testing
+still requires untouched, verifiably distinct acquisition groups after the
+model and preprocessing are fixed, with the same full-pad definition and
+nail/dorsal/background negatives. The consumed cohort must not be relabeled as
+an independent test.
