@@ -184,6 +184,7 @@ class MainActivity : ComponentActivity() {
                                 ScreenStep.IMAGE_PICKER -> {
                                     ImagePickerScreen(
                                         uiState = state,
+                                        onExperimentalPhoto = { startActivity(Intent(this@MainActivity, com.blurfing.app.experimental.ExperimentalPhotoActivity::class.java)) },
                                         onImageSelected = { uri ->
                                             cameraViewModel.clearError()
                                             viewModel.onImageSelected(uri, context)
@@ -278,6 +279,7 @@ class MainActivity : ComponentActivity() {
                         else -> {
                             ImagePickerScreen(
                                 uiState = state,
+                                onExperimentalPhoto = { startActivity(Intent(this@MainActivity, com.blurfing.app.experimental.ExperimentalPhotoActivity::class.java)) },
                                 onImageSelected = { uri ->
                                     cameraViewModel.clearError()
                                     viewModel.onImageSelected(uri, context)

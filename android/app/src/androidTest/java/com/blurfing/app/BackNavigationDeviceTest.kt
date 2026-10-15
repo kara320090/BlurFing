@@ -7,6 +7,10 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.espresso.Espresso.pressBack
+import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.action.ViewActions
+import androidx.test.espresso.matcher.RootMatchers.isDialog
+import androidx.test.espresso.matcher.ViewMatchers.isRoot
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.blurfing.app.model.ProcessingSettings
 import com.blurfing.app.viewmodel.BlurFingViewModel
@@ -91,7 +95,8 @@ class BackNavigationDeviceTest {
                 compose.onNodeWithText("계속 처리").performClick()
                 compose.runOnIdle { assertTrue((vm.uiState.value as UiState.Ready).isProcessing) }
                 pressBack()
-                pressBack() // Dismissing the dialog also keeps the request running.
+                compose.onNodeWithText("진행 중인 처리를 취소할까요?").assertIsDisplayed()
+                onView(isRoot()).inRoot(isDialog()).perform(ViewActions.pressBack()) // Wait for dialog focus, then send system Back.
                 compose.onNodeWithText("진행 중인 처리를 취소할까요?").assertDoesNotExist()
                 compose.runOnIdle { assertTrue((vm.uiState.value as UiState.Ready).isProcessing) }
                 pressBack()

@@ -30,7 +30,8 @@ fun ImagePickerScreen(
     onTakePhoto: () -> Unit,
     isCameraPending: Boolean = false,
     cameraError: String? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onExperimentalPhoto: (() -> Unit)? = null
 ) {
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -107,6 +108,7 @@ fun ImagePickerScreen(
                         ) {
                             Text("갤러리에서 사진 선택")
                         }
+                        onExperimentalPhoto?.let { open -> OutlinedButton(onClick=open,enabled=!isCameraPending) { Text("사진 AI 보호 실험 (미승인)") } }
                     }
                 }
 
@@ -153,6 +155,7 @@ fun ImagePickerScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        onExperimentalPhoto?.let { open -> OutlinedButton(onClick=open,enabled=!isCameraPending) { Text("별도 사진 AI 보호 실험 (미승인)") } }
 
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
