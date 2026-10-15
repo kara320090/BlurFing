@@ -57,6 +57,8 @@ enum class ScreenStep {
     COMPARISON
 }
 
+enum class BackNavigationResult { UNHANDLED, NAVIGATED, CONFIRM_PROCESSING_CANCEL }
+
 /**
  * UI State for BlurFing application workflow.
  */
@@ -254,6 +256,17 @@ open class BlurFingViewModel(
             val latest = _uiState.value as? UiState.Ready ?: return
             _uiState.value = latest.copy(step = step, processingError = null)
         }
+    }
+
+    /** System Back follows the screen buttons; an active request needs user confirmation. */
+    fun onBackRequested(): BackNavigationResult {
+        val current = _uiState.value as? UiState.Ready ?: return BackNavigationResult.UNHANDLED
+        if (current.isProcessing) return BackNavigationResult.CONFIRM_PROCESSING_CANCEL
+        when (current.step) {
+            ScreenStep.PROCESSING, ScreenStep.COMPARISON -> navigateToStep(ScreenStep.REGION_EDITOR)
+            ScreenStep.REGION_EDITOR, ScreenStep.IMAGE_PICKER -> resetToIdle()
+        }
+        return BackNavigationResult.NAVIGATED
     }
 
     // 영역 편집 (BF-03)
