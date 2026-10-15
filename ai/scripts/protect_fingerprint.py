@@ -23,8 +23,68 @@ def cli_progress_to_stderr():
         sys.stderr.flush();os.dup2(saved,out_fd);os.close(saved)
 
 
-def protect_fingerprint(source,output=None,photo_runtime=None,experimental_scanner=False,strength=.5,structure_guard=None,*,photo_semantics=None):
+def validate_photo_options(photo_engine,photo_model,consumed_registry,development_replay):
+    """Explicit experimental selection; optional runtimes stay lazy by default."""
+    if type(photo_engine) is not str or photo_engine not in ('legacy','native_v12','distal_v13'):
+        raise ValueError('photo_engine_must_be_legacy_native_v12_or_distal_v13')
+    if type(development_replay) is not bool:
+        raise ValueError('development_replay_flag_must_be_boolean')
+    if photo_engine=='legacy':
+        if photo_model is not None or consumed_registry is not None or development_replay:
+            raise ValueError('experimental_photo_options_require_explicit_engine')
+    elif photo_engine=='native_v12' and (photo_model is None or consumed_registry is None):
+        raise ValueError('native_v12_requires_photo_model_and_consumed_registry')
+    elif photo_engine=='distal_v13' and (photo_model is not None or consumed_registry is None):
+        raise ValueError('distal_v13_requires_registry_and_forbids_learned_photo_model')
+    for value in (photo_model,consumed_registry):
+        if value is not None and (not isinstance(value,(str,os.PathLike)) or not str(value).strip()):
+            raise ValueError('experimental_photo_paths_must_be_nonempty_paths')
+
+
+def native_photo_result(source,output,photo_engine,photo_model,consumed_registry,development_replay,*,photo_semantics,detect_only):
+    """Return None for non-PHOTO inputs; never replace scanner/default behavior."""
+    entrypoint_sha256=digest(Path(__file__))
+    if photo_engine=='native_v12':
+        from protect_photo_whole_pad_context_native_v1 import canonical_rgb,run
+    else:
+        from protect_photo_distal_native_v1 import canonical_rgb,run
+    rgb,identity=canonical_rgb(source)
+    route=route_input(rgb)
+    if route['input_type']!='PHOTO':return None
+    output=(Path(tempfile.mkdtemp(prefix='blurfing_native_frontend_'))/'result'
+            if output is None else Path(output))
+    arguments=([source,photo_model,consumed_registry,output] if photo_engine=='native_v12'
+               else [source,consumed_registry,output])
+    returned,photo=run(*arguments,photo_semantics=photo_semantics,
+        detect_only=detect_only,development_replay=development_replay)
+    if (digest(source)!=identity['original_source_sha256'] or
+            photo.get('input_identity',{}).get('original_source_sha256')!=identity['original_source_sha256']):
+        raise RuntimeError('photo_source_changed_between_routing_and_execution')
+    if not isinstance(returned,np.ndarray) or returned.dtype!=np.uint8 or returned.shape!=rgb.shape:
+        raise RuntimeError('photo_engine_returned_RGB_contract')
+    if digest(Path(__file__))!=entrypoint_sha256:raise RuntimeError('unified_photo_entrypoint_changed_during_run')
+    # The selected experiment owns source/mask/actual-return invariants. This adapter adds
+    # common transport fields without turning partial rejection into success.
+    result=photo|dict(schema_version='unified-fingerprint-v2',photo_engine=photo_engine,
+        input_type='photo',source_sha256=identity['original_source_sha256'],
+        image_width=rgb.shape[1],image_height=rgb.shape[0],
+        source_exif_orientation=identity['source_exif_orientation'],coordinate_system='encoded_original_pixels',
+        route=route,exterior_preserved=photo['RGB_outside_accepted_permission_preserved'],
+        independent_validation_complete=False,PHOTO_DETECTOR_APPROVED=False,
+        PHOTO_PROTECTION_PRODUCTION_READY=False,privacy_validated=False,unified_entrypoint_sha256=entrypoint_sha256)
+    (output/'result.json').write_text(json.dumps(result,indent=2),encoding='utf-8')
+    return returned,result
+
+
+def protect_fingerprint(source,output=None,photo_runtime=None,experimental_scanner=False,strength=.5,structure_guard=None,*,photo_semantics=None,photo_engine='legacy',photo_model=None,consumed_registry=None,development_replay=False):
     if isinstance(strength,bool) or strength not in (0.,.5):raise ValueError('strength must be 0 or 0.5')
+    validate_photo_options(photo_engine,photo_model,consumed_registry,development_replay)
+    if photo_engine!='legacy':
+        if photo_runtime is not None:raise ValueError('experimental_photo_engine_cannot_be_combined_with_hand_SAM_runtime')
+        if type(experimental_scanner) is not bool:raise ValueError('experimental_transform_flag_must_be_boolean')
+        native=native_photo_result(source,output,photo_engine,photo_model,consumed_registry,development_replay,
+            photo_semantics=photo_semantics,detect_only=not experimental_scanner or strength==0)
+        if native is not None:return native
     source=Path(source);sha=digest(source)
     with Image.open(source) as im:
         if im.mode not in ['RGB','L']:raise ValueError('only 8-bit RGB/L inputs supported; no implicit alpha/dynamic-range loss')
@@ -81,22 +141,30 @@ def protect_fingerprint(source,output=None,photo_runtime=None,experimental_scann
     result['fingerprints_rejected']=len(regions)-transformed;result['legacy_status']=result['status'];result['status']='success' if transformed and transformed==len(regions) else 'partial_success' if transformed else 'rejected'
     (output/'result.json').write_text(json.dumps(result,indent=2));return returned,result
 
-def protect_image(source,output=None,*,detect_only=False,strength=.5,photo_semantics=None):
+def protect_image(source,output=None,*,detect_only=False,strength=.5,photo_semantics=None,photo_engine='legacy',photo_model=None,consumed_registry=None,development_replay=False):
     """Complete routed API; legacy protect_fingerprint signature remains available."""
+    if type(detect_only) is not bool:raise ValueError('detect_only_flag_must_be_boolean')
     guard=None
     if not detect_only:
         from scanner_structure_guard import scanner_structure_guard
         guard=scanner_structure_guard
-    return protect_fingerprint(source,output,experimental_scanner=not detect_only,strength=strength,structure_guard=guard,photo_semantics=photo_semantics)
+    return protect_fingerprint(source,output,experimental_scanner=not detect_only,strength=strength,structure_guard=guard,
+        photo_semantics=photo_semantics,photo_engine=photo_engine,photo_model=photo_model,
+        consumed_registry=consumed_registry,development_replay=development_replay)
 
 class JSONArgumentParser(argparse.ArgumentParser):
     def error(self,message):
         self.print_usage(sys.stderr);print(json.dumps(dict(status='error',error='invalid_arguments')));raise SystemExit(2)
 
 if __name__=='__main__':
-    p=JSONArgumentParser(description=__doc__);p.add_argument('--input',type=Path,required=True);p.add_argument('--output',type=Path);p.add_argument('--photo-semantics',type=Path);p.add_argument('--hand-model',type=Path);p.add_argument('--sam-checkpoint',type=Path);p.add_argument('--experimental-scanner-transform',action='store_true',help='compatibility alias: scanner transform is attempted by default');p.add_argument('--detect-only',action='store_true');p.add_argument('--strength',type=float,default=.5);a=p.parse_args();runtime=None
+    p=JSONArgumentParser(description=__doc__);p.add_argument('--input',type=Path,required=True);p.add_argument('--output',type=Path);p.add_argument('--photo-semantics',type=Path);p.add_argument('--hand-model',type=Path);p.add_argument('--sam-checkpoint',type=Path);p.add_argument('--experimental-scanner-transform',action='store_true',help='compatibility alias: scanner transform is attempted by default');p.add_argument('--detect-only',action='store_true');p.add_argument('--strength',type=float,default=.5)
+    p.add_argument('--photo-engine',choices=['legacy','native_v12','distal_v13'],default='legacy')
+    p.add_argument('--photo-model',type=Path);p.add_argument('--consumed-registry',type=Path)
+    p.add_argument('--development-replay',action='store_true',help='Explicit experimental consumed-photo retest, never independent evaluation.')
+    a=p.parse_args();runtime=None
     runtime_error=None
     if bool(a.hand_model)!=bool(a.sam_checkpoint):p.error('both hand and SAM model paths are required')
+    if a.photo_engine!='legacy' and a.hand_model:p.error('experimental PHOTO engines cannot be combined with hand/SAM runtime')
     if a.hand_model and a.sam_checkpoint:
         try:
             with cli_progress_to_stderr():runtime=MediaPipeSAMRuntime(a.hand_model,a.sam_checkpoint)
@@ -106,10 +174,14 @@ if __name__=='__main__':
         if not a.detect_only:
             from scanner_structure_guard import scanner_structure_guard
             guard=scanner_structure_guard
-        with cli_progress_to_stderr():_,r=protect_fingerprint(a.input,a.output,runtime,not a.detect_only,a.strength,guard,photo_semantics=a.photo_semantics)
+        with cli_progress_to_stderr():_,r=protect_fingerprint(a.input,a.output,runtime,not a.detect_only,a.strength,guard,
+            photo_semantics=a.photo_semantics,photo_engine=a.photo_engine,photo_model=a.photo_model,
+            consumed_registry=a.consumed_registry,development_replay=a.development_replay)
         if runtime_error:r.setdefault('detection',{})['runtime_setup_error']=runtime_error
         print(json.dumps(r,indent=2))
     except Exception as exc:
-        print(json.dumps(dict(status='error',error=type(exc).__name__)));sys.exit(1)
+        error=dict(status='error',error=type(exc).__name__)
+        if a.photo_engine!='legacy':error['reason']=str(exc)
+        print(json.dumps(error));sys.exit(1)
     finally:
         if runtime is not None:runtime.close()

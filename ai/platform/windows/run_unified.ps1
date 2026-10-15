@@ -5,6 +5,10 @@ param(
     [string]$ColfispoofModel = $env:BLURFING_COLFISPOOF_MODEL,
     [string]$InputImage = "",
     [string]$OutputDirectory = "",
+    [ValidateSet('legacy','native_v12','distal_v13')][string]$PhotoEngine = 'legacy',
+    [string]$PhotoModel = "",
+    [string]$ConsumedRegistry = "",
+    [switch]$DevelopmentReplay,
     [switch]$Gui
 )
 $ErrorActionPreference = 'Stop'
@@ -23,10 +27,22 @@ if (@($workerValues | Where-Object { $_ }).Count -gt 0) {
     $env:BLURFING_COLFISPOOF_SOURCE = $ColfispoofSource
     $env:BLURFING_COLFISPOOF_MODEL = $ColfispoofModel
 }
+$photoArguments = @()
+if ($PhotoEngine -eq 'legacy') {
+    if ($PhotoModel -or $ConsumedRegistry -or $DevelopmentReplay) { throw 'Experimental PHOTO options require an explicit native_v12 or distal_v13 engine' }
+} else {
+    if (-not $ConsumedRegistry -or -not (Test-Path -LiteralPath $ConsumedRegistry -PathType Leaf)) { throw 'Experimental PHOTO engine requires a private consumed registry JSON' }
+    $photoArguments = @('--photo-engine',$PhotoEngine,'--consumed-registry',$ConsumedRegistry)
+    if ($PhotoEngine -eq 'native_v12') {
+        if (-not $PhotoModel -or -not (Test-Path -LiteralPath $PhotoModel -PathType Container)) { throw 'native_v12 requires a completed private V6 model folder' }
+        $photoArguments += @('--photo-model',$PhotoModel)
+    } elseif ($PhotoModel) { throw 'distal_v13 uses no learned pad model; do not supply PhotoModel' }
+    if ($DevelopmentReplay) { $photoArguments += '--development-replay' }
+}
 if ($Gui) {
-    & $CorePython (Join-Path $aiRoot 'app\windows\unified_gui.py')
+    & $CorePython (Join-Path $aiRoot 'app\windows\unified_gui.py') @photoArguments
 } else {
     if (-not $InputImage -or -not $OutputDirectory) { throw 'CLI requires InputImage and a fresh OutputDirectory' }
-    & $CorePython (Join-Path $aiRoot 'scripts\protect_fingerprint.py') --input $InputImage --output $OutputDirectory
+    & $CorePython (Join-Path $aiRoot 'scripts\protect_fingerprint.py') --input $InputImage --output $OutputDirectory @photoArguments
 }
 exit $LASTEXITCODE
