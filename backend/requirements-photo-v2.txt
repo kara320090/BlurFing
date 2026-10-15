@@ -1,0 +1,5 @@
+-r requirements.txt
+# This parser closes uploaded spool files for cancellation/receive errors too.
+fastapi>=0.141.1
+starlette>=1.6.0
+numpy

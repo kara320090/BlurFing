@@ -1,0 +1,317 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BlurFing photo-experimental-v2 response (unapproved experiment)",
+  "description": "Additional numeric, method/engine, pixel SHA, accepted/rejected/changed and display aggregate invariants are enforced in code. Bounding boxes are not permission masks.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "accepted_permission_mask",
+    "bounds_are_not_filled_permission",
+    "candidate_components",
+    "changed_RGB_pixels",
+    "complete_photo_protection_verified",
+    "contract_version",
+    "coordinate_system",
+    "evaluation",
+    "image_base64",
+    "image_height",
+    "image_width",
+    "independent_final_test",
+    "method",
+    "mime_type",
+    "photo_engine",
+    "privacy_validated",
+    "processing_ms",
+    "production_approved",
+    "region_display_bounds",
+    "rejected_components",
+    "rejected_permission_mask",
+    "request_id",
+    "result_kind",
+    "returned_RGB_sha256",
+    "source_RGB_sha256",
+    "source_exif_orientation",
+    "source_sha256",
+    "status",
+    "transformed_components",
+    "warnings"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "photo-experimental-v2"
+    },
+    "request_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,199}$"
+    },
+    "result_kind": {
+      "const": "experimental"
+    },
+    "method": {
+      "enum": [
+        "photo_native_v12_experimental",
+        "photo_distal_v13_geometry_experimental",
+        "photo_pose_v14_geometry_experimental"
+      ]
+    },
+    "photo_engine": {
+      "enum": [
+        "native_v12",
+        "distal_v13",
+        "pose_v14"
+      ]
+    },
+    "status": {
+      "enum": [
+        "success",
+        "partial_success",
+        "rejected"
+      ]
+    },
+    "image_base64": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 20971520,
+      "contentEncoding": "base64",
+      "contentMediaType": "image/png"
+    },
+    "mime_type": {
+      "const": "image/png"
+    },
+    "image_width": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20000000
+    },
+    "image_height": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20000000
+    },
+    "source_exif_orientation": {
+      "type": "integer",
+      "const": 1
+    },
+    "coordinate_system": {
+      "const": "encoded_original_pixels"
+    },
+    "source_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "source_RGB_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "returned_RGB_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "candidate_components": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 256
+    },
+    "transformed_components": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 256
+    },
+    "rejected_components": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 256
+    },
+    "changed_RGB_pixels": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 20000000
+    },
+    "accepted_permission_mask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "boolean_pixel_sha256",
+        "encoding",
+        "image_base64",
+        "pixels",
+        "png_sha256"
+      ],
+      "properties": {
+        "encoding": {
+          "const": "png_uint8_0_255"
+        },
+        "image_base64": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20971520,
+          "contentEncoding": "base64",
+          "contentMediaType": "image/png"
+        },
+        "png_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "boolean_pixel_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "pixels": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20000000
+        }
+      }
+    },
+    "rejected_permission_mask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "boolean_pixel_sha256",
+        "encoding",
+        "image_base64",
+        "pixels",
+        "png_sha256"
+      ],
+      "properties": {
+        "encoding": {
+          "const": "png_uint8_0_255"
+        },
+        "image_base64": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20971520,
+          "contentEncoding": "base64",
+          "contentMediaType": "image/png"
+        },
+        "png_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "boolean_pixel_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "pixels": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20000000
+        }
+      }
+    },
+    "region_display_bounds": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "bounds_are_not_filled_permission",
+          "changed_RGB_pixels",
+          "height",
+          "mask_pixels",
+          "permission_boolean_sha256",
+          "reason_code",
+          "region_id",
+          "status",
+          "width",
+          "x",
+          "y"
+        ],
+        "properties": {
+          "region_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "status": {
+            "enum": [
+              "transformed",
+              "rejected"
+            ]
+          },
+          "reason_code": {
+            "type": "string",
+            "pattern": "^(TRANSFORMED|REJECT_[A-Z0-9_]{1,80})$"
+          },
+          "mask_pixels": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20000000
+          },
+          "changed_RGB_pixels": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20000000
+          },
+          "permission_boolean_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "bounds_are_not_filled_permission": {
+            "const": true
+          },
+          "x": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "y": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "width": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1
+          },
+          "height": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1
+          }
+        }
+      }
+    },
+    "bounds_are_not_filled_permission": {
+      "const": true
+    },
+    "processing_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9223372036854775807
+    },
+    "warnings": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 5,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "EXPERIMENTAL_UNAPPROVED",
+          "UNDETECTED_FINGERPRINTS_POSSIBLE",
+          "COUNTS_ARE_PERMISSION_COMPONENTS_NOT_FINGERS",
+          "REJECTED_REGIONS_RETAIN_ORIGINAL_PIXELS",
+          "GEOMETRY_BOUNDARIES_REQUIRE_REVIEW_ACCURACY_REGRESSION_OBSERVED",
+          "POSE_GEOMETRY_BOUNDARIES_REQUIRE_REVIEW"
+        ]
+      }
+    },
+    "privacy_validated": {
+      "const": false
+    },
+    "production_approved": {
+      "const": false
+    },
+    "complete_photo_protection_verified": {
+      "const": false
+    },
+    "independent_final_test": {
+      "const": false
+    },
+    "evaluation": {
+      "type": "null"
+    }
+  }
+}

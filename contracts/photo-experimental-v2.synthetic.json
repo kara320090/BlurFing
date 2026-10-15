@@ -1,0 +1,76 @@
+{
+  "contract_version": "photo-experimental-v2",
+  "request_id": "synthetic-contract-example",
+  "result_kind": "experimental",
+  "method": "photo_native_v12_experimental",
+  "photo_engine": "native_v12",
+  "status": "partial_success",
+  "image_base64": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAMCAIAAADkharWAAAAGmVYSWZNTQAqAAAACAABARIAAwAAAAEAAQAAAAAAABPAdecAAAAiSURBVHicY6ysqPjPQAJgIkk1AwMDE4nqGUY1EAMGYSgBALY+A3/zMMgGAAAAAElFTkSuQmCC",
+  "mime_type": "image/png",
+  "image_width": 16,
+  "image_height": 12,
+  "source_exif_orientation": 1,
+  "coordinate_system": "encoded_original_pixels",
+  "source_sha256": "65002aee797ab6b1bc59185fa62895ccbc135b8696ef6be1959eb2b181b844be",
+  "source_RGB_sha256": "f88436cba79dda1b2a14526ccd64207bf698cf138134060060314a64044525ea",
+  "returned_RGB_sha256": "829d20931ef44c871d7209932a07d73e178e5a7d7d9b3cde3fe311343de0f023",
+  "candidate_components": 2,
+  "transformed_components": 1,
+  "rejected_components": 1,
+  "changed_RGB_pixels": 1,
+  "accepted_permission_mask": {
+    "encoding": "png_uint8_0_255",
+    "image_base64": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAMCAAAAABOjGJdAAAAGmVYSWZNTQAqAAAACAABARIAAwAAAAEAAQAAAAAAABPAdecAAAANSURBVHicY/jPMGwAAMsBAQAWSJneAAAAAElFTkSuQmCC",
+    "png_sha256": "8634005dd93480e8e12ebf073c77c028972d3e3d0b24fe13f0a96380d4ecad45",
+    "boolean_pixel_sha256": "fb4a52bdcb9e92103f57f6acc15101273855283935c9bbf8276d1c45ba1b27ba",
+    "pixels": 1
+  },
+  "rejected_permission_mask": {
+    "encoding": "png_uint8_0_255",
+    "image_base64": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAMCAAAAABOjGJdAAAAGmVYSWZNTQAqAAAACAABARIAAwAAAAEAAQAAAAAAABPAdecAAAANSURBVHicY2AYNuA/AAHLAQBNb1y+AAAAAElFTkSuQmCC",
+    "png_sha256": "d2f5dc957ded57489121358b1b37cd5193f2f5eb5daca4e5376308b285c03764",
+    "boolean_pixel_sha256": "57153b76f61c2badabeb23203d690a2fe5509e76d1196658af70b2daf62c1aec",
+    "pixels": 1
+  },
+  "region_display_bounds": [
+    {
+      "region_id": 1,
+      "status": "transformed",
+      "reason_code": "TRANSFORMED",
+      "mask_pixels": 1,
+      "changed_RGB_pixels": 1,
+      "permission_boolean_sha256": "fb4a52bdcb9e92103f57f6acc15101273855283935c9bbf8276d1c45ba1b27ba",
+      "x": 0.0,
+      "y": 0.0,
+      "width": 0.0625,
+      "height": 0.08333333333333333,
+      "bounds_are_not_filled_permission": true
+    },
+    {
+      "region_id": 2,
+      "status": "rejected",
+      "reason_code": "REJECT_PITCH_UNOBSERVED",
+      "mask_pixels": 1,
+      "changed_RGB_pixels": 0,
+      "permission_boolean_sha256": "57153b76f61c2badabeb23203d690a2fe5509e76d1196658af70b2daf62c1aec",
+      "x": 0.9375,
+      "y": 0.9166666666666666,
+      "width": 0.0625,
+      "height": 0.08333333333333333,
+      "bounds_are_not_filled_permission": true
+    }
+  ],
+  "bounds_are_not_filled_permission": true,
+  "processing_ms": 7,
+  "warnings": [
+    "EXPERIMENTAL_UNAPPROVED",
+    "UNDETECTED_FINGERPRINTS_POSSIBLE",
+    "COUNTS_ARE_PERMISSION_COMPONENTS_NOT_FINGERS",
+    "REJECTED_REGIONS_RETAIN_ORIGINAL_PIXELS"
+  ],
+  "privacy_validated": false,
+  "production_approved": false,
+  "complete_photo_protection_verified": false,
+  "independent_final_test": false,
+  "evaluation": null
+}
