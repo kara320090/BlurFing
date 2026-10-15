@@ -113,6 +113,8 @@ Use `scripts/protect_fingerprint.py --input /path/to/image --output /path/to/new
 
 [방향 잡음 분리 간격 관측 실험](docs/PHOTO_ORIENTATION_SEPARATED_PITCH_V1.md)은 V10의 간격 관측 실패 때만 방향 계산용 필터와 원본 주기 측정을 분리합니다. 문제 사진의 간격 관측은 회복했지만 후속 특징점 검사에서 거절되므로 실제 보호 완료로 보고하지 않습니다. 별도 `scripts/protect_photo_whole_pad_context_noise_v1.py`로 실행하며 V6 모델·기존 수치 기준·frozen 수학·기본 경로는 보존합니다.
 
+[최종 반환 RGB 판정 실험](docs/PHOTO_NATIVE_RETURN_DECISION_V1.md)은 중간 영상의 특징점 9개 때문에 006의 최종 이미지 검사가 생략되던 문제를 별도 V12 경로에서 해결합니다. 같은 후보를 원본 해상도로 복원한 뒤 기존 검사에서 13→12개로 통과하고 실제 변환본이 반환됐습니다. `scripts/protect_photo_whole_pad_context_native_v1.py`로 실행하며 V6 모델·수치 기준·렌더러 수학·기본 경로는 보존합니다. 기존 working/native 이중 판정과 동등한 정책은 아니며 독립 보호 성능은 미검증입니다.
+
 [PHOTO pad refinement 학습 준비](docs/PAD_REFINEMENT_TRAINING.md): 지정된 10개 annotation을 검증하고 coarse-guided crop 27개와 source 단위 5-fold 학습 코드를 준비했습니다. 학습과 최종 평가는 완료됐으나 GT7 IoU 0.4149, coverage 3/10으로 회귀하여 모델을 거절했습니다. 기본 inference에는 사용하지 않습니다.
 
 [Refinement 최종 학습·GT7 결과](results/pad_refinement_final_summary.md): pretrained encoder 확보 후 고정 5-fold와 최종 13 epoch 학습을 완료했습니다. GT7 macro IoU 0.4149, coverage 3/10으로 coarse baseline보다 나빠져 모델을 채택하지 않았습니다. 보호 변환에는 연결하지 않았으며 GT7을 보고 설정을 바꾸거나 재학습하지 않았습니다.
