@@ -3,14 +3,17 @@ import base64
 import io
 import json
 import os
+import socket
 import subprocess
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from threading import Event
+from threading import Event, Thread
 
+import httpx
 import pytest
+import uvicorn
 from fastapi.testclient import TestClient
 from PIL import Image
 
@@ -348,6 +351,94 @@ def test_cancellation_keeps_id_until_worker_finishes(monkeypatch, request_releas
     monkeypatch.setattr(app.state, "protection_processor", mock_processor)
     assert protect_request().status_code == 200
     assert protect_request(request_id="different-after-cancellation").status_code == 200
+
+
+@pytest.mark.parametrize("fail_after_disconnect", [False, True])
+def test_live_http_disconnect_keeps_capacity_until_worker_finishes(
+    monkeypatch, request_released, fail_after_disconnect
+):
+    started = Event()
+    finish = Event()
+
+    class ControlledMock(MockProcessor):
+        def __call__(self, *args):
+            if not started.is_set():
+                started.set()
+                if not finish.wait(timeout=10):
+                    raise RuntimeError("test worker did not resume")
+                if fail_after_disconnect:
+                    raise RuntimeError("synthetic failure after disconnect")
+            return super().__call__(*args)
+
+    monkeypatch.setattr(app.state, "protection_processor", ControlledMock())
+    monkeypatch.setattr(backend_main, "MAX_PENDING_PROCESSOR_REQUESTS", 1)
+    monkeypatch.setattr(backend_main, "PROCESSOR_TIMEOUT_SECONDS", 15.0)
+    # OS가 배정한 포트를 같은 소켓으로 Uvicorn에 전달해 포트 선점 경쟁을 피한다.
+    listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    listener.bind(("127.0.0.1", 0))
+    port = listener.getsockname()[1]
+    server = uvicorn.Server(uvicorn.Config(
+        app, host="127.0.0.1", port=port, lifespan="off", log_level="error",
+    ))
+    server_thread = Thread(target=server.run, kwargs={"sockets": [listener]}, daemon=True)
+    server_thread.start()
+    try:
+        deadline = time.monotonic() + 5
+        while not server.started and server_thread.is_alive() and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert server.started, "live HTTP server did not start"
+
+        with httpx.Client(base_url=f"http://127.0.0.1:{port}", timeout=2, trust_env=False) as live_client:
+            assert live_client.get("/").status_code == 200
+            assert live_client.get("/ready").json() == {"status": "ready"}
+            request = live_client.build_request(
+                "POST", "/v1/protect",
+                data={"request_id": "live-disconnect", "method": "gaussian_blur",
+                      "strength": "0.5", "regions": '[{"x":0,"y":0,"width":1,"height":1}]'},
+                files={"image": ("synthetic.png", synthetic_image(), "image/png")},
+            )
+            body = request.read()
+            headers = [(name, value) for name, value in request.headers.raw if name.lower() != b"connection"]
+            wire_request = (
+                b"POST /v1/protect HTTP/1.1\r\n"
+                + b"".join(name + b": " + value + b"\r\n" for name, value in headers)
+                + b"Connection: close\r\n\r\n" + body
+            )
+            # 완전한 multipart 요청을 보낸 뒤, 처리 시작을 확인하고 응답을 읽지 않은 채 TCP 연결을 닫는다.
+            with socket.create_connection(("127.0.0.1", port), timeout=2) as abandoned_connection:
+                abandoned_connection.sendall(wire_request)
+                assert started.wait(timeout=3), "processor did not start"
+
+            assert not request_released.is_set()
+            duplicate = protect_request(request_client=live_client, request_id="live-disconnect")
+            assert duplicate.status_code == 409
+            assert duplicate.json() == {
+                "request_id": "live-disconnect", "code": "REQUEST_IN_PROGRESS",
+                "message": "같은 request_id의 요청이 이미 처리 중입니다.", "retryable": True,
+            }
+            busy = protect_request(request_client=live_client, request_id="live-after-disconnect")
+            assert busy.status_code == 503
+            assert busy.json() == {
+                "request_id": "live-after-disconnect", "code": "SERVER_BUSY",
+                "message": "서버가 처리 중인 요청이 많습니다. 잠시 후 다시 시도해 주세요.", "retryable": True,
+            }
+            assert not request_released.is_set()
+
+            finish.set()
+            assert request_released.wait(timeout=3), "worker did not release its ID"
+            for request_id in ("live-disconnect", "live-after-disconnect"):
+                retried = protect_request(request_client=live_client, request_id=request_id)
+                assert retried.status_code == 200
+                assert retried.json()["request_id"] == request_id
+                assert retried.json()["status"] == "succeeded"
+                assert retried.json()["result_kind"] == "mock"
+                assert retried.json()["warnings"] == ["MOCK_NO_PROTECTION"]
+    finally:
+        finish.set()
+        server.should_exit = True
+        server_thread.join(timeout=5)
+        listener.close()
+        assert not server_thread.is_alive(), "live HTTP server did not stop"
 
 
 def test_capacity_counts_running_and_queued_jobs(monkeypatch):
