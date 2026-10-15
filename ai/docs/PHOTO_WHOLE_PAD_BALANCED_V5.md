@@ -70,6 +70,23 @@ only on legacy GT10, so its score does not measure learning from new labels.
 The balanced loss does not establish an improvement and is not adopted as the
 default. Final all-source fit and actual returned RGB are separate diagnostics.
 
+The completed final-model fit is 0.419923 source-macro IoU across all 23 sources,
+0.293393 for legacy GT10 and 0.517255 for new whole-pad GT13. Actual V10 returned
+RGB changes on 9/13 training-cohort photos. Permission, accepted and changed
+intersections with the full human GT cover 96.73%, 59.08% and 56.57% respectively.
+There are also 798,901 changed pixels outside human GT. These are annotation
+disagreements, not all independently certified nail/dorsal false positives;
+their large increase and the detector precision of 0.525203 prevent an improved
+model claim. All exterior/rejected-pixel and C-subset-A-subset-P checks pass.
+Such preservation does not establish anatomical correctness or privacy.
+
+The actual single-photo CLI reproduces the batch prediction and RGB exactly on
+one fixed cohort photo with source-bound cached semantics, original EXIF and
+GT-free inputs. A cached/common-forward comparison checks two sources.
+These are execution checks, not independent performance or security validation.
+Complete anonymous aggregates are in
+[the V5 status](PHOTO_WHOLE_PAD_BALANCED_V5_STATUS.json).
+
 An independent completed-checkpoint audit recomputed every fold's class
 statistics from its training IDs, verified no heldout IDs enter those statistics,
 and matched the final all-23-source statistics. The epoch history, strict-best
@@ -78,6 +95,14 @@ trainable parameters actually changed; optimizer membership is complete and
 unique, while frozen encoder parameters and BatchNorm buffers remain identical
 to official initialization. The V5 loader rejects the actual V4 model folder.
 No checkpoint, gradient or final-epoch wiring fault was found.
+
+The source-weight audit also found no implementation error. The legacy ten
+sources supply 295 tiles and the new thirteen supply 362. Final tile weights
+range from 0.583 to 1.904 and average one; their full-epoch objective is exactly
+the average of per-source tile means. Equal objective weights do not guarantee
+equal parameter influence in each shuffled AdamW step. The median-epoch rule
+also gives different final update budgets: V4 uses 1,980 steps and V5 uses 495.
+This is a protocol limitation, not a demonstrated weighting or checkpoint bug.
 
 ## Remaining context limitation
 
@@ -98,3 +123,16 @@ still requires untouched, verifiably distinct acquisition groups after the
 model and preprocessing are fixed, with the same full-pad definition and
 nail/dorsal/background negatives. The consumed cohort must not be relabeled as
 an independent test.
+
+An additional consumed-development comparison checks the existing coarse prior.
+On the new 13, coarse macro IoU/precision/recall are 0.66662/0.89373/0.73045;
+intersecting V5 with coarse gives 0.66744/0.89497/0.73044. This removes 2,698,482
+predicted pixels outside GT but also 1,034,902 correct GT pixels. Coarse covers
+only 69.62% of full GT by total area, so a hard coarse gate cannot recover the
+whole pad. It is retained as model context, not installed as a proposed fix.
+
+Legacy GT10 has an unspecified visible-pad boundary policy; only the new cohort
+is human-attested under the whole-pad-to-first-crease policy. The three aggregate
+development groups therefore do not constitute three independently certified
+whole-pad annotation cohorts. Additional consistent human annotation and distinct
+acquisition groups are needed to assess whole-pad generalization.

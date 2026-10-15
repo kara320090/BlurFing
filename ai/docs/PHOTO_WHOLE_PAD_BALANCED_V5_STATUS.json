@@ -1,0 +1,76 @@
+{
+  "version": "whole_pad_balanced_v5_development_20261015",
+  "human_reviewed_new_sources": 13,
+  "legacy_sources": 10,
+  "training_sources": 23,
+  "GT_free_native_body_tiles": 657,
+  "conservative_development_groups": 3,
+  "acquisition_and_person_independence_verified": false,
+  "independent_final_test": false,
+  "class_balance": {
+    "positive_fraction": 0.06964765564233256,
+    "positive_weight": 7.178992535910926,
+    "negative_weight": 0.537430794937384
+  },
+  "development_validation": {
+    "OOF_source_macro_iou": 0.527446201267159,
+    "equal_group_macro_iou": 0.4684052077724048,
+    "policy_macro_iou": {
+      "whole_visible_palmar_distal_pad_v1": 0.66809197416407,
+      "legacy_visible_pad_boundary_unspecified": 0.344606696501175
+    },
+    "best_epochs": [
+      1,
+      3,
+      3
+    ],
+    "final_epochs": 3,
+    "new_cohort_fold_training": "legacy ten only; new 13 used for developmental early stopping"
+  },
+  "final_model_training_fit": {
+    "source_macro_iou": 0.4199234599807604,
+    "policy_macro_iou": {
+      "whole_visible_palmar_distal_pad_v1": 0.5172545282491325,
+      "legacy_visible_pad_boundary_unspecified": 0.2933930712318768
+    },
+    "cached_forward_matches_common": true,
+    "cached_forward_real_sources_checked": 2
+  },
+  "final_model_actual_V10_protection": {
+    "sources": 13,
+    "sources_changed": 9,
+    "GT_pixels": 3817798,
+    "permission_GT_pixels": 3692850,
+    "accepted_GT_pixels": 2255466,
+    "changed_GT_pixels": 2159772,
+    "changed_outside_GT": 798901,
+    "macro_iou": 0.5172545282491325,
+    "macro_recall": 0.9733336235715867,
+    "macro_precision": 0.5252025975523534,
+    "precision_defined_sources": 13,
+    "permission_GT_fraction": 0.9672722338897972,
+    "accepted_GT_fraction": 0.590776672836017,
+    "changed_GT_fraction": 0.5657114388975006,
+    "all_preservation_checks_passed": true
+  },
+  "final_model_sha256": "b2965a036548e4400311182fcb72524113f929cd6fd3e9e20d13a5e7f1bcd903",
+  "actual_single_photo_CLI_verified": true,
+  "CLI_matches_batch_mask_and_RGB": true,
+  "CLI_GT_free": true,
+  "EXIF_and_original_source_preserved": true,
+  "full_AI_suite_tests_pass": 481,
+  "additional_photo_entry_tests_pass": 4,
+  "android_merge_unit_tests_pass": 136,
+  "android_merge_APK_build_pass": true,
+  "model_probability_calibrated": false,
+  "detector_decision_boundary_equivalent_to_V4": false,
+  "V5_model_adopted_as_improved_default": false,
+  "algorithm_numeric_thresholds_unchanged": true,
+  "observation_geometry_changed_explicitly": true,
+  "frozen_renderer_and_compositor_files_unchanged": true,
+  "PHOTO_DETECTOR_APPROVED": false,
+  "PHOTO_PROTECTION_PRODUCTION_READY": false,
+  "new_experiments_Linux_runtime_verified": false,
+  "private_inputs_and_weights_published": false,
+  "interpretation": "Consumed development and final training fit; changed RGB and candidate counts are not privacy/security proof."
+}
