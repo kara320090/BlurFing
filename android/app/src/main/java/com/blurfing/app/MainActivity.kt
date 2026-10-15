@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -40,6 +41,7 @@ import com.blurfing.app.ui.screens.ProcessingScreen
 import com.blurfing.app.ui.screens.RegionEditorScreen
 import com.blurfing.app.ui.theme.BlurFingTheme
 import com.blurfing.app.viewmodel.BlurFingViewModel
+import com.blurfing.app.viewmodel.BackNavigationResult
 import com.blurfing.app.viewmodel.CameraCaptureViewModel
 import com.blurfing.app.utils.CameraCaptureContract
 import com.blurfing.app.viewmodel.ScreenStep
@@ -69,6 +71,33 @@ class MainActivity : ComponentActivity() {
                     val processingSettings by viewModel.settings.collectAsState()
                     val backendReadiness by viewModel.readiness.collectAsState()
                     val context = LocalContext.current
+                    var showProcessingCancelConfirmation by rememberSaveable { mutableStateOf(false) }
+                    val isProcessing = (uiState as? UiState.Ready)?.isProcessing == true
+                    BackHandler(enabled = uiState is UiState.Ready) {
+                        showProcessingCancelConfirmation = viewModel.onBackRequested() ==
+                            BackNavigationResult.CONFIRM_PROCESSING_CANCEL
+                    }
+                    LaunchedEffect(isProcessing) {
+                        if (!isProcessing) showProcessingCancelConfirmation = false
+                    }
+                    if (showProcessingCancelConfirmation && isProcessing) {
+                        AlertDialog(
+                            onDismissRequest = { showProcessingCancelConfirmation = false },
+                            title = { Text("진행 중인 처리를 취소할까요?") },
+                            text = { Text("취소해도 선택한 사진과 수정한 영역은 유지됩니다.") },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    showProcessingCancelConfirmation = false
+                                    viewModel.cancelProtection()
+                                }) { Text("처리 취소") }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showProcessingCancelConfirmation = false }) {
+                                    Text("계속 처리")
+                                }
+                            }
+                        )
+                    }
                     var pendingDiagnosticReport by rememberSaveable { mutableStateOf<String?>(null) }
                     val diagnosticLauncher = rememberLauncherForActivityResult(
                         ActivityResultContracts.CreateDocument("application/json")

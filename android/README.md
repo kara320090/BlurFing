@@ -81,6 +81,8 @@ SNS 사진 속 손가락 지문 노출을 줄이는 Android 보호 앱 프로젝
 
 ## 4. 검증 결과 및 구분
 
+2026-10-15: 시스템 뒤로가기와 처리 취소 확인을 연결했습니다. Android 단위 테스트 **136개**, 신규 `BackNavigationDeviceTest` 에뮬레이터 테스트 **3개** 및 debug·계측 APK 빌드가 통과했습니다. 초기 에뮬레이터 환경 문제와 재검증 결과는 [11번 검증 기록](../docs/worklogs/2026-10-15-이봉헌-android-back-navigation.md)에 구분해 기록했습니다. 아래 내용은 이전 기능별 검증 기록입니다.
+
 최종 추가 작업에서는 단위 테스트 107개, 에뮬레이터 UI 5개, 팀 백엔드 직접 연결 4개를 통과했습니다. [설정·복원](../docs/android-session-recovery.md), [비교·평가](../docs/android-comparison.md), [기기 검증](../docs/android-device-verification.md), [백엔드 연결 재현](../docs/android-live-backend-checks.md), [실행 기록과 남은 범위](../docs/worklogs/2026-09-28-이봉헌-android-preparation.md)를 확인하세요. 아래 91개 결과는 카메라 기능 추가 시점의 기록입니다.
 
 ### 기본 카메라 앱을 이용한 촬영 (BF-02)
@@ -138,3 +140,5 @@ Android 8·9에서는 저장 버튼을 누를 때 `WRITE_EXTERNAL_STORAGE`를 �
 [2026-09-27 사진 입력·MediaStore 저장 보완 및 검증](../docs/worklogs/2026-09-27-이봉헌-입출력보완.md)
 
 [2026-09-28 Android 8·9 저장 권한 및 오래된 권한 응답 처리](../docs/worklogs/2026-09-28-이봉헌.md)
+
+[시스템 뒤로가기와 처리 취소 확인](../docs/android-next-11-back-navigation.md): 설정·비교 화면에서 편집으로 돌아가고, 처리 중에는 취소 여부를 확인합니다. 편집 화면에서 첫 화면으로 돌아가면 편집 복원용 임시 사본을 정리합니다.
