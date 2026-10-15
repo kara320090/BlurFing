@@ -15,6 +15,7 @@ from photo_learned_pad_pipeline_v12 import evaluate_learned_mask,VERSION as GATE
 from photo_learned_pad_pipeline_v1 import pixel_hash,save_result
 import photo_region_pipeline_v1 as shared
 from protection_runtime_sources_v1 import capture_runtime_sources,assert_runtime_sources_unchanged
+from final_png_color_metadata_v1 import save_final_rgb_png
 
 VERSION='photo_distal_native_v13_experimental'
 PERMISSION='existing_COLFISPOOF_body_distal_v2'
@@ -100,7 +101,8 @@ def run(source,registry_path,output,*,photo_semantics=None,detect_only=False,dev
     report=results['rows'][0]
     with Image.open(private/'protection/INPUT/returned.png') as image:returned=np.asarray(image).copy()
     if pixel_hash(returned)!=report['returned_RGB_sha256']:raise RuntimeError('returned_RGB_hash_mismatch')
-    Image.fromarray(returned).save(output/'returned.png',exif=exif)
+    color_metadata=save_final_rgb_png(source,identity['original_source_sha256'],returned,output/'returned.png',identity['source_exif_orientation'])
+    report.update(**color_metadata)
     with Image.open(output/'returned.png') as image:
         if not np.array_equal(np.asarray(image),returned):raise RuntimeError('saved_RGB_roundtrip_mismatch')
     tiles.unchanged(source,identity['original_source_sha256']);tiles.unchanged(registry_path,registry_sha)

@@ -21,6 +21,7 @@ import photo_region_pipeline_v1 as shared
 from photo_consumed_replay_v1 import development_replay as replay_scope,consumed_roles
 import pad_refinement_tiles_v3 as tiles
 from protection_runtime_sources_v1 import capture_runtime_sources,assert_runtime_sources_unchanged
+from final_png_color_metadata_v1 import save_final_rgb_png
 
 VERSION='single_photo_whole_pad_context_native_v1_experimental'
 
@@ -126,7 +127,8 @@ def run(source,model,registry_path,output,*,photo_semantics=None,detect_only=Fal
     with Image.open(private/'protection/INPUT/returned.png') as image:returned=np.asarray(image).copy()
     # Decode/compare rather than copying a possibly unrelated cached file.
     if hashlib.sha256(returned.tobytes()).hexdigest()!=report['returned_RGB_sha256']:raise RuntimeError('returned_RGB_hash_mismatch')
-    Image.fromarray(returned).save(output/'returned.png',exif=exif)
+    color_metadata=save_final_rgb_png(source,identity['original_source_sha256'],returned,output/'returned.png',identity['source_exif_orientation'])
+    report.update(**color_metadata)
     with Image.open(output/'returned.png') as image:
         if not np.array_equal(np.asarray(image),returned):raise RuntimeError('saved_RGB_roundtrip_mismatch')
     unchanged(source,identity['original_source_sha256']);unchanged(registry_path,registry_sha)

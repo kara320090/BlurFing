@@ -4,6 +4,7 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog,messagebox
 from PIL import Image,ImageTk,ImageOps
+from color_preview_v1 import display_preview
 ROOT=Path(__file__).resolve().parents[2]
 class App:
     def __init__(self,root,*,photo_engine='legacy',photo_model=None,consumed_registry=None,development_replay=False):
@@ -86,7 +87,7 @@ class App:
             if generation!=self._generation or source!=self.source:return
             output=data['output_path']
             with Image.open(output) as image:
-                preview=ImageOps.exif_transpose(image);preview.thumbnail((900,550));photo=ImageTk.PhotoImage(preview)
+                preview=display_preview(image);photo=ImageTk.PhotoImage(preview)
             notice=' | geometry experiment: review boundaries' if engine in ('distal_v13','pose_v14') else ''
             self.output=output;self.photo=photo;self._output_generation=generation;self.text.delete('1.0','end');self.text.insert('end',json.dumps(data,indent=2));self.preview.config(image=self.photo);self.label.config(text=f"{engine} / {data['input_type']}: {data['status']} | candidate regions {data['fingerprints_detected']}, transformed {data['fingerprints_transformed']}, rejected {data['fingerprints_rejected']}"+notice);self.save_button.config(state='normal')
         self.job(lambda:self.execute('protect_fingerprint.py',['--input',source,'--output',folder,*photo_arguments]),complete)

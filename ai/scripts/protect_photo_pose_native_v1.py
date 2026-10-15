@@ -12,6 +12,7 @@ from pad_refinement_data_contract_v2 import digest,read_source_rgb
 from photo_consumed_replay_v1 import development_replay as replay_scope,consumed_roles
 from protect_photo_whole_pad_context_native_v1 import canonical_rgb
 from protection_runtime_sources_v1 import capture_runtime_sources,assert_runtime_sources_unchanged
+from final_png_color_metadata_v1 import save_final_rgb_png
 
 VERSION='single_photo_pose_native_v14_experimental'
 
@@ -101,7 +102,8 @@ def run(source,registry_path,output,*,photo_semantics=None,detect_only=False,dev
             (masks/'metadata.private.json').write_text(json.dumps(dict(axes=geometry['axes'],metadata=geometry['metadata']),indent=2),encoding='utf-8')
         tiles.unchanged(worker_path,record_sha);tiles.unchanged(manifest,manifest_sha);tiles.check_tiles(private/'dataset',view,'inference')
     if base.pixel_hash(returned)!=report['returned_RGB_sha256']:raise ValueError('returned_RGB_hash_mismatch')
-    Image.fromarray(returned).save(output/'returned.png',exif=exif)
+    color_metadata=save_final_rgb_png(source,identity['original_source_sha256'],returned,output/'returned.png',identity['source_exif_orientation'])
+    report.update(**color_metadata)
     with Image.open(output/'returned.png') as image:
         if image.mode!='RGB' or image.getexif().get(274,1)!=identity['source_exif_orientation'] or not np.array_equal(np.asarray(image),returned):
             raise ValueError('saved_RGB_EXIF_roundtrip_mismatch')
