@@ -18,13 +18,15 @@ from pad_refinement_data_contract_v2 import read_mask,native_shape
 from photo_learned_pad_pipeline_v1 import save_result,pixel_hash
 from photo_learned_pad_pipeline_v12 import evaluate_learned_mask,VERSION as PIPELINE_VERSION
 import photo_region_pipeline_v1 as shared
+from photo_consumed_replay_v1 import development_replay as replay_scope,consumed_roles
+import pad_refinement_tiles_v3 as tiles
 
 VERSION='single_photo_whole_pad_context_native_v1_experimental'
 
 
 def protection_code_hashes():
     code=legacy_code_hashes()
-    for name in ['photo_orientation_separated_pitch_v1.py','photo_learned_pad_pipeline_v11.py','photo_native_return_decision_v1.py','photo_learned_pad_pipeline_v12.py',Path(__file__).name]:
+    for name in ['photo_orientation_separated_pitch_v1.py','photo_learned_pad_pipeline_v11.py','photo_native_return_decision_v1.py','photo_learned_pad_pipeline_v12.py','photo_consumed_replay_v1.py',Path(__file__).name]:
         code[name]=digest(Path(__file__).with_name(name))
     return code
 
@@ -36,17 +38,21 @@ def protect_bundle(folder,root,output,detect_only=False):
     code=protection_code_hashes();predictions=infer(folder,root,output/'predictions')
     manifest,sha=json_snapshot(root/'manifest.input.private.json')
     if sha!=predictions['input_manifest_sha256']:raise ValueError('prediction_manifest_binding_mismatch')
+    replay=manifest.get('development_replay',False)
+    if type(replay) is not bool:raise ValueError('development_replay_flag_must_be_boolean')
+    usage=dict(development_replay=replay,data_role='development_replay' if replay else 'unverified_user_input',
+               independent_final_test=False)
     rows=[];indexed={r['source_id']:r for r in predictions['rows']}
     for source in manifest['sources']:
         sid=source['source_id'];path=output/'predictions'/(sid+'.png')
         mask=read_mask(path,indexed[sid]['prediction_sha256'],native_shape(source))
         returned,report=evaluate_learned_mask(source,mask,pixel_hash(mask),detect_only=detect_only)
-        report.update(model_sha256=predictions['model_sha256'],model_training_version=PROTOCOL['version'],GT_used=False)
+        report.update(model_sha256=predictions['model_sha256'],model_training_version=PROTOCOL['version'],GT_used=False,**usage)
         save_result(output/sid,returned,report);rows.append(report)
     unchanged(root/'manifest.input.private.json',sha);check_tiles(root,manifest,'inference')
     if protection_code_hashes()!=code:raise ValueError('context_protection_code_changed')
     report=dict(version=PIPELINE_VERSION,rows=rows,model_sha256=predictions['model_sha256'],
-        default_pipeline_enabled=False,approved_for_protection=False,independent_final_test=False)
+        default_pipeline_enabled=False,approved_for_protection=False,**usage)
     (output/'protection.private.json').write_text(json.dumps(report,indent=2),encoding='utf-8');return report
 
 def canonical_rgb(source):
@@ -68,14 +74,16 @@ def canonical_rgb(source):
         canonical_RGB_sha256=hashlib.sha256(rgb.tobytes()).hexdigest())
 
 
-def run(source,model,registry_path,output,*,photo_semantics=None,detect_only=False):
+def run(source,model,registry_path,output,*,photo_semantics=None,detect_only=False,development_replay=False):
     if type(detect_only) is not bool:raise ValueError('detect_only_flag_must_be_boolean')
+    if type(development_replay) is not bool:raise ValueError('development_replay_flag_must_be_boolean')
     source=Path(source);model=Path(model);output=Path(output);registry_path=Path(registry_path)
     if output.exists():raise FileExistsError('fresh_output_required')
     protection_hashes=protection_code_hashes()
     registry,registry_sha=json_snapshot(registry_path);validate_registry(registry)
-    # Existing consumed examples cannot silently become new evaluation data.
-    exclude_consumed(image_identity(source),registry)
+    # Strict by default; replay is explicit and never new evaluation data.
+    original_identity=image_identity(source)
+    if not development_replay:exclude_consumed(original_identity,registry)
     rgb,identity=canonical_rgb(source)
     if shared.route_input(rgb)['input_type']!='PHOTO':raise ValueError('experimental_photo_input_required')
     network,cfg=load_model(model);del network
@@ -90,16 +98,24 @@ def run(source,model,registry_path,output,*,photo_semantics=None,detect_only=Fal
     # Cached semantics belong to original encoded RGB/L source bytes. Keep
     # that original identity instead of relabelling a cache as canonical PNG.
     inference_source=source if photo_semantics is not None and identity['source_mode'] in ['RGB','L'] else canonical
-    if photo_semantics is None:
-        photo_semantics=private/'semantics'
-        command=[config[0],str(Path(__file__).with_name('colfispoof_body_semantics.py')),'--input',str(inference_source.resolve()),
-            '--output',str(photo_semantics.resolve()),'--external-source',config[1],'--model',config[2]]
-        subprocess.run(command,shell=False,check=True,timeout=300,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
-    shared.load_semantics(inference_source,rgb,photo_semantics)
-    inputs=[dict(source_id='INPUT',source_path=str(inference_source.resolve()),source_sha256=digest(inference_source),
-                 semantics=str(Path(photo_semantics).resolve()),acquisition_group='unknown',group_provenance='user_input_unverified')]
-    prepare(inputs,registry,private/'dataset',purpose='inference')
-    results=protect_bundle(model,private/'dataset',private/'protection',detect_only)
+    canonical_identity=image_identity(canonical)
+    roles=sorted(set(consumed_roles(original_identity,registry)+consumed_roles(canonical_identity,registry)))
+    usage=dict(development_replay=development_replay,data_role='development_replay' if development_replay else 'unverified_user_input',
+               consumed_source_detected=bool(roles),consumed_registry_roles=roles,independent_final_test=False)
+    with replay_scope(registry,[original_identity,canonical_identity],enabled=development_replay):
+        tiles.exclude_consumed(original_identity,registry);tiles.exclude_consumed(canonical_identity,registry)
+        if photo_semantics is None:
+            photo_semantics=private/'semantics'
+            command=[config[0],str(Path(__file__).with_name('colfispoof_body_semantics.py')),'--input',str(inference_source.resolve()),
+                '--output',str(photo_semantics.resolve()),'--external-source',config[1],'--model',config[2]]
+            subprocess.run(command,shell=False,check=True,timeout=300,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
+        shared.load_semantics(inference_source,rgb,photo_semantics)
+        inputs=[dict(source_id='INPUT',source_path=str(inference_source.resolve()),source_sha256=digest(inference_source),
+                     semantics=str(Path(photo_semantics).resolve()),acquisition_group='unknown',group_provenance='user_input_unverified')]
+        view=prepare(inputs,registry,private/'dataset',purpose='inference')
+        view.update(**usage)
+        (private/'dataset/manifest.input.private.json').write_text(json.dumps(view,indent=2),encoding='utf-8')
+        results=protect_bundle(model,private/'dataset',private/'protection',detect_only)
     report=results['rows'][0]
     with Image.open(private/'protection/INPUT/returned.png') as image:returned=np.asarray(image).copy()
     # Decode/compare rather than copying a possibly unrelated cached file.
@@ -112,7 +128,7 @@ def run(source,model,registry_path,output,*,photo_semantics=None,detect_only=Fal
     report|=dict(single_photo_entrypoint=VERSION,input_type='photo',input_identity=identity,
         output_path=str((output/'returned.png').resolve()),model_sha256=results['model_sha256'],
         protection_code_sha256=protection_hashes,
-        GT_used=False,privacy_validated=False,complete_photo_protection_verified=False,
+        GT_used=False,privacy_validated=False,complete_photo_protection_verified=False,**usage,
         model_probability_calibrated=False,detector_decision_boundary_equivalent_to_V4=False,
         experimental_global_context=True,experimental_multiscale_observation=True,experimental_component_local_gate=True,
         experimental_orientation_noise_fallback=True,legacy_V10_observations_preferred=True,
@@ -129,10 +145,11 @@ if __name__=='__main__':
     p.add_argument('--model',type=Path,required=True);p.add_argument('--consumed-registry',type=Path,required=True)
     p.add_argument('--output',type=Path,required=True);p.add_argument('--photo-semantics',type=Path)
     p.add_argument('--detect-only',action='store_true')
+    p.add_argument('--development-replay',action='store_true',help='Allow exact consumed input for development retesting; never independent evaluation.')
     a=p.parse_args()
     try:
         with cli_progress_to_stderr():_,result=run(a.input,a.model,a.consumed_registry,a.output,photo_semantics=a.photo_semantics,
-            detect_only=a.detect_only)
+            detect_only=a.detect_only,development_replay=a.development_replay)
         print(json.dumps(result,indent=2))
     except Exception as error:
         print(json.dumps(dict(status='error',error=type(error).__name__,reason=str(error))))

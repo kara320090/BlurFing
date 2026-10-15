@@ -17,6 +17,19 @@ class NativeDecisionInputContracts(unittest.TestCase):
     def test_invalid_detect_only_stops_both_entrypoints_before_IO(self):
         with self.assertRaisesRegex(ValueError,'must_be_boolean'):pipeline.run('unused','unused','unused','unused',detect_only='false')
         with self.assertRaisesRegex(ValueError,'must_be_boolean'):pipeline.protect_bundle('unused','unused','unused',detect_only='false')
+        with self.assertRaisesRegex(ValueError,'development_replay_flag_must_be_boolean'):
+            pipeline.run('unused','unused','unused','unused',development_replay='false')
+
+    def test_consumed_source_is_rejected_by_default_before_model_or_worker(self):
+        from test_pad_refinement_tiles_v3 import TileFixture
+        fixture=TileFixture();fixture.setUp();self.addCleanup(fixture.doCleanups)
+        source=Path(fixture.inputs[0]['source_path']);fixture.registry[0].update(pipeline.image_identity(source))
+        registry=fixture.root/'registry.json';registry.write_text(json.dumps(fixture.registry))
+        output=fixture.root/'result'
+        with patch.object(pipeline,'load_model') as model,patch.object(pipeline.subprocess,'run') as worker:
+            with self.assertRaisesRegex(ValueError,'consumed_source_or_decoded_pixels_forbidden'):
+                pipeline.run(source,fixture.root/'model',registry,output)
+        self.assertFalse(output.exists());model.assert_not_called();worker.assert_not_called()
 
     def test_bundle_calls_V12_on_bound_permission_and_retains_development_metadata(self):
         with tempfile.TemporaryDirectory() as tmp:

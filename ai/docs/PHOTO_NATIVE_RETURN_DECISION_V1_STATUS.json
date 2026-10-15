@@ -44,7 +44,7 @@
     "final_feature_loss_or_extraction_failure_is_not_success": true
   },
   "verification": {
-    "AI_tests_passed": 529,
+    "AI_tests_passed": 539,
     "AI_failures": 0,
     "AI_errors": 0,
     "AI_skipped": 0,
@@ -66,7 +66,37 @@
     "previous_success_regions": 11,
     "independent_pixel_audit_passed": true,
     "independent_cohort_sources_checked": 13,
+    "strict_CLI_consumed_exclusion_preserved": true,
+    "explicit_development_replay_supported": true,
+    "replay_exact_original_and_canonical_identities_bound": true,
+    "replay_registry_unchanged": true,
+    "replay_other_threads_remain_strict": true,
+    "nested_replay_rejected": true,
+    "actual_CMD_consumed_photo_replay_saved_output": true,
+    "actual_CMD_replay_006_RGB_identical": true,
+    "replay_results_labeled_nonindependent": true,
     "new_Linux_runtime_executed": false
+  },
+  "actual_launcher_development_retests": {
+    "consumed_GT7_photo": {
+      "process_exit_code": 0,
+      "status": "rejected",
+      "transformed_components": 0,
+      "rejected_components": 5,
+      "insufficient_features": 1,
+      "pitch_unobserved": 4,
+      "changed_RGB_pixels": 0,
+      "independent_final_test": false
+    },
+    "006": {
+      "process_exit_code": 0,
+      "status": "partial_success",
+      "transformed_components": 1,
+      "rejected_components": 1,
+      "changed_RGB_pixels": 219571,
+      "previous_V12_RGB_exact": true,
+      "independent_final_test": false
+    }
   },
   "same_model_training_fit_comparison": {
     "V11": {

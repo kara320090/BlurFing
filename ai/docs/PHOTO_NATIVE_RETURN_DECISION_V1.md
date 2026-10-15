@@ -70,9 +70,42 @@ binding. It preserves GT-free COLFISPOOF/model inference, RGB/L and explicit RGB
 canonicalization, source-bound semantics, encoded EXIF coordinates, fresh output
 and JSON stdout. This is opt-in, development-only and not production approved.
 
+### Repeating a previously evaluated photo
+
+The CLI remains strict by default: `consumed_source_or_decoded_pixels_forbidden`
+means that the source bytes or decoded appearance match a previously consumed
+GT7/holdout registry entry. This is an evaluation data safeguard, not a protection
+algorithm failure. For a deliberate development retest, append
+`--development-replay` to the command above. The local Windows Native Test
+launcher uses that explicit development mode; its `-StrictEvaluation` switch
+retains strict rejection.
+
+Replay binds the complete identity triples of the original file and the actual
+persisted canonical RGB PNG. A new scoped adapter calls the unchanged exclusion
+validator and permits only its exact consumed-input reason for those declared
+identities, the original registry hash and the owning process/thread. All other
+errors propagate. Other threads remain strict, enabled scopes cannot nest, and
+the original function is restored even on failure. RGB/L semantics caches remain
+bound to their original source bytes. No registry row, checkpoint metadata,
+training/input source, detector setting or renderer is edited.
+
+The GT-free input manifest and protection reports explicitly record
+`development_replay=true`, `data_role=development_replay` and
+`independent_final_test=false`. Matches record their consumed registry roles.
+Replay results cannot be counted as new independent performance evidence, even
+when a particular replay input does not match the exclusion registry.
+
+Actual Windows CMD runs verified both cases after this launcher fix. A consumed
+GT7 photo reached full inference/protection and saved its returned image, with
+all five components rejected (one insufficient features, four pitch unobserved)
+and zero changed pixels. This is successful execution, not successful protection.
+Source 006 returned a transformed component with 219,571 changed pixels and
+exact RGB equality to its previously verified V12 output. Both runs are labeled
+development replay; model, registry, input and EXIF bindings were preserved.
+
 ## Completed Windows development checks
 
-All 529 AI unit tests passed without failures, errors or skips. An actual fresh
+All 539 AI unit tests passed without failures, errors or skips. An actual fresh
 COLFISPOOF Windows launcher run with a Unicode/space JPEG path produced the same
 V6 mask and exactly the independently reconstructed fixed native candidate for
 006. EXIF 6 and source bytes were preserved. The actual 219,571 changed pixels
