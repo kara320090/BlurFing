@@ -14,9 +14,13 @@ VERSION='body_supported_observation_seeds_v1_experimental'
 MAX_SEEDS=8
 
 
-def seeds(mask,body):
+def _validate_masks(mask,body):
     if mask.dtype!=np.bool_ or body.dtype!=np.bool_ or mask.shape!=body.shape or mask.ndim!=2 or not mask.any() or np.any(mask&~body):
         raise ValueError('body_observation_mask_contract')
+
+
+def seeds(mask,body):
+    _validate_masks(mask,body)
     shared.validate_resize(*mask.shape,1.)
     distances=cv2.distanceTransform(np.pad(body.astype(np.uint8),1),cv2.DIST_L2,5)[1:-1,1:-1]
     labels,count=ndimage.label(mask);rows=[]
@@ -41,12 +45,22 @@ def seeds(mask,body):
 
 
 def prepare_region(rgb,gray,mask,body,orientation,source_sha,plan,association,*,_proposals=None,_width_preflight=False,_pitch_observer=None):
+    _validate_masks(mask,body)
     scale=plan['working_scale'];upright=shared.orient(rgb,orientation)
     shape,audit=shared.validate_resize(*upright.shape[:2],scale)
     axis=shared.orient_axis(association['axis_native_yx'],orientation,[shape[0]/upright.shape[0],shape[1]/upright.shape[1]])
     working=cv2.resize(upright,(shape[1],shape[0]),interpolation=cv2.INTER_AREA if scale<1 else cv2.INTER_CUBIC)
     working_mask=cv2.resize(shared.orient(mask.astype(np.uint8),orientation),(shape[1],shape[0]),interpolation=cv2.INTER_NEAREST)>0
     working_body=cv2.resize(shared.orient(body.astype(np.uint8),orientation),(shape[1],shape[0]),interpolation=cv2.INTER_NEAREST)>0
+    # A valid native fragment can vanish under nearest-neighbor downsampling.
+    # It has no observation support at this scale; retain its native permission
+    # for rejection/compositing instead of treating it as a malformed input.
+    if not working_mask.any():
+        return None,dict(working_scale=scale,working_shape=list(shape),axis_working_yx=axis,
+            actual_resize_yx=[shape[0]/upright.shape[0],shape[1]/upright.shape[1]],resize_audit=audit,
+            observation_policy=VERSION,observation_seed_attempts=[],permission_mask_expanded=False,
+            native_permission_pixels=int(mask.sum()),working_permission_pixels=0,
+            working_permission_empty_after_resize=True,reject_reason='body_supported_seed_unavailable')
     proposals=seeds(working_mask,working_body) if _proposals is None else _proposals(working_mask,working_body,mask.shape,orientation,shape,association)
     attempts=[];chosen=None;width_failure=False
     for proposal in proposals:

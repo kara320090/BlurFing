@@ -49,7 +49,9 @@ class RejectionResolutionTests(unittest.TestCase):
         args=self.fixture();args[-1]['regions'][1]['reason']='some_new_error'
         with self.assertRaisesRegex(ValueError,'normal_quality_rejection'):resolution.cover_rejected(*args)
         args=self.fixture();args[-1]['regions'][1]['error']='OSError'
-        with self.assertRaisesRegex(ValueError,'region_binding'):resolution.cover_rejected(*args)
+        args[-1]['regions'][1]['reason']='extractor_unavailable'
+        with self.assertRaisesRegex(ValueError,'processing_error: region 2: OSError: extractor_unavailable'):
+            resolution.cover_rejected(*args)
 
     def test_tampered_hashes_masks_and_fake_success_are_rejected(self):
         args=self.fixture();args[1][39,59]=0

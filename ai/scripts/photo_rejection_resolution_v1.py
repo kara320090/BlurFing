@@ -95,7 +95,10 @@ def cover_rejected(rgb, returned, permission, accepted, labels, report):
     applied = 0
     for row in rows:
         mask = labels == row['region_id']
-        if (row.get('error') or row['mask_pixels'] != int(mask.sum()) or
+        if row.get('error'):
+            raise ValueError('rejection_resolution_processing_error: region '
+                             + str(row['region_id']) + ': ' + str(row['error']) + ': ' + str(row.get('reason')))
+        if (row['mask_pixels'] != int(mask.sum()) or
                 row['mask_pixel_sha256'] != pixel_hash(mask)):
             raise ValueError('rejection_resolution_region_binding_mismatch')
         if row['status'] == 'transformed':

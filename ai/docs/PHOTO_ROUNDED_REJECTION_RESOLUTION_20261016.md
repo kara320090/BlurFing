@@ -35,3 +35,15 @@
 관련 단위/회귀 검사 **71개 통과**. 거절 원인 분류, 원본 화소를 바꾸어도 가림 영역에 노출되지 않는 성질, 잘못된 hash/마스크/거짓 성공 차단, runtime 오류를 가림으로 숨기지 않는 조건, 원본 및 EXIF 보존, 기존 V12와 둥근 검출 경로를 포함한다. 실제 SourceAFIS 작업의 `scores 0` 출력은 점수 비교 작업을 요청하지 않았다는 진행 로그이며 매칭 점수 0이라는 뜻이 아니다.
 
 로컬 비교: `outputs/rounded-rejection-resolution-20261016/comparison.html`. 진단은 `work/rounded-rejection-audit-20261016/`에 비공개로 보존했다. 자연스러운 무늬 변환의 적용률과 독립적인 지문 보호 성능은 아직 해결되지 않았으며 검정 가림 수로 대체해 보고하지 않는다.
+
+## 추가 사진에서 발견한 축소 경계 조건
+
+추가 입력의 유효한 3화소 permission 조각이 working scale 약 0.556의 nearest-neighbor 축소 후 0화소가 됐다. 관측 seed 함수가 빈 working mask를 잘못된 입력으로 처리하면서 `body_observation_mask_contract`가 발생했고, 보완본 검증에서는 이 오류가 `rejection_resolution_region_binding_mismatch`로 가려졌다. native permission 자체의 hash나 영역 분할이 틀린 사례는 아니었다.
+
+`photo_body_observation_seed_v1.prepare_region()`은 native mask 계약을 먼저 검사하고, 유효한 native 조각이 축소 후 비었을 때 기존 `body_supported_seed_unavailable` 사유로 반환한다. component 경로에서는 `component_local_seed_unavailable`이 된다. working/native 화소 수를 기록하며, 원래 permission은 삭제·팽창하지 않는다. 간격을 만들어 넣거나 scale을 강제로 바꾸지 않는다. 잘못된 native mask는 계속 계약 오류이며, 실제 runtime 오류도 보완 가림으로 숨기지 않는다. 보완본의 오류 메시지는 region ID와 원래 오류 사유를 전달하도록 구분했다.
+
+관련 회귀 검사 **95개 통과**. 8개 EXIF 방향에서 축소로 사라지는 합성 조각, native 입력 보존, 기존 미관측 사유 연결, 살아남은 조각의 기존 관측 경로, 잘못된 입력 및 runtime 오류 차단을 포함한다. 실제 실패 사진도 재실행해 3화소 조각이 오류 없이 거절되고 원래 좌표에서 보완 가림되는 것을 확인했다. frozen renderer, 보호 gate 수치와 모델 가중치는 변경하지 않았다.
+
+추가 사진 6장(JPG 3장, DNG에서 만든 RGB 사본 3장)을 검출부터 처리하고, 수정 후에는 hash-bound 검출 자료를 사용해 native 경로를 6장 모두 재실행했다. **무늬 변환 적용 사진 0/6, 별도 검정 가림 보완본 6/6**이며, 연결 후보 안 미처리 화소는 0이다. 최종 PNG를 다시 읽어 원본 파일 6개, permission 밖 RGB, native 결과 및 기존 마스크, EXIF/ICC, frozen 소스 4개의 보존을 확인했다. 작은 오검출 조각과 불규칙한 경계는 남아 있으며 검출 정확도나 일반 보호 성공률로 해석하지 않는다.
+
+DNG는 이번 비공개 실행에서 격리된 rawpy/LibRaw로 전체 해상도 sRGB PNG를 생성했다. JPEG 미리보기를 대신 사용하지 않았고, EXIF 표시 방향과 LibRaw의 자동 방향 결과를 픽셀로 대조했다. 원본 DNG는 보존했다. 이는 사진 준비 단계이며 기본 실행기의 DNG 지원을 추가한 것은 아니다. 로컬 결과와 오류 재현 자료는 `outputs/two-photo-folders-20261016/`에 보관하며, `comparison.html`은 재검증된 결과만 연결한다.
