@@ -21,12 +21,18 @@ def _source_metadata(source,expected_sha256):
     if digest(source)!=expected_sha256:raise ValueError('final_PNG_source_hash_mismatch')
     if icc is not None:
         if mode not in ('RGB','RGBA'):raise ValueError('source_ICC_to_final_RGB_mode_not_supported')
-        if (not isinstance(icc,bytes) or len(icc)<132 or int.from_bytes(icc[:4],'big')!=len(icc) or
+        if not isinstance(icc,bytes) or len(icc)<132:
+            raise ValueError('invalid_source_RGB_ICC_profile')
+        declared=int.from_bytes(icc[:4],'big')
+        # Some camera JPEG payloads append a few NUL bytes outside the declared
+        # profile. Validate only the declared profile; preserve the entire
+        # original payload in the PNG. Never accept truncation or nonzero data.
+        if (declared<132 or not 0<=len(icc)-declared<=3 or any(icc[declared:]) or
                 icc[36:40]!=b'acsp'):raise ValueError('invalid_source_RGB_ICC_profile')
         if icc[16:20]!=b'RGB ' or icc[20:24] not in (b'XYZ ',b'Lab '):
             raise ValueError('source_ICC_to_final_RGB_colorspace_not_supported')
         try:
-            profile=ImageCms.ImageCmsProfile(io.BytesIO(icc))
+            profile=ImageCms.ImageCmsProfile(io.BytesIO(icc[:declared]))
             if profile.profile.xcolor_space.strip()!='RGB':raise ValueError('ICC is not RGB')
             # Validate that this is an actual usable RGB source profile. Build
             # only; never apply a transform to source/model/returned samples.

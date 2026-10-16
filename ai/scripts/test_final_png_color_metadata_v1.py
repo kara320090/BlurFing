@@ -57,6 +57,29 @@ class FinalPNGContracts(unittest.TestCase):
             self.assertEqual(image.mode,'RGB');self.assertEqual(image.info['icc_profile'],self.profile);np.testing.assert_array_equal(np.asarray(image),expected)
         self.assertEqual(source.read_bytes(),before)
 
+    def test_bounded_zero_padding_preserves_payload_RGB_and_color_transform(self):
+        import io
+        plain=ImageCms.ImageCmsProfile(io.BytesIO(self.profile));target_profile=ImageCms.createProfile('sRGB')
+        expected=ImageCms.profileToProfile(Image.fromarray(self.rgb),plain,target_profile,outputMode='RGB')
+        for count in (1,2,3):
+            payload=self.profile+b'\x00'*count;source=self.source(icc=payload,orientation=6);before=source.read_bytes()
+            target=self.root/f'padded-{count}.png'
+            color.save_final_rgb_png(source,digest(source),self.rgb,target,6)
+            with Image.open(target) as image:
+                self.assertEqual(image.info['icc_profile'],payload)
+                self.assertEqual(image.getexif()[274],6)
+                np.testing.assert_array_equal(np.asarray(image),self.rgb)
+                display=ImageCms.profileToProfile(image,ImageCms.ImageCmsProfile(io.BytesIO(payload)),target_profile,outputMode='RGB')
+                np.testing.assert_array_equal(np.asarray(display),np.asarray(expected))
+            self.assertEqual(source.read_bytes(),before)
+
+    def test_truncated_nonzero_or_excessive_ICC_tail_stays_rejected(self):
+        for payload in (self.profile[:-1],self.profile+b'\x01',self.profile+b'\x00\x01',self.profile+b'\x00'*4):
+            source=self.source(icc=payload);target=self.root/'invalid-tail.png'
+            with self.assertRaisesRegex(ValueError,'invalid_source_RGB_ICC_profile'):
+                color.save_final_rgb_png(source,digest(source),self.rgb,target,1)
+            self.assertFalse(target.exists())
+
     def test_invalid_and_nonRGB_profiles_are_never_copied(self):
         gray_header=bytearray(self.profile);gray_header[16:20]=b'GRAY'
         for profile,reason in [(b'fake ICC','invalid_source'),(bytes(gray_header),'colorspace_not_supported')]:
