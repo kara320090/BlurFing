@@ -43,5 +43,30 @@ class ContextCheckpointContracts(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'must_be_boolean'): inference.protect_bundle('.', '.',out,detect_only='false')
             run.assert_not_called();self.assertFalse(out.exists())
 
+    def test_exact_audited_addition_loads_without_rewriting_training_record(self):
+        name='pad_refinement_data_contract_v2.py'
+        old={name:'aa45082f18f3b9e7d90364bb4f420e5f930de28c71961df95669f494cb693f37','model.py':'fixed'}
+        new=old|{name:'5d95e3fec9e5c47eeccecc2575ede5b342881aa46f4da6782279b31fd2757c1b'}
+        model=SimpleNamespace(context_encoder=torch.nn.Identity())
+        with tempfile.TemporaryDirectory() as tmp:
+            folder=Path(tmp);path=folder/'final_config.private.json'
+            cfg=self.config(model)|dict(source_code_sha256=old);path.write_text(json.dumps(cfg));before=path.read_bytes()
+            with patch.object(inference,'code_hashes',return_value=new),patch.object(inference,'load_checkpoint',return_value=model):
+                actual,read=inference.load_model(folder)
+            self.assertIs(actual,model);self.assertEqual(read,cfg);self.assertEqual(path.read_bytes(),before)
+            report=inference.checkpoint_source_compatibility(old,new)
+            self.assertEqual(report['mode'],'audited_additive_inference_validator')
+        for bad in [new|{name:'0'*64},new|{'model.py':'changed'},new|{'extra.py':'new'},{}]:
+            self.assertIsNone(inference.checkpoint_source_compatibility(old,bad))
+        self.assertIsNone(inference.checkpoint_source_compatibility(new,old))
+        self.assertIsNone(inference.checkpoint_source_compatibility(None,new))
+
+    def test_dependency_changed_during_checkpoint_load_rejected(self):
+        model=SimpleNamespace(context_encoder=torch.nn.Identity())
+        with tempfile.TemporaryDirectory() as tmp:
+            folder=Path(tmp);cfg=self.config(model);(folder/'final_config.private.json').write_text(json.dumps(cfg))
+            with patch.object(inference,'code_hashes',side_effect=[{'declared_code':'frozen'},{'declared_code':'changed'}]),patch.object(inference,'load_checkpoint',return_value=model):
+                with self.assertRaisesRegex(ValueError,'runtime_sources_changed_during_load'):inference.load_model(folder)
+
 
 if __name__=='__main__': unittest.main()

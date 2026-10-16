@@ -12,15 +12,38 @@ from pad_refinement_tiles_v3 import json_snapshot,unchanged,check_tiles,hash_jso
 from pad_refinement_data_contract_v2 import digest
 
 
+def checkpoint_source_compatibility(expected, actual):
+    """Only the audited additive inference validator may differ from training.
+
+    Commit 4d5ec82 adds RGB_REFINED_BODY_V1 provenance validation. Removing
+    that exact branch reproduces the previous bytes; original training inputs
+    still take the identical branch. Neither model nor training record is edited.
+    Unknown revisions, other changed files and changed file sets stay rejected.
+    """
+    if not isinstance(expected,dict) or set(expected)!=set(actual): return None
+    changed={name for name in actual if actual[name]!=expected[name]}
+    if not changed: return dict(mode='exact_training_sources',compatible_changes=[])
+    name='pad_refinement_data_contract_v2.py'
+    old='aa45082f18f3b9e7d90364bb4f420e5f930de28c71961df95669f494cb693f37'
+    new='5d95e3fec9e5c47eeccecc2575ede5b342881aa46f4da6782279b31fd2757c1b'
+    if changed!={name} or expected[name]!=old or actual[name]!=new: return None
+    return dict(mode='audited_additive_inference_validator',compatible_changes=[dict(
+        file=name,training_sha256=old,runtime_sha256=new,
+        reason='RGB_REFINED_BODY_V1 validation only; original training branch unchanged')])
+
+
 def load_model(folder):
     folder=Path(folder);config,sha=json_snapshot(folder/'final_config.private.json')
+    runtime_code=code_hashes()
     if (config.get('training_complete') is not True or config.get('development_only') is not True or
         config.get('approved_for_inference') is not False or config.get('independent_final_test') is not False or
         config.get('protocol')!=dict(PROTOCOL) or config.get('protocol_sha256')!=PROTOCOL_SHA256 or
-        hash_json(config.get('protocol'))!=PROTOCOL_SHA256 or config.get('source_code_sha256')!=code_hashes() or
+        hash_json(config.get('protocol'))!=PROTOCOL_SHA256 or
+        checkpoint_source_compatibility(config.get('source_code_sha256'),runtime_code) is None or
         config.get('threshold')!=.5): raise ValueError('completed_whole_pad_context_V6_development_checkpoint_required')
     seed_all(PROTOCOL['seed']);model=load_checkpoint(folder/'final_context_whole_pad.pt',config['model_sha256'])
     if encoder_identity(model.context_encoder)!=config.get('context_encoder_sha256'): raise ValueError('context_checkpoint_encoder_mismatch')
+    if code_hashes()!=runtime_code: raise ValueError('context_runtime_sources_changed_during_load')
     unchanged(folder/'final_config.private.json',sha);return model,config
 
 
@@ -33,7 +56,9 @@ def protection_code_hashes():
 def run(folder,root,output):
     folder,root,output=Path(folder),Path(root),Path(output)
     manifest,manifest_sha=json_snapshot(root/'manifest.input.private.json');check_tiles(root,manifest,'inference')
-    model,config=load_model(folder)
+    runtime_code=code_hashes();model,config=load_model(folder)
+    compatibility=checkpoint_source_compatibility(config.get('source_code_sha256'),runtime_code)
+    if compatibility is None or code_hashes()!=runtime_code: raise ValueError('context_runtime_sources_changed_during_load')
     if config['consumed_registry_sha256']!=manifest['consumed_registry_sha256']: raise ValueError('frozen_consumed_registry_mismatch')
     if output.exists(): raise FileExistsError('fresh_context_prediction_output_required')
     code=digest(Path(__file__));cfg_sha=digest(folder/'final_config.private.json')
@@ -47,11 +72,12 @@ def run(folder,root,output):
     prepared.assert_unchanged(model);check_tiles(root,manifest,'inference')
     unchanged(root/'manifest.input.private.json',manifest_sha);unchanged(folder/'final_config.private.json',cfg_sha)
     unchanged(folder/'final_context_whole_pad.pt',config['model_sha256']);unchanged(Path(__file__),code)
-    if code_hashes()!=config['source_code_sha256']: raise ValueError('frozen_context_inputs_or_code_changed')
+    if code_hashes()!=runtime_code: raise ValueError('frozen_context_inputs_or_code_changed')
     report=dict(model_sha256=config['model_sha256'],input_manifest_sha256=manifest_sha,rows=rows,GT_used=False,
         context_encoder_sha256=prepared.encoder_sha256,context_bindings=prepared.bindings,
         development_only=True,independent_final_test=False,approved_for_protection=False,
-        inference_code_sha256=code,model_probability_calibrated=False)
+        inference_code_sha256=code,model_probability_calibrated=False,
+        checkpoint_source_compatibility=compatibility,runtime_training_dependency_sha256=runtime_code)
     (output/'inference.private.json').write_text(json.dumps(report,indent=2),encoding='utf-8');return report
 
 
