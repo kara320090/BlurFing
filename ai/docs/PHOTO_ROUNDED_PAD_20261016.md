@@ -2,6 +2,8 @@
 
 2026-10-16. 사용자가 요청한 별도 검은 가림 경로이며 기존 V6 가중치, COLFISPOOF, frozen 보호 변환 수학, pitch/feature 판정값을 변경하지 않는다. 원본 사진·정답·모델·진단 이미지는 비공개 위치에 보존한다.
 
+후속 [실제 지문 보호 변환 연결과 검증](PHOTO_ROUNDED_NATIVE_20261016.md)은 별도 실행기 `BlurFing-Rounded-Protect.cmd`를 사용한다. 이 문서의 실행기는 검출 영역의 검정 가림 미리보기다.
+
 ## 원인과 처리
 
 보고된 전체 손 사진의 coarse 후보는 손가락 아래쪽과 손바닥 일부까지 이어진다. 실제 semantic BODY는 손가락들을 손바닥으로 연결하고, class-2 marker는 일부 손끝에서 누락되거나 조각난다. 기존 watershed owner 하나가 여러 손가락과 아래쪽 피부를 포함해 기준 폭과 중심축이 과대 추정됐다. 해당 owner의 작업 좌표 reference width는 약 144.35px였고 인접 정상 손가락 owner는 약 33.09px였다. 이 상태의 넓은 후보를 EdgeTAM dense prompt로 주면 잘못된 후보까지 충실히 채운다. 단순 closing/convex hull을 전체 합집합에 적용하면 이러한 연결을 악화시킬 수 있다.
