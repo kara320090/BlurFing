@@ -6,7 +6,7 @@ from photo_synthetic_replacement_v10 import render_core, material, normalize, sa
 from photo_synthetic_replacement_v7 import reconstructed_skin
 
 
-def crease_descriptors(pixels, base, u, v, width, length):
+def crease_descriptors(pixels, base, u, v, width, length, *, interior_only=False):
     """Trace long oblique grooves in unordered coarse RGB cell summaries.
 
     Only a small set of quadratic curves leaves this observer. These curves
@@ -23,13 +23,20 @@ def crease_descriptors(pixels, base, u, v, width, length):
         valid[y, x] = True
     meta = dict(method='long_oblique_coarse_median_quadratic_crease_descriptors', grid=[nx, ny],
         minimum_cell_support=32, maximum_source_statistics=nx*ny*3, maximum_curves=10,
-        retained_source_macro_structure=True, source_filtered_raster_exported=False, curves=[])
+        retained_source_macro_structure=True, source_filtered_raster_exported=False,
+        silhouette_adjacent_evidence_excluded=interior_only, curves=[])
     if nx < 6 or ny < 12 or valid.sum() < 24:
         return np.zeros(len(u)), meta | dict(reason='insufficient_coarse_support')
     nearest = ndimage.distance_transform_edt(~valid, return_distances=False, return_indices=True)
     data = data[tuple(nearest)]
     small = ndimage.gaussian_filter(data, (.48, .55), mode='nearest')
     residual = small-ndimage.gaussian_filter(small, (2.5, .6), mode='nearest')
+    admissible = valid
+    if interior_only:
+        # A groove needs interior support on both sides. Edge shading and
+        # truncated tip cells cannot establish a long anatomical skin crease.
+        inside = ndimage.distance_transform_edt(np.pad(valid, 1))[1:-1, 1:-1]
+        admissible = valid & (inside >= 2.)
     # Hough-like long-line proposals avoid assuming that folds are horizontal.
     xs = np.linspace(-.75, .75, max(9, nx))
     proposals = []
@@ -37,7 +44,7 @@ def crease_descriptors(pixels, base, u, v, width, length):
         for intercept in np.linspace(-.95, .95, ny*2):
             ys = intercept+slope*xs
             coords = np.array([(ys+1)*ny/2-.5, (xs+1)*nx/2-.5])
-            supported = ndimage.map_coordinates(valid.astype(float), coords, order=0, mode='constant', cval=0) > .5
+            supported = ndimage.map_coordinates(admissible.astype(float), coords, order=0, mode='constant', cval=0) > .5
             if supported.sum() < len(xs)*.75: continue
             scores = ndimage.map_coordinates(residual, coords, order=1, mode='nearest', prefilter=False)
             score = -float(np.mean(scores[supported]))
@@ -52,7 +59,7 @@ def crease_descriptors(pixels, base, u, v, width, length):
             col = int(np.clip((x+1)*nx/2, 0, nx-1))
             row = int(np.clip((expected+1)*ny/2, 0, ny-1))
             rows = np.arange(max(0, row-2), min(ny, row+3))
-            rows = rows[valid[rows, col]]
+            rows = rows[admissible[rows, col]]
             if not len(rows): continue
             r = rows[np.argmin(residual[rows, col])]
             if residual[r, col] < -.8: samples.append((x, (r+.5)*2/ny-1, -residual[r, col]))

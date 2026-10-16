@@ -80,7 +80,7 @@ def sample_style(stats, u, v):
         order=1, mode='nearest', prefilter=False) for k in range(stats.shape[2])])
 
 
-def material(local, u, v, width, length, seed, stats, base):
+def material(local, u, v, width, length, seed, stats, base, *, projection='plane'):
     """One shared independently generated relief surface at camera resolution."""
     scale = min(1., MAX_MATERIAL_DIMENSION/max(width, length))
     w, h = max(16, round(width*scale)), max(16, round(length*scale))
@@ -90,14 +90,23 @@ def material(local, u, v, width, length, seed, stats, base):
     def take(a):
         return ndimage.map_coordinates(a, sample, order=1, mode='nearest', prefilter=False)
     rng = np.random.default_rng(seed ^ 0xAB100)
+    if projection not in ('plane', 'dome'):
+        raise ValueError('unsupported_synthetic_material_projection')
     design_scale = 480/max(width, length)
+    if projection == 'dome':
+        # Do not magnify a tiny input into subpixel synthetic ridge periods.
+        design_scale = min(1., design_scale)
     pitch = float(np.clip(width*design_scale/rng.uniform(48., 65.), 4., 12.))
     canonical = np.ones((512, 512), bool)
     field, recipe = independent_photographic_field(canonical, pitch, seed)
     field, contrast, warp = independent_variation(field, pitch, seed)
     profile, profile_meta = render_photographic_profile(field, canonical, pitch, seed)
     # Project the same aspect-preserving synthetic field into the material.
-    coords = np.array([255.5+gv*length*.5*design_scale, 255.5+gu*width*.5*design_scale])
+    projected_u, projected_v = gu, gv
+    if projection == 'dome':
+        projected_u = np.arcsin(np.clip(gu*.94, -.94, .94))/np.arcsin(.94)
+        projected_v = gv*(1+.08*gu*gu)
+    coords = np.array([255.5+projected_v*length*.5*design_scale, 255.5+projected_u*width*.5*design_scale])
     ridge = ndimage.map_coordinates(profile, coords, order=3, mode='nearest', prefilter=True)
     modulation = ndimage.map_coordinates(contrast, coords, order=1, mode='nearest', prefilter=False)
     native_pitch = pitch/design_scale
@@ -148,6 +157,7 @@ def material(local, u, v, width, length, seed, stats, base):
     result = base+(relief[:, None]*np.array([1., .96, .92])+pigment[:, None]*[1., .60, .40])*fade[:, None]
     return result, dict(method='coupled_independent_ridges_pores_shallow_folds_camera_scale',
         latent_shape=[h, w], maximum_latent_dimension=MAX_MATERIAL_DIMENSION,
+        surface_projection=projection, design_scale=design_scale,
         synthetic_pattern=recipe['pattern'], field_recipe=recipe, deformation=warp,
         profile_recipe=profile_meta, synthetic_pitch_pixels=native_pitch, pitch_is_measured=False,
         fingerprint_texture_resolved=bool(width*design_scale >= 8 and len(u) >= 32),
