@@ -146,10 +146,14 @@ and feature gates are not reused to label black redaction.
 ## Verification and remaining evidence
 
 Windows: **705 AI tests passed**, including 12 new observer/redaction/entrypoint
-contracts. The isolated external-model environment passed `pip check`. The
-existing Linux synthetic workflow was extended to 40 focused tests; its actual
-run conclusion is recorded separately after pushing. Full model parity,
-independent accuracy and general privacy performance remain unverified.
+contracts. The isolated external-model environment passed `pip check`.
+Ubuntu Python 3.10 and 3.11 each passed the **48 synthetic reference checks and
+40 focused tests** at source commit `af5a49c2fb86769cac580f313e4888cf7059e97e`:
+[verified actual Linux run](https://github.com/kara320090/BlurFing/actions/runs/38837891743).
+The exact commit and both jobs' test-step conclusions were checked through the
+public GitHub API. The hosted jobs use no private photographs or model weights.
+Full model parity, independent accuracy and general privacy performance remain
+unverified.
 
 Next evidence is human-reviewed complete pad boundaries for the additional
 photos, independent capture groups and real spacing reference data. A new
