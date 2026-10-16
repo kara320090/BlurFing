@@ -28,7 +28,14 @@ def _array(path, shape, *, binary=False):
     return a
 
 
-def run(source, protection_run, output, *, seed=None):
+def run(source, protection_run, output, *, seed=None, renderer='v1'):
+    if renderer not in ('v1', 'v2', 'v3'):
+        raise ValueError('unsupported_synthetic_renderer')
+    render_selected = render
+    if renderer == 'v2':
+        from photo_synthetic_replacement_v2 import render as render_selected
+    elif renderer == 'v3':
+        from photo_synthetic_replacement_v3 import render as render_selected
     source, protection_run, output = map(Path, (source, protection_run, output))
     if output.exists() or output.is_symlink():
         raise FileExistsError('fresh_output_required')
@@ -52,7 +59,7 @@ def run(source, protection_run, output, *, seed=None):
     if not np.array_equal(fallback, verified_fallback):
         raise ValueError('synthetic_fallback_binding_mismatch')
     replacement_labels = np.where(fallback, labels, 0).astype(np.uint16)
-    synthetic, metadata = render(rgb, fallback, replacement_labels, seed=seed)
+    synthetic, metadata = render_selected(rgb, fallback, replacement_labels, seed=seed)
     synthetic[accepted] = native[accepted]
     if (not np.array_equal(synthetic[~permission], rgb[~permission]) or
             not np.array_equal(synthetic[accepted], native[accepted])):
@@ -68,7 +75,7 @@ def run(source, protection_run, output, *, seed=None):
             raise ValueError('synthetic_upstream_artifact_changed')
     if digest(source) != identity['original_source_sha256']:
         raise ValueError('synthetic_source_changed')
-    metadata.update(**color, input_identity=identity,
+    metadata.update(**color, input_identity=identity, synthetic_renderer=renderer,
         method='opaque_synthetic_texture_on_rejected_permission',
         cached_native_report_sha256=pins['result.private.json'],
         cached_native_status=report['status'],
@@ -95,10 +102,11 @@ if __name__ == '__main__':
     parser.add_argument('--protection-run', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--seed', type=int, help='Optional reproducibility seed; default uses fresh random seed.')
+    parser.add_argument('--renderer', choices=('v1', 'v2', 'v3'), default='v1')
     args = parser.parse_args()
     try:
         with cli_progress_to_stderr():
-            _, result = run(args.input, args.protection_run, args.output, seed=args.seed)
+            _, result = run(args.input, args.protection_run, args.output, seed=args.seed, renderer=args.renderer)
         print(json.dumps(result, indent=2))
     except Exception as error:
         print(json.dumps(dict(status='error', reason=str(error), error=type(error).__name__)))
