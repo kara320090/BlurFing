@@ -18,12 +18,13 @@ from photo_pitch_free_redaction_v1 import redact,pixel_hash
 VERSION='single_photo_pitch_free_v1_experimental'
 
 
-def run(source,model,registry_path,output,*,photo_semantics=None,development_replay=False,include_observed_pose=False,include_coarse_pad=False,complete_holes=False,allow_scanner=False):
+def run(source,model,registry_path,output,*,photo_semantics=None,development_replay=False,include_observed_pose=False,include_coarse_pad=False,complete_holes=False,allow_scanner=False,rounded_pads=False):
     if type(development_replay) is not bool:raise ValueError('development_replay_flag_must_be_boolean')
     if type(include_observed_pose) is not bool:raise ValueError('include_observed_pose_flag_must_be_boolean')
     if type(include_coarse_pad) is not bool:raise ValueError('include_coarse_pad_flag_must_be_boolean')
     if type(complete_holes) is not bool:raise ValueError('complete_holes_flag_must_be_boolean')
     if type(allow_scanner) is not bool:raise ValueError('allow_scanner_flag_must_be_boolean')
+    if type(rounded_pads) is not bool:raise ValueError('rounded_pads_flag_must_be_boolean')
     source,model,registry_path,output=map(Path,(source,model,registry_path,output))
     if output.exists() or output.is_symlink():raise FileExistsError('fresh_output_required')
     # Early contract checks and pure redaction tools do not require Torch.
@@ -74,7 +75,7 @@ def run(source,model,registry_path,output,*,photo_semantics=None,development_rep
     learned=mask.copy();body=read_body(record)
     coarse=read_mask(record['coarse_path'],record['coarse_sha256'],native_shape(record))
     tip=read_mask(record['tip_path'],record['tip_sha256'],native_shape(record))
-    detector_policy='V6_only';pose_metadata=None;coarse_metadata=None
+    detector_policy='V6_only';pose_metadata=None;coarse_metadata=None;pose_geometry=None
     if include_coarse_pad:
         from photo_isolated_coarse_completion_v1 import complete_isolated_pad
         mask,coarse_metadata=complete_isolated_pad(mask,coarse,body,tip)
@@ -93,6 +94,7 @@ def run(source,model,registry_path,output,*,photo_semantics=None,development_rep
             pose_metadata=dict(status=('no_single_observed_hand_base_mask_retained' if include_coarse_pad
                                        else 'no_single_observed_hand_V6_only'),reason=str(error))
         else:
+            pose_geometry=geometry
             pose=geometry['permission_labels']>0;added=int((pose&~mask).sum());mask=mask|pose
             pose_metadata=dict(status='unreviewed_pose_union',added_pixels=added,anatomical_boundary_verified=False)
         tiles.unchanged(worker,worker_sha)
@@ -103,18 +105,24 @@ def run(source,model,registry_path,output,*,photo_semantics=None,development_rep
     before_completion=mask.copy()
     mask,completion=complete_owner_holes(mask,coarse,body,tip,fill_holes=complete_holes)
     if complete_holes:detector_policy+='_owner_enclosed_holes'
+    before_rounding=mask.copy();rounding=None
+    if rounded_pads:
+        from photo_rounded_pad_v1 import rounded_pads as round_whole_pads
+        mask,rounding=round_whole_pads(mask,coarse,body,tip,pose_geometry=pose_geometry)
+        detector_policy+='_rounded_whole_pad_geometry'
     returned,report=redact(rgb,mask,pixel_hash(rgb),pixel_hash(mask))
     color=save_final_rgb_png(source,identity['original_source_sha256'],returned,output/'returned.png',identity['source_exif_orientation'])
     Image.fromarray(mask.astype(np.uint8)*255).save(output/'redacted_mask.png')
     from pitch_free_artifacts_v1 import save_artifacts
     artifacts=save_artifacts(source,identity,rgb,coarse,mask,returned,output,
-        stages=dict(body_mask=body,tip_mask=tip,learned_mask=learned,before_completion_mask=before_completion))
+        stages=dict(body_mask=body,tip_mask=tip,learned_mask=learned,before_completion_mask=before_completion,
+            **(dict(before_rounding_mask=before_rounding) if rounded_pads else {})))
     tiles.unchanged(source,identity['original_source_sha256']);tiles.unchanged(registry_path,registry_sha)
     runtime_sources=assert_runtime_sources_unchanged(snapshot)
     roles=sorted(set(consumed_roles(original_identity,registry)+consumed_roles(canonical_identity,registry)))
     report.update(single_photo_entrypoint=VERSION,input_identity=identity,model_sha256=predictions['model_sha256'],
         mask_scope='unreviewed_model_proposal',detector_policy=detector_policy,pose_metadata=pose_metadata,
-        coarse_coverage_metadata=coarse_metadata,completion_metadata=completion,input_type='PHOTO',route=route,**artifacts,
+        coarse_coverage_metadata=coarse_metadata,completion_metadata=completion,rounded_pad_metadata=rounding,input_type='PHOTO',route=route,**artifacts,
         GT_used=False,independent_final_test=False,development_replay=development_replay,
         consumed_source_detected=bool(roles),consumed_registry_roles=roles,runtime_source_snapshot=runtime_sources,
         runtime_source_snapshot_verified=True,
@@ -158,11 +166,12 @@ if __name__=='__main__':
     parser.add_argument('--include-observed-pose',action='store_true',help='Explicit wider unreviewed proposal; can redact extra background.')
     parser.add_argument('--include-coarse-pad',action='store_true',help='Explicit isolated-finger coarse completion; may redact extra skin.')
     parser.add_argument('--complete-holes',action='store_true',help='Fill enclosed holes within each observed owner; no boundary dilation.')
+    parser.add_argument('--rounded-pads',action='store_true',help='Replace eligible owners with rounded distal caps; inferred boundaries require review.')
     parser.add_argument('--allow-scanner',action='store_true',help='Route fingerprint-only inputs to the existing scanner ROI detector.');args=parser.parse_args()
     try:
         with cli_progress_to_stderr():_,result=run(args.input,args.model,args.consumed_registry,args.output,
             photo_semantics=args.photo_semantics,development_replay=args.development_replay,include_observed_pose=args.include_observed_pose,
-            include_coarse_pad=args.include_coarse_pad,complete_holes=args.complete_holes,allow_scanner=args.allow_scanner)
+            include_coarse_pad=args.include_coarse_pad,complete_holes=args.complete_holes,allow_scanner=args.allow_scanner,rounded_pads=args.rounded_pads)
         print(json.dumps(result,indent=2))
     except Exception as error:
         from photo_source_rgb_v1 import source_diagnostic
