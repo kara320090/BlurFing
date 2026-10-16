@@ -145,7 +145,10 @@ def verify_source(source, purpose):
     if hashlib.sha256(rgb.tobytes()).hexdigest() != source.get('source_RGB_sha256'):
         raise ValueError('decoded_source_hash_mismatch')
     semantic = json.loads(checked_bytes(source['semantics_path'], source.get('semantics_sha256')))
-    if (semantic.get('source_sha256') != source['source_sha256'] or
+    if semantic.get('kind') == 'RGB_REFINED_BODY_V1':
+        from photo_crease_native_adapter_v1 import verify_derived_semantics
+        verify_derived_semantics(source,semantic,purpose)
+    elif (semantic.get('source_sha256') != source['source_sha256'] or
             semantic.get('coordinate_system') != COORDINATES or
             semantic.get('body_sha256') != source['body_sha256'] or
             semantic.get('tip_sha256') != source['tip_sha256'] or

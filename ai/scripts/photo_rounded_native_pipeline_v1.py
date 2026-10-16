@@ -16,10 +16,13 @@ from photo_native_owner_context_v1 import restore_contexts
 VERSION = 'rounded_pad_native_protection_v1_experimental'
 
 
-def protection_contexts(body, tip, rounding, pose_geometry=None):
+def protection_contexts(body, tip, rounding, pose_geometry=None, *, complete_native_edges=False):
     rows = rounding['candidates']
     if pose_geometry is None:
         contexts = restore_contexts(candidate_contexts(estimate(body, tip, preserve_candidates=True), body), body)
+        if complete_native_edges:
+            from photo_native_partition_edges_v1 import restore_edges
+            contexts = restore_edges(contexts,body)
         owners = {c['candidate_id']: c['body'] for c in contexts}
     else:
         owners = {'pose-'+a['digit']: pose_geometry['owner_labels'] == a['label'] for a in pose_geometry['axes']}
@@ -97,7 +100,10 @@ def evaluate(source, mask, expected_pixel_sha256, rounding, *, pose_geometry=Non
     if (not isinstance(mask, np.ndarray) or mask.dtype != np.bool_ or mask.shape != body.shape or
             base.pixel_hash(mask) != expected_pixel_sha256 or np.any(mask & ~body)):
         raise ValueError('rounded_protection_mask_binding_mismatch')
-    contexts = protection_contexts(body, tip, rounding, pose_geometry)
+    policy=rounding.get('native_owner_edge_policy')
+    if policy not in (None,'unique_native_quantization_band_v1'):
+        raise ValueError('rounded_protection_unknown_native_edge_policy')
+    contexts = protection_contexts(body, tip, rounding, pose_geometry,complete_native_edges=policy is not None)
     partition = connected_partition(mask, contexts)
     labels = partition['labels']
     before = base.pixel_hash(labels)

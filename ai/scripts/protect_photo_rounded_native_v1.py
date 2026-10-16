@@ -42,8 +42,8 @@ def save_artifacts(source, identity, rgb, mask, returned, accepted, output):
     with (output/'comparison.png').open('xb') as stream:canvas.save(stream,format='PNG')
 
 
-def protect_detection(source, detection, registry_path, output, *, development_replay=False, detect_only=False):
-    if type(development_replay) is not bool or type(detect_only) is not bool:
+def protect_detection(source, detection, registry_path, output, *, development_replay=False, detect_only=False, crease_boundary=False):
+    if type(development_replay) is not bool or type(detect_only) is not bool or type(crease_boundary) is not bool:
         raise ValueError('rounded_native_flags_must_be_boolean')
     if Path(output).exists() or Path(output).is_symlink():raise FileExistsError('fresh_output_required')
     registry,_=tiles.json_snapshot(Path(registry_path));tiles.validate_registry(registry)
@@ -57,11 +57,11 @@ def protect_detection(source, detection, registry_path, output, *, development_r
     # retain the original consumed-source barrier.
     with replay_scope(registry,[original,canonical],enabled=development_replay):
         return _protect_detection(source,detection,registry_path,output,
-            development_replay=development_replay,detect_only=detect_only)
+            development_replay=development_replay,detect_only=detect_only,crease_boundary=crease_boundary)
 
 
-def _protect_detection(source, detection, registry_path, output, *, development_replay=False, detect_only=False):
-    if type(development_replay) is not bool or type(detect_only) is not bool:
+def _protect_detection(source, detection, registry_path, output, *, development_replay=False, detect_only=False, crease_boundary=False):
+    if type(development_replay) is not bool or type(detect_only) is not bool or type(crease_boundary) is not bool:
         raise ValueError('rounded_native_flags_must_be_boolean')
     source,detection,registry_path,output=map(Path,(source,detection,registry_path,output))
     if output.exists() or output.is_symlink():raise FileExistsError('fresh_output_required')
@@ -87,7 +87,7 @@ def _protect_detection(source, detection, registry_path, output, *, development_
     mask,before,coarse=[read_mask(p,pins[p],shape) for p in paths]
     if pixel_hash(mask)!=detection_report['mask_pixel_sha256']:
         raise ValueError('rounded_native_detection_mask_binding_mismatch')
-    worker=detection/'private/hand.private.json';worker_sha=None;pose=None
+    worker=detection/'private/hand.private.json';worker_sha=None;pose=None;hand_record=None
     if worker.exists():
         hand_record,worker_sha=tiles.json_snapshot(worker)
         if hand_record.get('hand_count')==1:pose=geometry_from_worker(record,rgb,hand_record)
@@ -98,6 +98,9 @@ def _protect_detection(source, detection, registry_path, output, *, development_
     if not np.array_equal(recomputed,mask) or rounding!=detection_report['rounded_pad_metadata']:
         raise ValueError('rounded_native_geometry_replay_mismatch')
     output.mkdir(parents=True,exist_ok=False)
+    if crease_boundary:
+        from photo_crease_native_adapter_v1 import prepare
+        record,mask,rounding,pose=prepare(record,rgb,before,rounding,hand_record,output/'private/crease_boundary')
     returned,report,accepted,labels=evaluate(record,mask,pixel_hash(mask),rounding,pose_geometry=pose,detect_only=detect_only)
     if pixel_hash(returned)!=report['returned_RGB_sha256']:
         raise ValueError('rounded_native_return_RGB_hash_mismatch')
@@ -118,6 +121,7 @@ def _protect_detection(source, detection, registry_path, output, *, development_
         detection_path=str(detection.resolve()),detection_report_sha256=report_sha,
         model_sha256=detection_report['model_sha256'],rounded_pad_metadata=rounding,
         original_source_sha256=identity['original_source_sha256'],GT_used=False,detect_only=detect_only,
+        crease_boundary=crease_boundary,mask_scope=('RGB_silhouette_to_observed_crease_experimental' if crease_boundary else 'rounded_cap_experimental'),
         development_replay=development_replay,independent_final_test=False,
         output_path=str((output/'returned.png').resolve()),protected_path=str((output/'protected.png').resolve()),
         comparison_path=str((output/'comparison.png').resolve()),
@@ -126,8 +130,8 @@ def _protect_detection(source, detection, registry_path, output, *, development_
     return returned,report
 
 
-def run(source,model,registry_path,output,*,development_replay=False,photo_semantics=None,detect_only=False):
-    if type(development_replay) is not bool or type(detect_only) is not bool:
+def run(source,model,registry_path,output,*,development_replay=False,photo_semantics=None,detect_only=False,crease_boundary=False):
+    if type(development_replay) is not bool or type(detect_only) is not bool or type(crease_boundary) is not bool:
         raise ValueError('rounded_native_flags_must_be_boolean')
     output=Path(output)
     if output.exists() or output.is_symlink():raise FileExistsError('fresh_output_required')
@@ -137,7 +141,7 @@ def run(source,model,registry_path,output,*,development_replay=False,photo_seman
         development_replay=development_replay,include_observed_pose=True,
         include_coarse_pad=True,complete_holes=True,rounded_pads=True)
     return protect_detection(source,detection,registry_path,output/'protection',
-        development_replay=development_replay,detect_only=detect_only)
+        development_replay=development_replay,detect_only=detect_only,crease_boundary=crease_boundary)
 
 
 if __name__=='__main__':
@@ -145,10 +149,11 @@ if __name__=='__main__':
     parser=JSONArgumentParser(description=__doc__)
     for name in ['input','model','consumed-registry','output']:parser.add_argument('--'+name,type=Path,required=True)
     parser.add_argument('--development-replay',action='store_true');parser.add_argument('--detect-only',action='store_true')
+    parser.add_argument('--crease-boundary',action='store_true',help='Opt-in RGB silhouette and observed transverse crease boundary; requires visual review.')
     args=parser.parse_args()
     try:
         with cli_progress_to_stderr():_,report=run(args.input,args.model,args.consumed_registry,args.output,
-            development_replay=args.development_replay,detect_only=args.detect_only)
+            development_replay=args.development_replay,detect_only=args.detect_only,crease_boundary=args.crease_boundary)
         print(json.dumps(report,indent=2))
     except Exception as error:
         print(json.dumps(dict(status='error',reason=str(error),error=type(error).__name__)));raise SystemExit(1)
