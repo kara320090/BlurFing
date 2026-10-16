@@ -70,6 +70,40 @@ class MaterialTests(unittest.TestCase):
         result, meta = render(rgb, empty, empty.astype(np.uint16), seed=0)
         np.testing.assert_array_equal(result, rgb); self.assertEqual(meta['replacement_regions'], 0)
 
+    def test_known_long_oblique_creases_reconstructed_without_flat_input_hallucination(self):
+        from photo_synthetic_replacement_v7 import reconstructed_skin
+        from photo_synthetic_replacement_v11 import folded_skin
+        y, x = np.mgrid[:640, :420]
+        mask = ((x-210)/197.4)**6+((y-320)/307.2)**6 < 1
+        _, _, u, v, w, h = geometry(mask)
+        broad = 160+8*u-6*v
+        grooves = -14*np.exp(-.5*(((v-.28*u+.15)*h/2)/5.)**2)
+        grooves -= 10*np.exp(-.5*(((v+.2*u-.35)*h/2)/6.)**2)
+        truth = np.tile((broad+grooves)[:, None], (1, 3))
+        pixels = np.clip(np.floor(truth+.8*np.sin(v*h)[:, None]+.5), 0, 255).astype(np.uint8)
+        old, _ = reconstructed_skin(pixels, u, v, w, h)
+        result, meta = folded_skin(pixels, u, v, w, h)
+        self.assertLess(np.sqrt(np.mean((result-truth)**2)), np.sqrt(np.mean((old-truth)**2))*.85)
+        self.assertEqual(len(meta['macro_creases']['curves']), 2)
+        flat = np.full(pixels.shape, 160, np.uint8)
+        result, meta = folded_skin(flat, u, v, w, h)
+        self.assertEqual(meta['macro_creases']['curves'], [])
+        np.testing.assert_allclose(result, 160, atol=1e-8)
+
+    def test_v11_actual_file_contract_and_appearance_is_not_approved(self):
+        from test_photo_synthetic_replacement_v1 import SyntheticReplacementTests
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source, cache, rgb, mask, accepted, native, _, icc = SyntheticReplacementTests().cached(root, accepted=True)
+            result, meta = run(source, cache, root/'v11', renderer='v11', seed=11)
+            np.testing.assert_array_equal(result[accepted], native[accepted])
+            np.testing.assert_array_equal(result[~mask], rgb[~mask])
+            self.assertFalse(meta['natural_appearance_validated']); self.assertFalse(meta['production_approved'])
+            self.assertFalse(meta['native_gate_decisions_changed'])
+            with Image.open(root/'v11/synthetic.png') as im:
+                np.testing.assert_array_equal(np.array(im), result)
+                self.assertEqual(im.getexif()[274], 6); self.assertEqual(im.info['icc_profile'], icc)
+
 
 if __name__ == '__main__':
     import cv2

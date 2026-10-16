@@ -24,3 +24,20 @@ Visual review of all 16 region crops: stronger ridges are evident but the
 uniform embossing and smooth skin still look artificial. Large source creases
 are underrepresented. **Strict naturalness acceptance: rejected.** No source
 mask, native gate or matcher threshold was tuned to manufacture a pass.
+
+## Round 2 — V11
+
+Long oblique macro grooves are fitted as at most ten quadratic descriptors
+from supported coarse-cell median residuals. Independent mesoscale roughness
+and albedo variation interrupt the uniform embossing. Source-derived macro
+crease information is retained and must not be described as zero-information
+privacy. No source ridge residual is blended into output.
+
+A known synthetic two-crease fixture improves reconstruction RMSE from 1.717
+to 1.358; flat inputs produce no macro-crease descriptors. Six material tests
+passed, including actual V11 PNG/native preservation and metadata. All six
+development photos / 16 regions were processed and saved/read back with exact
+outside RGB and original hashes. Visual review of every region: skin looks
+less smooth, but coarse mottling can resemble grit and proximal cut seams
+remain. **Strict naturalness acceptance: rejected.** This motivates less
+pigment mottling and a better generated boundary/curved material in round 3.
