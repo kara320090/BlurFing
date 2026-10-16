@@ -93,6 +93,57 @@ class FiveIterationTests(unittest.TestCase):
     def test_v16_actual_png_native_metadata_and_seed_replay(self):
         self.saved_contract('v16')
 
+    def test_v17_known_macro_depth_recovery_from_scalar_summaries(self):
+        from photo_synthetic_replacement_v17 import fit_crease_depths
+        y, x = np.mgrid[:512, :320].astype(float)
+        u, v = (2*x/319-1).ravel(), (2*y/511-1).ravel()
+        t = (v-.2*u-.04*u*u)*256/6
+        basis = -np.exp(-.5*t*t)+.3*np.exp(-.5*((t-1.8)/.8)**2)
+        base = np.full((len(u),3),160.)
+        pixels = np.clip(np.floor(base+(9*basis)[:,None]+.5),0,255).astype(np.uint8)
+        curve = dict(quadratic_v_from_u=[0., .2, .04], sigma_source_pixels=6., depth_RGB=3.)
+        _, fitted, meta = fit_crease_depths(pixels,base,u,v,320.,512.,[curve])
+        self.assertEqual(curve['depth_RGB'],3.)
+        self.assertAlmostEqual(fitted[0]['depth_RGB'],9.,delta=.5)
+        self.assertLessEqual(meta['curves'][0]['supported_scalar_cells'],96)
+        self.assertFalse(meta['raw_source_residual_transferred'])
+
+    def test_v17_light_response_follows_direction_and_preserves_height(self):
+        from photo_synthetic_replacement_v17 import photographic_light
+        ridge = np.broadcast_to(np.sin(2*np.pi*np.arange(256)/10),(128,256)).astype(np.float32)
+        before = ridge.copy(); empty = np.zeros_like(ridge)
+        a, meta = photographic_light(ridge,empty,10,1.,np.array([1.,0.]),8)
+        b, _ = photographic_light(ridge,empty,10,1.,np.array([-1.,0.]),8)
+        np.testing.assert_array_equal(ridge,before)
+        self.assertGreater(np.mean(abs(a-b)),.1)
+        self.assertTrue(np.isfinite(a).all());self.assertFalse(meta['source_detail_input'])
+
+    def test_v17_actual_png_native_metadata_and_seed_replay(self):
+        self.saved_contract('v17')
+
+    def test_v17_translation_and_outside_colors_do_not_change_generated_region(self):
+        from photo_synthetic_replacement_v17 import render
+        from test_photo_synthetic_replacement_v2 import SyntheticV2Tests
+        rgb,mask,labels,_=SyntheticV2Tests().fixture()
+        a,_=render(rgb,mask,labels,seed=17)
+        shifted=np.pad(rgb,((7,0),(13,0),(0,0)));m=np.pad(mask,((7,0),(13,0)))
+        shifted[~m]=[0,255,0]
+        b,_=render(shifted,m,m.astype(np.uint16),seed=17)
+        np.testing.assert_array_equal(a[mask],b[m]);np.testing.assert_array_equal(b[~m],shifted[~m])
+
+    def test_v17_fixed_observer_summaries_have_no_hidden_rgb_residual(self):
+        from unittest.mock import patch
+        from photo_synthetic_replacement_v17 import render
+        from test_photo_synthetic_replacement_v2 import SyntheticV2Tests
+        rgb,mask,labels,_=SyntheticV2Tests().fixture()
+        changed=rgb.copy();changed[mask]=np.random.default_rng(9).integers(0,256,(mask.sum(),3),dtype=np.uint8)
+        base=np.full((mask.sum(),3),160.)
+        with patch('photo_synthetic_replacement_v17.photographic_skin',return_value=(base,{'macro_creases':{'curves':[]}})), \
+             patch('photo_synthetic_replacement_v17.boundary_ribbon',side_effect=lambda base,*args:(base,{})), \
+             patch('photo_synthetic_replacement_v10.native_style',return_value=(np.ones((1,1,4)),{})):
+            a,_=render(rgb,mask,labels,seed=17);b,_=render(changed,mask,labels,seed=17)
+        np.testing.assert_array_equal(a[mask],b[mask])
+
 
 if __name__ == '__main__':
     import cv2
