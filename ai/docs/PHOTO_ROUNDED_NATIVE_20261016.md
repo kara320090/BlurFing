@@ -2,6 +2,8 @@
 
 2026-10-16. [둥근 손끝 후처리](PHOTO_ROUNDED_PAD_20261016.md)로 만든 마스크를 기존 `natural_auto_04` / `boundaryblend_02` renderer와 V12 실제 반환 RGB 검사에 연결하는 별도 실험 경로다. 검은 가림 미리보기와 실제 지문 보호 변환의 결과를 구분한다.
 
+후속 [거절 원인 진단과 보완 결과](PHOTO_ROUNDED_REJECTION_RESOLUTION_20261016.md): 실제 native 결과는 유지하고, 미적용 후보를 검게 가린 별도 `covered.png` 및 원인별 설명을 추가했다. 아래 수치는 무늬 변환 연결 당시 기록이며, 별도 가림을 무늬 변환 성공에 합산하지 않는다.
+
 ## 연결 계약
 
 `protect_photo_rounded_native_v1.py`가 원본부터 검출/후처리를 실행하고 `detection_preview`에 미리보기를 저장한다. 실제 변환은 원본 RGB와 후처리 마스크에서 다시 시작해 `protection/returned.png`, `protection/protected.png`에 저장한다. 검게 가린 이미지를 renderer 입력이나 성공 결과로 사용하지 않는다.

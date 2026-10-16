@@ -104,6 +104,10 @@ def _protect_detection(source, detection, registry_path, output, *, development_
     color=save_final_rgb_png(source,identity['original_source_sha256'],returned,output/'returned.png',identity['source_exif_orientation'])
     save_artifacts(source,identity,rgb,mask,returned,accepted,output)
     with (output/'region_labels.png').open('xb') as stream:Image.fromarray(labels).save(stream,format='PNG')
+    if not detect_only:
+        from photo_rejection_resolution_v1 import save_resolution_artifacts
+        resolution=save_resolution_artifacts(source,identity,rgb,returned,mask,accepted,labels,report,output)
+        report['rejection_resolution']=resolution
     tiles.check_tiles(dataset,manifest,'inference');tiles.unchanged(dataset/'manifest.input.private.json',manifest_sha)
     tiles.unchanged(detection/'result.private.json',report_sha);tiles.unchanged(registry_path,registry_sha)
     for p,sha in pins.items():tiles.unchanged(p,sha)
