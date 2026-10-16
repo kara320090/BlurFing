@@ -22,7 +22,7 @@ permissions:
 jobs:
   geometry:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -60,6 +60,20 @@ jobs:
           test_pitch_free_artifacts_v1
           test_photo_source_rgb_v1
           test_protect_photo_pitch_free_v1
+      - name: Check preserved synthetic appearance contracts (no private inputs)
+        working-directory: ai/scripts
+        run: |
+          python - <<'PY'
+          import cv2, unittest
+          cv2.setNumThreads(1)
+          names = ['test_photo_synthetic_replacement_v'+str(i) for i in range(1, 7)]
+          names += ['test_photo_synthetic_appearance_iterations_v1',
+                    'test_photo_synthetic_residual_audit_v1',
+                    'test_photo_skin_material_iterations',
+                    'test_photo_skin_five_iterations']
+          suite = unittest.defaultTestLoader.loadTestsFromNames(names)
+          raise SystemExit(not unittest.TextTestRunner(verbosity=2).run(suite).wasSuccessful())
+          PY
       - name: Retain synthetic result only
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

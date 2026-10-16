@@ -95,6 +95,9 @@ Final source snapshots remain immutable for reproducibility. Public delivery
 contains code, tests, this description and anonymous aggregate findings.
 Private photos, masks, source identities, comparisons, runtime copies and
 weights are excluded. GitHub preparation is separate from actual publication.
+The existing public geometry workflow now includes the same 77 synthetic
+appearance contracts with bounded OpenCV threads. Its Linux Python 3.10/3.11
+jobs are prepared for a future push; hosted CI was not executed locally.
 
 ## Reproduce an opt-in render
 
