@@ -100,10 +100,10 @@ python ai/scripts/verify_photo_geometry_portable_v1.py --compare ai/config/porta
 The output must be fresh; choose another name if it exists. The reference
 contains synthetic geometry/reduction hashes and spectral bins only. All 48
 invariant checks matched in two Windows environments (Python 3.11 and 3.10,
-with different NumPy versions). This is not a Linux, CNN, renderer, scanner or
-privacy equivalence claim. No usable Linux runtime/verified remote endpoint
-was available in this Windows session, so actual Linux execution remains
-pending.
+with different NumPy versions). Direct Linux/SSH access was unavailable, so
+the same public reference and focused tests were executed on hosted Ubuntu
+instead. This establishes synthetic helper equivalence only; full CNN,
+renderer, scanner and privacy equivalence remain unverified.
 
 New focused tests: 28 passed, covering owner ambiguity, mutation, partition
 pixel conservation, V15 rollback/detect-only/input contracts, rotation and
@@ -113,10 +113,14 @@ passed after all source edits ended. The 627 protected original files were
 rechecked unchanged, including seven originals at their relocated paths.
 
 The `PHOTO synthetic geometry contracts` workflow uses public synthetic data
-only on Ubuntu with Python 3.10 and 3.11. It repeats the 48 reference checks
-and 28 focused tests without model weights, human GT, private pictures or
-matcher runtimes. Adding the workflow alone is not evidence of Linux success;
-the actual run conclusion and commit must be verified separately.
+only on Ubuntu with Python 3.10 and 3.11. Both environments passed all 48
+reference checks and 28 focused tests at source commit
+`85b403103f891292ef1a4b24e8fb6de3d70df837`:
+[verified actual Linux run](https://github.com/kara320090/BlurFing/actions/runs/38832926831).
+The exact commit, run conclusion and both jobs' test-step success were checked
+through the public GitHub API. Model weights, human GT, private pictures and
+matcher runtimes were not uploaded or used. No full-model Linux claim follows
+from these synthetic tests.
 
 Further algorithm adoption requires verified complete pad boundaries, suitable
 development data and an independent capture-group evaluation. The seven new
