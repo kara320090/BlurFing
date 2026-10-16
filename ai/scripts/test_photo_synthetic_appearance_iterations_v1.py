@@ -84,6 +84,48 @@ class SkinIterationTests(unittest.TestCase):
             self.assertEqual(meta['synthetic_renderer'], 'v7')
             with self.assertRaises(FileExistsError): run(source, cache, root/'v7', renderer='v7')
 
+    def test_finer_ridge_structure_has_higher_spatial_frequency(self):
+        from photo_synthetic_replacement_v6 import styled_relief
+        from photo_synthetic_replacement_v8 import fine_photographic_relief
+        rgb, mask, _, _ = self.fixture()
+        yy, xx, u, v, w, h = geometry(mask)
+        local = mask[yy.min():yy.max()+1, xx.min():xx.max()+1]
+        energy, _ = texture_style(rgb[mask], local, u, v, w, h)
+        centers = []
+        for fn in (styled_relief, fine_photographic_relief):
+            a, meta = fn(local, u, v, w, h, 11, energy)
+            raster = np.zeros(local.shape); raster[local] = a
+            cy, cx = np.array(raster.shape)//2
+            crop = raster[cy-96:cy+96, cx-96:cx+96]; crop -= crop.mean()
+            power = np.abs(np.fft.fftshift(np.fft.fft2(crop*np.hanning(192)[:, None]*np.hanning(192)[None, :])))**2
+            y, x = np.mgrid[-96:96, -96:96]; radius = np.sqrt(x*x+y*y)/192
+            take = (radius > .025) & (radius < .4)
+            centers.append(float(np.sum(power[take]*radius[take])/np.sum(power[take])))
+            self.assertGreater(a.std(), .6)
+        self.assertGreater(centers[1], centers[0]*1.25)
+
+    def test_v8_seed_replay_and_saved_file_contract(self):
+        from photo_synthetic_replacement_v8 import render as v8
+        from test_photo_synthetic_replacement_v2 import SyntheticV2Tests
+        from test_photo_synthetic_replacement_v1 import SyntheticReplacementTests
+        rgb, mask, labels, _ = SyntheticV2Tests().fixture()
+        a, _ = v8(rgb, mask, labels, seed=13)
+        b, meta = v8(rgb, mask, labels, seed=13)
+        c, _ = v8(rgb, mask, labels, seed=14)
+        np.testing.assert_array_equal(a, b); np.testing.assert_array_equal(a[~mask], rgb[~mask])
+        self.assertFalse(np.array_equal(a[mask], c[mask]))
+        self.assertEqual(meta['unresolved_texture_regions'], 0)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source, cache, rgb, mask, accepted, native, _, profile = SyntheticReplacementTests().cached(root, accepted=True)
+            a, meta = run(source, cache, root/'v8', seed=4, renderer='v8')
+            np.testing.assert_array_equal(a[accepted], native[accepted])
+            np.testing.assert_array_equal(a[~mask], rgb[~mask])
+            with Image.open(root/'v8/synthetic.png') as im:
+                np.testing.assert_array_equal(np.array(im), a)
+                self.assertEqual(im.info['icc_profile'], profile)
+                self.assertEqual(im.getexif()[274], 6)
+
 
 if __name__ == '__main__':
     import cv2
