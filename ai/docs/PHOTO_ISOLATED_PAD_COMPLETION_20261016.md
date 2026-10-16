@@ -79,5 +79,8 @@ cached comparison RGB and masks. The existing wider mode reproduced the
 reported 146,751-pixel output exactly when the new flag was absent. All 627
 protected originals and the V6 checkpoint/config remained unchanged.
 
-Hosted Linux verification is performed by the public synthetic geometry
-workflow; full private-model Linux parity remains unverified.
+Ubuntu Python 3.10 and 3.11 each passed **48 synthetic reference checks and
+45 focused tests** at `093d23e3c1c57c66ad1be0eb6d3e23f0ebef05f3`:
+[verified hosted run](https://github.com/kara320090/BlurFing/actions/runs/38852979931).
+The exact commit, both jobs and their test steps were checked through the
+public GitHub API. Full private-model Linux parity remains unverified.
