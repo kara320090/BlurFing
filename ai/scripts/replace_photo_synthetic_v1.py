@@ -29,7 +29,7 @@ def _array(path, shape, *, binary=False):
 
 
 def run(source, protection_run, output, *, seed=None, renderer='v1'):
-    if renderer not in ('v1', 'v2', 'v3', 'v4'):
+    if renderer not in ('v1', 'v2', 'v3', 'v4', 'v5'):
         raise ValueError('unsupported_synthetic_renderer')
     render_selected = render
     if renderer == 'v2':
@@ -38,6 +38,8 @@ def run(source, protection_run, output, *, seed=None, renderer='v1'):
         from photo_synthetic_replacement_v3 import render as render_selected
     elif renderer == 'v4':
         from photo_synthetic_replacement_v4 import render as render_selected
+    elif renderer == 'v5':
+        from photo_synthetic_replacement_v5 import render as render_selected
     source, protection_run, output = map(Path, (source, protection_run, output))
     if output.exists() or output.is_symlink():
         raise FileExistsError('fresh_output_required')
@@ -104,7 +106,7 @@ if __name__ == '__main__':
     parser.add_argument('--protection-run', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--seed', type=int, help='Optional reproducibility seed; default uses fresh random seed.')
-    parser.add_argument('--renderer', choices=('v1', 'v2', 'v3', 'v4'), default='v1')
+    parser.add_argument('--renderer', choices=('v1', 'v2', 'v3', 'v4', 'v5'), default='v1')
     args = parser.parse_args()
     try:
         with cli_progress_to_stderr():
