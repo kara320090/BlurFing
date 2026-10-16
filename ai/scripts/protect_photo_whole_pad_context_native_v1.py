@@ -61,23 +61,7 @@ def protect_bundle(folder,root,output,detect_only=False):
         runtime_source_snapshot_verified=True,**usage)
     (output/'protection.private.json').write_text(json.dumps(report,indent=2),encoding='utf-8');return report
 
-def canonical_rgb(source):
-    sha=digest(source)
-    with Image.open(source) as image:
-        validate_resize(image.height,image.width,1.)
-        orientation=image.getexif().get(274,1);mode=image.mode
-        if type(orientation) is not int or orientation not in range(1,9):raise ValueError('invalid_source_exif_orientation')
-        if mode in ['RGB','L']:rgb=np.asarray(image.convert('RGB')).copy();alpha_policy='not_present'
-        elif mode=='RGBA':
-            # Explicit compositing, never an implicit alpha-channel discard.
-            rgba=np.asarray(image).astype(np.uint32);alpha=rgba[:,:,3:4]
-            rgb=((rgba[:,:,:3]*alpha+255*(255-alpha)+127)//255).astype(np.uint8)
-            alpha_policy='composite_over_opaque_white_integer_round_nearest'
-        else:raise ValueError('unsupported_source_mode')
-    unchanged(source,sha)
-    return rgb,dict(original_source_sha256=sha,source_mode=mode,source_exif_orientation=orientation,
-        alpha_policy=alpha_policy,EXIF_transposed=False,coordinate_system='encoded_original_pixels',
-        canonical_RGB_sha256=hashlib.sha256(rgb.tobytes()).hexdigest())
+from photo_source_rgb_v1 import canonical_rgb
 
 
 def run(source,model,registry_path,output,*,photo_semantics=None,detect_only=False,development_replay=False):
