@@ -126,6 +126,52 @@ class SkinIterationTests(unittest.TestCase):
                 self.assertEqual(im.info['icc_profile'], profile)
                 self.assertEqual(im.getexif()[274], 6)
 
+    def test_v9_micro_surface_is_independent_bounded_and_continuous_at_edge(self):
+        from scipy import ndimage
+        from photo_synthetic_replacement_v9 import micro_surface
+        from test_photo_synthetic_replacement_v2 import SyntheticV2Tests
+        rgb, mask, _, _ = SyntheticV2Tests().fixture()
+        yy, xx, u, v, w, h = geometry(mask)
+        local = mask[yy.min():yy.max()+1, xx.min():xx.max()+1]
+        base = np.full((mask.sum(), 3), 160.)
+        values = base+np.sin(v*70)[:, None]; before = values.copy()
+        energy = np.ones((3, 3, 2))
+        a, meta = micro_surface(values, base, local, u, v, w, h, 7, energy)
+        b, _ = micro_surface(values, base, local, u, v, w, h, 7, energy)
+        c, _ = micro_surface(values, base, local, u, v, w, h, 8, energy)
+        np.testing.assert_array_equal(a, b); np.testing.assert_array_equal(values, before)
+        self.assertGreater(np.abs(a-c).mean(), .1)
+        self.assertTrue(np.isfinite(a).all())
+        self.assertLessEqual(max(meta['latent_shape']), 640)
+        self.assertFalse(meta['source_pixels_input']); self.assertFalse(meta['source_residual_input'])
+        distance = ndimage.distance_transform_edt(np.pad(local, 1))[1:-1, 1:-1][local]
+        np.testing.assert_array_equal(a[distance == 1], values[distance == 1])
+
+    def test_v9_full_render_translation_save_and_surface_validation(self):
+        from photo_synthetic_replacement_v7 import render_core
+        from photo_synthetic_replacement_v9 import render as v9
+        from test_photo_synthetic_replacement_v2 import SyntheticV2Tests
+        from test_photo_synthetic_replacement_v1 import SyntheticReplacementTests
+        rgb, mask, labels, _ = SyntheticV2Tests().fixture()
+        a, meta = v9(rgb, mask, labels, seed=12)
+        shifted = np.pad(rgb, ((5, 0), (9, 0), (0, 0))); m = np.pad(mask, ((5, 0), (9, 0)))
+        shifted[~m] = [0, 255, 0]
+        b, _ = v9(shifted, m, m.astype(np.uint16), seed=12)
+        np.testing.assert_array_equal(a[mask], b[m]); np.testing.assert_array_equal(b[~m], shifted[~m])
+        self.assertEqual(meta['unresolved_texture_regions'], 0)
+        with self.assertRaisesRegex(ValueError, 'nonfinite'):
+            render_core(rgb, mask, labels, seed=12,
+                surface_fn=lambda values, *args: (np.full(values.shape, np.nan), {}))
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source, cache, rgb, mask, accepted, native, _, profile = SyntheticReplacementTests().cached(root, accepted=True)
+            a, meta = run(source, cache, root/'v9', seed=4, renderer='v9')
+            np.testing.assert_array_equal(a[accepted], native[accepted]); np.testing.assert_array_equal(a[~mask], rgb[~mask])
+            with Image.open(root/'v9/synthetic.png') as im:
+                np.testing.assert_array_equal(np.array(im), a)
+                self.assertEqual(im.info['icc_profile'], profile)
+                self.assertEqual(im.getexif()[274], 6)
+
 
 if __name__ == '__main__':
     import cv2

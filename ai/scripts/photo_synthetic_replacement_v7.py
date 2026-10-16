@@ -95,6 +95,8 @@ def render_core(rgb, mask, labels, *, seed=None, version='v7', relief_fn=styled_
         surface_meta = dict(applied=False)
         if surface_fn is not None:
             values, surface_meta = surface_fn(values, base, local, u, v, width, length, child_seed, energies)
+        if values.shape != pixels.shape or not np.isfinite(values).all():
+            raise ValueError('synthetic_generated_surface_nonfinite_or_shape_mismatch')
         out[target] = np.clip(np.floor(values+.5), 0, 255).astype(np.uint8)
         regions.append(dict(region_id=int(rid), pixels=int(target.sum()), geometric_width_pixels=width,
             color_field=color, boundary_color=boundary, texture_style=style, skin_surface=surface_meta, **texture,
