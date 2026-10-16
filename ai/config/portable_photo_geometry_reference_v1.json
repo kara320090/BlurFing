@@ -1,0 +1,30 @@
+{
+  "contract": "portable_photo_geometry_checks_v1",
+  "checks": {
+    "cell-2-4-1-1": "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a",
+    "cell-2-4-3-5": "35058f361f5ad0a05a692ae0d3503165cd3d86740dfb186d3c4c7f7ecfc249ac",
+    "cell-2-4-21-37": "9f87275bda165f67913c5fb5b8f05468ef936ad68fd97c21689521ec19620321",
+    "cell-17-29-1-1": "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a",
+    "cell-17-29-3-5": "69801b353a8f248b5399788172cf8a7758625782651ae1e8b733fd3f5cd875a8",
+    "cell-17-29-21-37": "1c8f2170a8b248e58de69e089a1226dc568954aff1bf5545572e7449e54b53e2",
+    "cell-39-71-1-1": "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a",
+    "cell-39-71-3-5": "69801b353a8f248b5399788172cf8a7758625782651ae1e8b733fd3f5cd875a8",
+    "cell-39-71-21-37": "6d523933cee45cb4cec7eea47c17e6149d390d900a81e8461bfd4aadaf4189fa",
+    "sorted_orbit_probability": "6a2cce4bc3426d5b7d9e0209bbced2f5f47a70b177bbfdf9cb962a9fa6dbc85a",
+    "ambiguous_owners": [
+      "8f2349bcb66d0bad13720b01f4e68a42df54db44ab7f17706afb0e290de4fd28",
+      "edd11ff18798d80facc585d37dc3246c1beee4a29cd9c45427c3fd0227c857ae"
+    ],
+    "unique_owner": "24aed44668590006f11820ad8c675830804c259b921cb00ab6e118cfb122b293",
+    "spectral_peak_bins": {
+      "3.2": 20,
+      "4.2": 15,
+      "8.0": 8,
+      "12.5": 5,
+      "23.8": 3,
+      "26.4": 2
+    }
+  },
+  "invariant_cases": 48,
+  "scope": "synthetic geometry/reduction/diagnostics only; no CNN, renderer, matcher or privacy validation"
+}

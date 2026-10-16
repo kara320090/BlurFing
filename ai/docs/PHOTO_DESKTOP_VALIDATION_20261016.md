@@ -135,3 +135,11 @@ measurements. Existing unit-test counts above do not include these private probe
 Originals, model weights, frozen protection code and numeric thresholds were
 unchanged. The new seven-photo human boundary review remains deferred; automated
 diagnostics do not supply human GT, independent accuracy or Linux parity.
+# Further automatic experiments
+
+The [boundary/rotation follow-up](PHOTO_BOUNDARY_ROTATION_EXPERIMENTS_20261016.md)
+records the final 693-test AI regression, unchanged protected inputs, mixed
+actual matcher results and rejected four-view model averaging. All new
+association/resize/pitch tools remain experimental; current GUI/API defaults,
+checkpoint preprocessing, frozen protection math and thresholds stay intact.
+The follow-up separates synthetic platform checks from full model parity.

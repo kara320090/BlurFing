@@ -1,0 +1,62 @@
+name: PHOTO synthetic geometry contracts
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/photo-geometry.yml'
+      - 'ai/scripts/**'
+      - 'ai/config/portable_photo_geometry_reference_v1.json'
+      - 'ai/requirements.txt'
+  pull_request:
+    paths:
+      - '.github/workflows/photo-geometry.yml'
+      - 'ai/scripts/**'
+      - 'ai/config/portable_photo_geometry_reference_v1.json'
+      - 'ai/requirements.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  geometry:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.10', '3.11']
+    env:
+      PYTHONHASHSEED: '0'
+      OMP_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install pinned public dependencies
+        run: python -m pip install -r ai/requirements.txt
+      - name: Compare synthetic reference (no private images or model)
+        run: >-
+          python ai/scripts/verify_photo_geometry_portable_v1.py
+          --compare ai/config/portable_photo_geometry_reference_v1.json
+          --output geometry-reference-linux.json
+      - name: Check association, rollback, rotation and spectral contracts
+        working-directory: ai/scripts
+        run: >-
+          python -m unittest -v
+          test_photo_owner_boundary_repair_v2
+          test_photo_learned_pad_pipeline_v15
+          test_photo_rotation_geometry_v1
+          test_photo_pitch_spectrum_diagnostic_v1
+      - name: Retain synthetic result only
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: synthetic-geometry-linux-python-${{ matrix.python }}
+          path: geometry-reference-linux.json
+          if-no-files-found: error
+          retention-days: 14
