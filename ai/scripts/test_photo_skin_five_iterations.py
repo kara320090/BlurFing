@@ -80,6 +80,19 @@ class FiveIterationTests(unittest.TestCase):
     def test_v15_actual_png_native_metadata_and_seed_replay(self):
         self.saved_contract('v15')
 
+    def test_v16_ridge_cross_sections_have_spatial_width_variation(self):
+        from photo_synthetic_replacement_v16 import organic_profile
+        field = np.broadcast_to(np.sin(2*np.pi*np.arange(512)/10), (512, 512)).astype(np.float32)
+        a, meta = organic_profile(field, 10, 2)
+        b, _ = organic_profile(field, 10, 2)
+        duty = [(a[y:y+64, x:x+64] > 0).mean() for y in range(0,512,64) for x in range(0,512,64)]
+        np.testing.assert_array_equal(a, b)
+        self.assertGreater(float(np.std(duty)), .025)
+        self.assertTrue(np.isfinite(a).all()); self.assertFalse(meta['source_phase_input'])
+
+    def test_v16_actual_png_native_metadata_and_seed_replay(self):
+        self.saved_contract('v16')
+
 
 if __name__ == '__main__':
     import cv2
