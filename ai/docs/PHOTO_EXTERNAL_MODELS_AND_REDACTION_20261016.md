@@ -5,6 +5,10 @@ are unchanged. A separate experimental command can visibly black out predicted
 pad pixels without measuring ridge spacing. Its mask coverage is unverified;
 it does not make the current PHOTO system production-ready.
 
+Follow-up: [isolated finger completion](PHOTO_ISOLATED_PAD_COMPLETION_20261016.md)
+records a second SAM prompt comparison and an optional COLFISPOOF-derived
+completion policy for fragmented single-finger masks.
+
 ## Actual external-model comparison
 
 No fine-tuning was performed. Source RGB, checkpoints, semantic masks and

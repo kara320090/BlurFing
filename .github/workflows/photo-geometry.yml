@@ -55,6 +55,7 @@ jobs:
           test_photo_pitch_spectrum_diagnostic_v1
           test_photo_raw_profile_pitch_v2
           test_photo_pitch_free_redaction_v1
+          test_photo_isolated_coarse_completion_v1
           test_protect_photo_pitch_free_v1
       - name: Retain synthetic result only
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

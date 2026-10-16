@@ -6,7 +6,7 @@ import protect_photo_pitch_free_v1 as entry
 
 class PitchFreeEntryContracts(unittest.TestCase):
     def test_flags_are_booleans_before_any_source_or_model_access(self):
-        for options in [dict(development_replay='false'),dict(include_observed_pose=1)]:
+        for options in [dict(development_replay='false'),dict(include_observed_pose=1),dict(include_coarse_pad=1)]:
             with patch.object(entry,'capture_runtime_sources') as capture:
                 with self.assertRaisesRegex(ValueError,'flag_must_be_boolean'):
                     entry.run('missing.png','missing-model','missing.json','unused-output',**options)

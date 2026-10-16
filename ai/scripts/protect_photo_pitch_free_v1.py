@@ -18,9 +18,10 @@ from photo_pitch_free_redaction_v1 import redact,pixel_hash
 VERSION='single_photo_pitch_free_v1_experimental'
 
 
-def run(source,model,registry_path,output,*,photo_semantics=None,development_replay=False,include_observed_pose=False):
+def run(source,model,registry_path,output,*,photo_semantics=None,development_replay=False,include_observed_pose=False,include_coarse_pad=False):
     if type(development_replay) is not bool:raise ValueError('development_replay_flag_must_be_boolean')
     if type(include_observed_pose) is not bool:raise ValueError('include_observed_pose_flag_must_be_boolean')
+    if type(include_coarse_pad) is not bool:raise ValueError('include_coarse_pad_flag_must_be_boolean')
     source,model,registry_path,output=map(Path,(source,model,registry_path,output))
     if output.exists() or output.is_symlink():raise FileExistsError('fresh_output_required')
     # Early contract checks and pure redaction tools do not require Torch.
@@ -63,7 +64,14 @@ def run(source,model,registry_path,output,*,photo_semantics=None,development_rep
         tiles.check_tiles(private/'dataset',manifest,'inference')
     record=manifest['sources'][0];mask_path=private/'predictions/INPUT.png'
     mask=read_mask(mask_path,predictions['rows'][0]['prediction_sha256'],native_shape(record))
-    detector_policy='V6_only';pose_metadata=None
+    detector_policy='V6_only';pose_metadata=None;coarse_metadata=None
+    if include_coarse_pad:
+        from pad_refinement_data_contract_v2 import read_body
+        from photo_isolated_coarse_completion_v1 import complete_isolated_pad
+        coarse=read_mask(record['coarse_path'],record['coarse_sha256'],native_shape(record))
+        tip=read_mask(record['tip_path'],record['tip_sha256'],native_shape(record))
+        mask,coarse_metadata=complete_isolated_pad(mask,coarse,read_body(record),tip)
+        detector_policy='V6_with_isolated_coarse_completion'
     if include_observed_pose:
         import mediapipe_hand_worker_v1 as hand
         from photo_pose_native_pipeline_v1 import geometry_from_worker
@@ -75,13 +83,15 @@ def run(source,model,registry_path,output,*,photo_semantics=None,development_rep
         try:geometry=geometry_from_worker(record,rgb,hand_record)
         except ValueError as error:
             if str(error)!='pose_exactly_one_observed_hand_required':raise
-            pose_metadata=dict(status='no_single_observed_hand_V6_only',reason=str(error))
+            pose_metadata=dict(status=('no_single_observed_hand_base_mask_retained' if include_coarse_pad
+                                       else 'no_single_observed_hand_V6_only'),reason=str(error))
         else:
             pose=geometry['permission_labels']>0;added=int((pose&~mask).sum());mask=mask|pose
             pose_metadata=dict(status='unreviewed_pose_union',added_pixels=added,anatomical_boundary_verified=False)
         tiles.unchanged(worker,worker_sha)
         if hand.digest(hand_runtime[1])!=hand.MODEL_SHA256:raise ValueError('official_hand_model_SHA256_mismatch')
-        detector_policy='V6_union_observed_pose_if_available'
+        detector_policy=('V6_with_isolated_coarse_completion_union_observed_pose_if_available' if include_coarse_pad
+                         else 'V6_union_observed_pose_if_available')
     returned,report=redact(rgb,mask,pixel_hash(rgb),pixel_hash(mask))
     color=save_final_rgb_png(source,identity['original_source_sha256'],returned,output/'returned.png',identity['source_exif_orientation'])
     Image.fromarray(mask.astype(np.uint8)*255).save(output/'redacted_mask.png')
@@ -90,6 +100,7 @@ def run(source,model,registry_path,output,*,photo_semantics=None,development_rep
     roles=sorted(set(consumed_roles(original_identity,registry)+consumed_roles(canonical_identity,registry)))
     report.update(single_photo_entrypoint=VERSION,input_identity=identity,model_sha256=predictions['model_sha256'],
         mask_scope='unreviewed_model_proposal',detector_policy=detector_policy,pose_metadata=pose_metadata,
+        coarse_coverage_metadata=coarse_metadata,
         GT_used=False,independent_final_test=False,development_replay=development_replay,
         consumed_source_detected=bool(roles),consumed_registry_roles=roles,runtime_source_snapshot=runtime_sources,
         runtime_source_snapshot_verified=True,
@@ -103,10 +114,12 @@ if __name__=='__main__':
     parser=JSONArgumentParser(description=__doc__)
     for name in ['input','model','consumed-registry','output']:parser.add_argument('--'+name,type=Path,required=True)
     parser.add_argument('--photo-semantics',type=Path);parser.add_argument('--development-replay',action='store_true')
-    parser.add_argument('--include-observed-pose',action='store_true',help='Explicit wider unreviewed proposal; can redact extra background.');args=parser.parse_args()
+    parser.add_argument('--include-observed-pose',action='store_true',help='Explicit wider unreviewed proposal; can redact extra background.')
+    parser.add_argument('--include-coarse-pad',action='store_true',help='Explicit isolated-finger coarse completion; may redact extra skin.');args=parser.parse_args()
     try:
         with cli_progress_to_stderr():_,result=run(args.input,args.model,args.consumed_registry,args.output,
-            photo_semantics=args.photo_semantics,development_replay=args.development_replay,include_observed_pose=args.include_observed_pose)
+            photo_semantics=args.photo_semantics,development_replay=args.development_replay,include_observed_pose=args.include_observed_pose,
+            include_coarse_pad=args.include_coarse_pad)
         print(json.dumps(result,indent=2))
     except Exception as error:
         print(json.dumps(dict(status='error',error=type(error).__name__,reason=str(error))));raise SystemExit(1)
