@@ -143,3 +143,9 @@ actual matcher results and rejected four-view model averaging. All new
 association/resize/pitch tools remain experimental; current GUI/API defaults,
 checkpoint preprocessing, frozen protection math and thresholds stay intact.
 The follow-up separates synthetic platform checks from full model parity.
+
+The [external-model/redaction experiment](PHOTO_EXTERNAL_MODELS_AND_REDACTION_20261016.md)
+adds actual SAM 2.1/FingerNet comparisons and a separate visible black-redaction
+command for unmeasurable spacing. Windows AI tests reached 705. It is an
+explicit alternative protection method with unverified mask coverage; existing
+GUI/API defaults and frozen natural-renderer behavior remain unchanged.
