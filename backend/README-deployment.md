@@ -37,8 +37,15 @@ Windows에서 임시 HTTPS를 경유한 검사 8개가 통과했다. 합성 PNG/
 
 Windows 회귀는 288개와 하위 검사 59개가 통과했다. 구 checkout에 없는 계약 JSON
 2개는 같은 main SHA의 원문을 메모리에서 읽었으며 `contracts/`는 수정하지 않았다.
-읽기 전용 Nginx의 기본 임시 경로 문제를 수정하고 별도 회귀 검사 1개도 통과했다.
-고정 주소, 재부팅 후 복구, GitHub 재배포·복구, 프록시 과부하·timeout·취소 주입,
+이후 읽기 전용 Nginx의 임시 경로와 Git 추출 작업 폴더를 수정했으며, 실제 Git 커밋의
+backend 추출과 배포 도구 테스트 17개가 통과했다.
+
+학교 Linux에서 GitHub 커밋 `dde89085ffefa07d6707962208c2a8ed291dbaa4`를
+`update`로 별도 release 폴더에 배포했다. Nginx 설정 검사와 3개 서비스 Healthy,
+내부 8개·외부 HTTPS 8개 검사 재통과를 확인했다. 이 재배포에서는 Tunnel 프로세스를
+유지했고 같은 임시 주소로 접속됐다. 재시작 때도 같은 주소라는 보장은 아니다.
+
+고정 주소, 재부팅 후 복구, rollback, 프록시 과부하·timeout·취소 주입,
 실제 AI 및 앱 연동은 이 결과만으로 완료로 보지 않는다.
 
 ## 처음 실행
@@ -118,6 +125,9 @@ python3 -B backend/manage_deployment.py --sudo update
 `git fetch` 후 해당 커밋의 `backend`만 `backend/.deploy/releases`에 풀어 빌드한다.
 현재 checkout과 `data/` 등 다른 파일을 checkout/reset/stash하지 않는다.
 원격 버전에 `compose.yaml`이 없으면 기존 서버를 교체하지 않고 실패한다.
+Git 추출은 저장소 루트에서 수행한다. 관리 도구 자체의 변경은 별도로 검토한
+`backend/manage_deployment.py`를 호스트에 갱신한다. `update`가 현재 작업 폴더의
+관리 도구나 사용자 파일을 자동으로 덮어쓰지는 않는다.
 성공한 기동의 경로·커밋과 이전 경로를 `.deploy/state.json`에 남긴다.
 이미지 빌드 실패는 기존 서비스를 교체하지 않는다. 기동 이후 실패는 자동으로
 성공 처리하지 않으며 상태·verify 결과를 확인해야 한다.

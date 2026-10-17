@@ -13,15 +13,18 @@
     "scope": "GitHub main SHA의 코드/테스트를 읽고, 로컬에 없던 backend V2 파일 7개만 그 Git 원문으로 복원했다. 기존 V1 및 다른 폴더의 미커밋 변경은 보존했다.",
     "latest_v2_suite_run": true,
     "school_linux_ai_measured": false,
-    "deployment_verified": false,
-    "v2_suite_result": "Windows 전체 회귀 288개와 59 subtests 통과. 구 checkout에 없는 계약 JSON 2개만 동일 Git revision 원문을 메모리에서 읽었다. 이후 Nginx 임시 경로 회귀 1개 통과. 학교 Linux 전체 pytest 회귀는 미실행.",
+    "deployment_verified": true,
+    "v2_suite_result": "Windows 전체 회귀 288개와 59 subtests 통과. 구 checkout에 없는 계약 JSON 2개만 동일 Git revision 원문을 메모리에서 읽었다. 이후 수정한 배포 보조 도구 17개와 실제 Git archive 추출 검사를 통과했다. 학교 Linux 전체 pytest 회귀는 미실행.",
     "scope_update": "사용자 요청으로 미완성 실제 AI 측정은 이후로 두고 V1 Mock, Docker/Compose/Nginx 및 Quick Tunnel 임시 HTTPS 배포를 먼저 진행한다. V2의 실제 AI 계약과 미설정 503은 유지한다.",
     "mock_deployment": {
       "date": "2026-10-17",
       "operator_reported": "Docker build/pip check, Compose config, nginx -t 통과. V1/V2/Nginx Healthy. 내부 Mock HTTP 검사 8개 통과. Cloudflare Quick Tunnel 시작.",
       "external_check": "Windows에서 임시 HTTPS를 통해 같은 검사 8개 통과. 합성 PNG/JPEG 크기·픽셀·Mock 표시 및 상태/공통 404·405/미설정 V2를 검사했다.",
-      "remaining": "GitHub 재배포·rollback, 프록시 장애 주입·재부팅, 고정 주소, 휴대폰 앱·실제 AI 통합"
-    }
+      "remaining": "rollback, 프록시 장애 주입·재부팅, 고정 주소, 휴대폰 앱·실제 AI 통합",
+      "deployed_revision": "dde89085ffefa07d6707962208c2a8ed291dbaa4",
+      "redeployment": "사용자 실행으로 GitHub fetch, backend 별도 release 추출, 빌드, Nginx 설정 검사, 3개 서비스 Healthy 및 내부 8개 검사를 통과했다. 에이전트가 같은 임시 HTTPS 주소로 외부 8개 검사를 다시 통과했다."
+    },
+    "deployment_verification_scope": "V1 Mock의 임시 HTTPS 배포 및 GitHub 커밋 재배포. 실제 AI, 고정 도메인, 실기기 앱, 재부팅/rollback 및 프록시 장애 주입 완료를 뜻하지 않는다."
   },
   "ownership_counts": {
     "Android·시스템 통합": 34,
@@ -39,7 +42,7 @@
   "stack_roles": {
     "docker": "V1/V2 백엔드와 직접 의존성을 고정 이미지로 포장한다. 비공개 모델·registry·사진·키는 포함하지 않는다. 실제 AI runtime 이미지는 모델 요구사항 확정 후 별도 연결한다.",
     "docker_compose": "서비스/네트워크/환경변수/healthcheck/재시작·종료·읽기 전용 자료 마운트를 묶는다. 외부 공개 포트와 작업별 임시 자료 수명을 명시한다.",
-    "nginx": "V1/V2 경로 전달, 본문/접수 제한, timeout, 공통 프록시 오류, 비저장/로그 정책을 담당한다. Mock 공개 구성은 구현했으며 실제 Linux 검증이 남았다.",
+    "nginx": "V1/V2 경로 전달, 본문/접수 제한, timeout, 공통 프록시 오류, 비저장/로그 정책을 담당한다. Linux 설정·기동 및 Mock HTTPS 왕복 검증을 통과했다. 과부하/timeout/취소 장애 주입은 별도 검증 대상이다.",
     "uvicorn": "FastAPI ASGI 실행을 담당한다. 프로세스 안의 ID/접수 한도 계약을 보존하도록 V1/V2 각각 single worker를 기준으로 검증한다.",
     "fastapi": "V1/V2 계약·입력/결과 독립 검증·공통 오류·상태 API·작업 수명과 AI 어댑터를 담당한다.",
     "external_access": "Tailscale+SSH는 관리자 전용이다. 도메인이 없는 현재는 사용자 요청에 따라 Cloudflare Quick Tunnel 임시 HTTPS로 Mock을 시험한다. 고정 주소·상시 운영·실제 AI 시간과 edge timeout 호환성은 별도 확인한다."
@@ -77,8 +80,9 @@
     }
   ],
   "evidence_limits": [
+    "2026-10-17 GitHub 커밋 dde89085ffefa07d6707962208c2a8ed291dbaa4로 학교 Linux 재배포 성공. 내부와 외부 임시 HTTPS Mock 검사 각각 8개 재통과. 같은 Tunnel 주소는 유지됐지만 재부팅 후 고정 주소를 보장하지 않는다.",
     "2026-10-17 Windows 전체 회귀 288개와 59 subtests 통과. V2 계약 fixture JSON 2개만 같은 Git SHA에서 메모리로 공급했다. 다른 폴더 수정 없이 기존 V1/V2·측정 도구·배포 보조 도구·독립 결과 검사를 실행했다. 실제 AI 성능 증거가 아니다.",
-    "이후 Nginx의 모든 임시 경로를 tmpfs로 제한하는 회귀 검사 1개가 통과했다.",
+    "Nginx tmpfs 경로와 Git archive의 저장소 루트 실행을 보강한 뒤 배포 보조 도구 17개 및 실제 Git 추출 검사를 통과했다.",
     "사용자가 학교 Linux에서 Docker/Compose 빌드·Nginx 설정 검사·3개 서비스 Healthy와 내부 합성 HTTP 검사 8개 통과 결과를 전달했다. 에이전트는 Windows에서 공개 임시 HTTPS 검사 8개를 별도 실행해 통과했다.",
     "사용자 보고: /home/user/BlurFing 클론 SHA 6e17794918ea66f61ca6ffa90f339318031f2e91, Compose 5.1.4, sudo Docker 엔진 29.5.2. data 파일 5개의 기존 변경은 보존한다.",
     "test_definitions는 기준 revision에 실제 존재하는 테스트 함수 참조다. 해당 요구사항 전체를 충족했다는 인증이나 향후 테스트 통과를 의미하지 않는다.",
@@ -948,7 +952,7 @@
       ],
       "pending_evidence": [
         "학교 Linux 실제 모델 처리 시간 측정",
-        "Docker/Compose/Nginx/Uvicorn/FastAPI 구성·회귀 검증",
+        "학교 Linux 전체 pytest 및 프록시 과부하/timeout/취소 장애 주입 검증",
         "고정 HTTPS 주소와 Tunnel 연결·재시작 지속성 검증",
         "실제 앱/AI 통합 및 운영 인수"
       ]
@@ -985,7 +989,7 @@
         }
       ],
       "pending_evidence": [
-        "최신 V2 테스트 스위트와 실제 Linux 엔진 실행 재검증"
+        "학교 Linux V2 전체 pytest 및 실제 엔진 실행 검증"
       ]
     },
     {
@@ -1028,7 +1032,7 @@
         }
       ],
       "pending_evidence": [
-        "최신 V2 및 native 계약 테스트 스위트 재실행",
+        "학교 Linux V2 및 native 계약 테스트 스위트 실행",
         "Nginx 통과 시 실제 본문 상한과 임시 저장 처리 확인"
       ]
     },
@@ -1068,7 +1072,7 @@
         }
       ],
       "pending_evidence": [
-        "최신 V2 및 native 계약 테스트 스위트 재실행",
+        "학교 Linux V2 및 native 계약 테스트 스위트 실행",
         "Linux 실제 모델 반환과 Android 저장/readback 결합 검증"
       ]
     },
