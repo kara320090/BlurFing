@@ -59,8 +59,10 @@ def export_release(revision):
         raise ValueError("A full commit SHA is required")
     # Refuse an old source revision that has not yet received the deployment files.
     run(["git", "show", revision + ":backend/compose.yaml"], capture=True)
+    # Archive pathspecs are relative to cwd. Running from backend/ would search
+    # for backend/backend and fail before replacing the running deployment.
     result = subprocess.run(["git", "archive", "--format=tar", revision, "backend"],
-                            cwd=ROOT, check=True, capture_output=True)
+                            cwd=ROOT.parent, check=True, capture_output=True)
     if len(result.stdout) > 64 * 1024 * 1024:
         raise ValueError("Backend source archive is unexpectedly large")
     releases = ROOT / ".deploy" / "releases"
@@ -94,14 +96,17 @@ def main(argv=None):
     parser.add_argument("--sudo", action="store_true", help="use sudo for Docker only")
     parser.add_argument("command", choices=("check", "up", "verify", "public", "url", "status", "update", "rollback"))
     args = parser.parse_args(argv)
+    stage = "read deployment state"
     try:
         source, release = active_source()
         if args.command == "up":
             source, release = ROOT, "local"
         if args.command == "update":
             # Fetch is non-destructive to all working-tree files, including data/.
+            stage = "fetch GitHub main"
             run(["git", "fetch", "--no-tags", "origin", "main"])
             release = run(["git", "rev-parse", "FETCH_HEAD"], capture=True).stdout.strip()
+            stage = "export backend from repository root"
             source = export_release(release)
         if args.command == "rollback":
             state = json.loads(STATE.read_text(encoding="utf-8"))
@@ -118,23 +123,33 @@ def main(argv=None):
         def dc(*arguments, capture=False):
             return run(command + list(arguments), capture=capture, env=environment)
 
+        stage = "validate Compose configuration"
         dc("config", "--quiet")
         if args.command in {"up", "update", "rollback"}:
             # Build before replacing running services; a build failure leaves them alone.
+            stage = "build backend image"
             dc("build", "api-v1", "api-v2")
+            stage = "validate Nginx configuration"
             dc("run", "--rm", "--no-deps", "nginx", "-t")
+            stage = "start services and wait for healthchecks"
             dc("up", "-d", "--wait", "--wait-timeout", "120", "--force-recreate", "api-v1", "api-v2", "nginx")
+            stage = "record deployment state"
             record_deployment(source, release)
             print("Services started. Run verify next; real AI and external HTTPS are not verified yet.")
         elif args.command == "check":
+            stage = "validate Nginx configuration"
             dc("run", "--rm", "--no-deps", "nginx", "-t")
         elif args.command == "verify":
+            stage = "verify internal Mock HTTP"
             dc("exec", "-T", "api-v1", "python", "check_deployment_http.py", "--base-url", "http://nginx:8080")
         elif args.command == "public":
+            stage = "verify internal Mock HTTP"
             dc("exec", "-T", "api-v1", "python", "check_deployment_http.py", "--base-url", "http://nginx:8080")
+            stage = "start Quick Tunnel"
             dc("--profile", "public", "up", "-d", "--no-recreate", "tunnel")
             print("Quick Tunnel started. Run url to read its temporary HTTPS URL; external verification is still required.")
         elif args.command == "url":
+            stage = "read Quick Tunnel URL"
             logs = dc("--profile", "public", "logs", "--no-color", "--tail", "100", "tunnel", capture=True).stdout
             urls = re.findall(r"https://[a-z0-9-]+\.trycloudflare\.com", logs)
             if not urls:
@@ -142,10 +157,11 @@ def main(argv=None):
                 return 1
             print(urls[-1])
         elif args.command == "status":
+            stage = "read service status"
             dc("--profile", "public", "ps")
         return 0
     except (OSError, ValueError, KeyError, subprocess.SubprocessError, tarfile.TarError):
-        print("Deployment command failed. No checkout/reset/stash was performed. Review the visible Docker/Git error; do not share secrets.")
+        print(f"Deployment failed at: {stage}. No checkout/reset/stash was performed. Review the visible Docker/Git error; do not share secrets.")
         return 1
 
 

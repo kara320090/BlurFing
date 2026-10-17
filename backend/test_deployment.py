@@ -130,8 +130,13 @@ def test_release_export_uses_separate_directory_and_preserves_working_copy(monke
     working_file.write_text("local changes", encoding="utf-8")
     monkeypatch.setattr(deployment, "ROOT", tmp_path)
     monkeypatch.setattr(deployment, "run", lambda *a, **k: None)
-    monkeypatch.setattr(deployment.subprocess, "run", lambda *a, **k: SimpleNamespace(
-        stdout=release_archive("backend/compose.yaml")))
+    def git_archive(command, **kwargs):
+        assert command[:3] == ["git", "archive", "--format=tar"]
+        assert command[-1] == "backend"
+        assert kwargs["cwd"] == tmp_path.parent
+        return SimpleNamespace(stdout=release_archive("backend/compose.yaml"))
+
+    monkeypatch.setattr(deployment.subprocess, "run", git_archive)
     exported = deployment.export_release("a" * 40)
     assert exported.is_relative_to(tmp_path / ".deploy" / "releases")
     assert (exported / "compose.yaml").read_text() == "deployment source\n"
