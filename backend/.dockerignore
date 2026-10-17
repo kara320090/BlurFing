@@ -1,0 +1,7 @@
+**
+!*.py
+!requirements*.txt
+!Dockerfile
+test_*.py
+measure_photo_ai.py
+manage_deployment.py

@@ -1,0 +1,9 @@
+.env
+.env.*
+!.env.example
+compose.local.yaml
+.deploy/
+deployment-upload.tar.gz
+__pycache__/
+.pytest_cache/
+.venv/

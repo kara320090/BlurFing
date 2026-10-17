@@ -54,28 +54,30 @@ class ExperimentalPhotoUpload internal constructor(
             try { active();fromUpright(upright,active) } finally { upright.recycle() }
         }
         fun fromUpright(source: Bitmap,checkActive: ()->Unit = {},checkMemory: Boolean=true): ExperimentalPhotoUpload {
-            if(checkMemory) ExperimentalPhotoMemory.requireAvailable(ExperimentalPhotoMemory.upload(source.width,source.height))
-                val pixels=IntArray(source.width)
-                val encoded=ExperimentalPngCodec.encodeRgb(source.width,source.height,checkActive) { y,row ->
-                    source.getPixels(pixels,0,source.width,0,y,source.width,1)
-                    pixels.forEachIndexed { x,c ->
-                        val a=c ushr 24 and 255
-                        fun channel(shift: Int)=(((c ushr shift and 255)*a+255*(255-a)+127)/255)
-                        val r=channel(16);val g=channel(8);val b=channel(0)
-                        row[3*x]=r.toByte();row[3*x+1]=g.toByte();row[3*x+2]=b.toByte()
-                    }
+            if(checkMemory) {
+                ExperimentalPhotoMemory.requireAvailable(ExperimentalPhotoMemory.upload(source.width,source.height))
+            }
+            val pixels=IntArray(source.width)
+            val encoded=ExperimentalPngCodec.encodeRgb(source.width,source.height,checkActive) { y,row ->
+                source.getPixels(pixels,0,source.width,0,y,source.width,1)
+                pixels.forEachIndexed { x,c ->
+                    val a=c ushr 24 and 255
+                    fun channel(shift: Int)=(((c ushr shift and 255)*a+255*(255-a)+127)/255)
+                    val r=channel(16);val g=channel(8);val b=channel(0)
+                    row[3*x]=r.toByte();row[3*x+1]=g.toByte();row[3*x+2]=b.toByte()
                 }
-                val scaled=preview(source)
-                val small=scaled.copy(Bitmap.Config.ARGB_8888,true)
-                if(scaled!==source)scaled.recycle()
-                val smallRow=IntArray(small.width)
-                repeat(small.height) { y -> checkActive();small.getPixels(smallRow,0,small.width,0,y,small.width,1)
-                    smallRow.forEachIndexed { x,c -> val a=c ushr 24 and 255
-                        fun channel(shift: Int)=(((c ushr shift and 255)*a+255*(255-a)+127)/255)
-                        smallRow[x]=0xff000000.toInt() or (channel(16) shl 16) or (channel(8) shl 8) or channel(0)
-                    };small.setPixels(smallRow,0,small.width,0,y,small.width,1)
-                };small.setHasAlpha(false)
-                return ExperimentalPhotoUpload(encoded.png,source.width,source.height,ExperimentalPngCodec.hash(encoded.png),encoded.rgbSha256,small)
+            }
+            val scaled=preview(source)
+            val small=scaled.copy(Bitmap.Config.ARGB_8888,true)
+            if(scaled!==source)scaled.recycle()
+            val smallRow=IntArray(small.width)
+            repeat(small.height) { y -> checkActive();small.getPixels(smallRow,0,small.width,0,y,small.width,1)
+                smallRow.forEachIndexed { x,c -> val a=c ushr 24 and 255
+                    fun channel(shift: Int)=(((c ushr shift and 255)*a+255*(255-a)+127)/255)
+                    smallRow[x]=0xff000000.toInt() or (channel(16) shl 16) or (channel(8) shl 8) or channel(0)
+                };small.setPixels(smallRow,0,small.width,0,y,small.width,1)
+            };small.setHasAlpha(false)
+            return ExperimentalPhotoUpload(encoded.png,source.width,source.height,ExperimentalPngCodec.hash(encoded.png),encoded.rgbSha256,small)
         }
         /** Only a canonical wire PNG; validates raw pixels while retaining a bounded preview. */
         fun fromCanonicalPng(bytes: ByteArray,checkActive: ()->Unit = {},checkMemory: Boolean=true): ExperimentalPhotoUpload {
