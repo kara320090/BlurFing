@@ -23,8 +23,15 @@ data class ExperimentalPhotoState(
     val engine: ExperimentalPhotoEngine=ExperimentalPhotoEngine.NATIVE,
     val serverAddress: String=EXPERIMENTAL_PHOTO_EMULATOR_DEFAULT,
     val busy: Boolean=false,val importing: Boolean=false,val saving: Boolean=false,
-    val awaitingSave: Boolean=false,val message: String?=null
-)
+    val awaitingSave: Boolean=false,val message: String?=null,
+    val savedResultRequestId: String?=null
+) {
+    val hasActiveWork: Boolean get() = busy || importing || saving || awaitingSave
+    val hasUnsavedResult: Boolean get() = result?.let {
+        it.presentation.canSaveChangedCopy && it.requestId != savedResultRequestId
+    } == true
+    val requiresExitConfirmation: Boolean get() = hasActiveWork || hasUnsavedResult
+}
 
 /** Independent request lifecycle; old v1 jobs/settings/results are never reused. */
 class ExperimentalPhotoViewModel(
@@ -44,7 +51,7 @@ class ExperimentalPhotoViewModel(
 
     fun setAddress(value: String) { if(!mutable.value.busy)mutable.value=mutable.value.copy(serverAddress=value.take(2048),message=null) }
     fun setEngine(value: ExperimentalPhotoEngine) { if(!mutable.value.busy && !mutable.value.importing && !mutable.value.saving) {
-        invalidate();mutable.value=mutable.value.copy(engine=value,result=null,message=null,awaitingSave=false)
+        invalidate();mutable.value=mutable.value.copy(engine=value,result=null,message=null,awaitingSave=false,savedResultRequestId=null)
     } }
     private fun invalidate() {
         generation++;requestId?.let { service?.cancel(it) };task?.cancel();saveTask?.cancel()
@@ -53,7 +60,7 @@ class ExperimentalPhotoViewModel(
     fun select(context: Context,uri: Uri?) {
         if(uri==null)return
         invalidate();val token=generation
-        mutable.value=mutable.value.copy(source=null,result=null,busy=false,importing=true,saving=false,awaitingSave=false,message=null)
+        mutable.value=mutable.value.copy(source=null,result=null,busy=false,importing=true,saving=false,awaitingSave=false,message=null,savedResultRequestId=null)
         task=viewModelScope.launch {
             try {
                 val source=loader(context.applicationContext,uri);coroutineContext.ensureActive()
@@ -68,7 +75,7 @@ class ExperimentalPhotoViewModel(
         if(state.busy || state.importing || state.saving)return
         invalidate();val token=generation;val id=UUID.randomUUID().toString()
         requestId=id
-        mutable.value=state.copy(result=null,busy=true,awaitingSave=false,message=null)
+        mutable.value=state.copy(result=null,busy=true,awaitingSave=false,message=null,savedResultRequestId=null)
         task=viewModelScope.launch {
             try {
                 val api=serviceFactory(state.serverAddress);service=api
@@ -119,7 +126,7 @@ class ExperimentalPhotoViewModel(
                     } ?: throw ExperimentalPhotoException("저장한 복사본을 확인할 수 없습니다.")
                     require(count==pending.result.png.size.toLong() && ExperimentalPngCodec.hex(digest.digest())==ExperimentalPngCodec.hash(pending.result.png))
                 };complete=true
-                if(pending.generation==generation)mutable.value=mutable.value.copy(saving=false,message="검증된 반환 PNG 복사본을 저장했습니다. 전체 지문 보호는 보장되지 않습니다.")
+                if(pending.generation==generation)mutable.value=mutable.value.copy(saving=false,savedResultRequestId=pending.result.requestId,message="검증된 반환 PNG 복사본을 저장했습니다. 전체 지문 보호는 보장되지 않습니다.")
             } catch(e: CancellationException) { throw e }
             catch(_: Exception) { if(pending.generation==generation)mutable.value=mutable.value.copy(saving=false,message="복사본을 저장하지 못했습니다. 원본과 비교 결과는 유지됩니다.") }
             finally {
