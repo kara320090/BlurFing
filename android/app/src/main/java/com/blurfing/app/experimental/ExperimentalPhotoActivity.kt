@@ -3,7 +3,6 @@ package com.blurfing.app.experimental
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.PickVisualMediaRequest
@@ -29,7 +28,7 @@ class ExperimentalPhotoActivity: ComponentActivity() {
         setContent {
             BlurFingTheme {
                 val state by model.state.collectAsState()
-                var leave by rememberSaveable { mutableStateOf(false) }
+                val requestExit = rememberExperimentalExitRequest(state, model::cancel, ::finish)
                 var saveWarning by rememberSaveable { mutableStateOf(false) }
                 var saveTicket by rememberSaveable { mutableStateOf<String?>(null) }
                 var showOverlay by rememberSaveable { mutableStateOf(true) }
@@ -37,11 +36,6 @@ class ExperimentalPhotoActivity: ComponentActivity() {
                 val save=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("image/png")) { uri: Uri? ->
                     val ticket=saveTicket;saveTicket=null;model.finishSave(applicationContext,uri,ticket)
                 }
-                BackHandler { if(state.busy || state.saving || state.importing)leave=true else finish() }
-                if(leave) AlertDialog(onDismissRequest={leave=false},title={Text("실험을 종료할까요?")},
-                    text={Text("진행 중인 요청을 취소합니다. 원본 사진 파일은 유지됩니다.")},
-                    confirmButton={TextButton(onClick={model.cancel();leave=false;finish()}) { Text("취소 후 종료") }},
-                    dismissButton={TextButton(onClick={leave=false}) { Text("계속 보기") }})
                 if(saveWarning && state.result!=null) AlertDialog(onDismissRequest={saveWarning=false},title={Text("실험 복사본 저장")},
                     text={Text("검출되지 않았거나 거절된 지문은 원본으로 남을 수 있습니다. 이 이미지는 전체 지문 보호가 검증되지 않은 실험 결과입니다. 원본과 별도 PNG로 저장합니다.")},
                     confirmButton={TextButton(onClick={
@@ -90,7 +84,7 @@ class ExperimentalPhotoActivity: ComponentActivity() {
                         }
                         if(state.saving)Text("검증된 원본 해상도 PNG를 저장 중…")
                         state.message?.let { Text(it,color=MaterialTheme.colorScheme.error) }
-                        OutlinedButton(onClick={if(state.busy || state.saving || state.importing)leave=true else finish()}) { Text("일반 화면으로 돌아가기") }
+                        OutlinedButton(onClick=requestExit) { Text("일반 화면으로 돌아가기") }
                     }
                 }
             }

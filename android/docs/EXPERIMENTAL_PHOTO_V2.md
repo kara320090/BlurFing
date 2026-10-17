@@ -12,6 +12,8 @@
 
 `success`는 검출된 후보가 변환되었다는 뜻이다. 검출 누락이나 전체 지문 보호를 보장하지 않는다. `partial_success`/`rejected`에는 원본 지문이 남을 수 있다는 안내를 유지한다. 변경된 결과만 별도 PNG로 저장하며, 저장 뒤 provider에서 다시 읽어 PNG 길이와 SHA256이 일치해야 완료로 표시한다.
 
+변경된 결과를 저장하지 않고 뒤로가거나 일반 화면으로 돌아가면 종료 여부를 확인한다. `계속 보기`는 결과를 유지한다. 입력·처리·저장과 외부 저장 위치 선택 대기에는 작업 취소를 확인하며, 저장창 취소나 저장 실패는 결과를 저장 완료로 표시하지 않는다. 확인 중 작업이 끝나면 현재 결과에 맞는 안내로 갱신한다. [종료·저장 상태 규칙](../../docs/android-next-12-experimental-exit.md)을 따른다.
+
 단위 테스트는 Pillow가 생성·독립 확인한 합성 RGB/L PNG, 필터 0~4, 비정상 PNG·중복 JSON, 실제 HTTP multipart, 취소·늦은 결과·저장 ticket 수명을 검사한다. 실제 사진·모델·정답 자료는 APK에 포함하지 않는다. `tools/generate_experimental_png_fixtures.py`는 합성 fixture만 재생성한다.
 
 선택적 기기 검사는 `ExperimentalWireInstrumentedTest`를 사용한다. 로컬 자료는 adb로 앱의 private filesDir에 일시 배치하고 `private_input`, `expected_rgb_sha256`을 인자로 준다. `private_response`는 기존 실제 응답을 다시 검증하며, `real_backend_url`/`photo_engine`은 Repository→실제 HTTP 경로를 실행한다. 실제 응답·비교 영수증·PNG는 앱 private filesDir에만 기록한다. provider 검사는 숨겨진 임시 MediaStore record를 읽기 검증 후 삭제한다. 이 검사는 AI의 일반 성능이나 보안 증명이 아니다.

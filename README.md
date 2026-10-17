@@ -5,6 +5,8 @@ SNS 사진 속 손가락 지문 노출을 줄이는 Android 보호 앱 프로젝
 
 ## 현재 상태
 
+2026-10-17 Android 개선: 사진 AI V2의 미저장 결과 종료 확인을 추가했습니다. 시스템 뒤로가기·일반 화면 복귀에서 현재 결과를 유지할 수 있고, PNG 재읽기 검증 후에만 해당 요청을 저장 완료로 기록합니다. Android 단위 **176개 통과·선택 시험 1개 건너뜀**, 신규 실험 화면 **4개**와 기존 뒤로가기 **3개** 에뮬레이터 시험이 통과했습니다. [12번 작업·검증 기록](docs/worklogs/2026-10-17-이봉헌-android-experimental-exit.md)을 확인하세요. 이번 검증은 합성 자료의 앱 상태·저장 동작이며 AI 보호 성능 시험은 아닙니다.
+
 2026-10-16 통합 검증: 별도 선택 경로인 사진 AI V2를 Android·로컬 서버·실제 모델에 연결했습니다. AI scripts **665개**, Windows GUI **22개**, Android 단위 **170개**·UI **11개**가 통과했습니다. Android Repository → loopback HTTP → `pose_v14` → MediaStore 저장·다시 읽기 1회와 PC `native_v12` 실제 HTTP 처리를 확인했습니다. 두 엔진 모두 같은 개발 사진에서 일부 후보만 처리했으며, 거절 영역과 적용 마스크 밖 RGB는 업로드 원본과 동일했습니다. 이 기록은 전체 사진의 보호 성공률이나 독립 성능 평가가 아닙니다.
 
 기존 V1 블러 API·기본 엔진은 유지하며 V2는 명시적으로 선택하는 미승인 실험입니다. Windows 새 PHOTO 경로는 유효한 원본 RGB ICC를 출력에 보존하고, HTTP는 클라이언트가 sRGB·방향을 정규화한 metadata 없는 RGB PNG를 사용합니다. 원본 파일은 덮어쓰지 않습니다. [V2 서버](backend/README-photo-v2.md), [Android 실험](android/docs/EXPERIMENTAL_PHOTO_V2.md), [실제 검증과 한계](ai/docs/PHOTO_DESKTOP_VALIDATION_20261016.md)를 확인하세요. 새 경로의 Linux 동등성·독립 정답 자료 평가·일반 지문 보호 성능은 아직 미검증입니다. 아래 9월 수치는 당시의 기능별 기록입니다.

@@ -81,6 +81,8 @@ SNS 사진 속 손가락 지문 노출을 줄이는 Android 보호 앱 프로젝
 
 ## 4. 검증 결과 및 구분
 
+2026-10-17: 사진 AI V2에서 저장하지 않은 결과의 종료 확인과 요청별 저장 완료 상태를 추가했습니다. Android 단위 **177개 중 176개 통과·1개 건너뜀**(비공개 사진이 필요한 선택 시험), 신규 `ExperimentalExitDeviceTest` **4개**와 기존 `BackNavigationDeviceTest` **3개** 에뮬레이터 시험이 통과했습니다. [종료 규칙](../docs/android-next-12-experimental-exit.md)과 [검증 기록](../docs/worklogs/2026-10-17-이봉헌-android-experimental-exit.md)을 따릅니다. 아래 내용은 이전 기능별 기록입니다.
+
 2026-10-15: 시스템 뒤로가기와 처리 취소 확인을 연결했습니다. Android 단위 테스트 **136개**, 신규 `BackNavigationDeviceTest` 에뮬레이터 테스트 **3개** 및 debug·계측 APK 빌드가 통과했습니다. 초기 에뮬레이터 환경 문제와 재검증 결과는 [11번 검증 기록](../docs/worklogs/2026-10-15-이봉헌-android-back-navigation.md)에 구분해 기록했습니다. 아래 내용은 이전 기능별 검증 기록입니다.
 
 최종 추가 작업에서는 단위 테스트 107개, 에뮬레이터 UI 5개, 팀 백엔드 직접 연결 4개를 통과했습니다. [설정·복원](../docs/android-session-recovery.md), [비교·평가](../docs/android-comparison.md), [기기 검증](../docs/android-device-verification.md), [백엔드 연결 재현](../docs/android-live-backend-checks.md), [실행 기록과 남은 범위](../docs/worklogs/2026-09-28-이봉헌-android-preparation.md)를 확인하세요. 아래 91개 결과는 카메라 기능 추가 시점의 기록입니다.
