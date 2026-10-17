@@ -2,6 +2,17 @@
 
 주담당: 한윤섭
 
+## Docker 기반 Mock 배포
+
+학교 Linux의 Docker·Compose·Nginx·Uvicorn·FastAPI 구성과 임시 HTTPS 실행은
+[Mock 서버 배포 안내](README-deployment.md)를 따릅니다. 기본 공개 시험은 V1 Mock이며
+실제 보호 처리를 하지 않습니다. 별도 [V2 API](README-photo-v2.md)는 보존하고 모델
+미설정 시 503을 반환합니다. 아래 기존 V1 기능 설명과 진입점은 그대로 유지합니다.
+
+요구사항 120개의 원문과 담당·백엔드 코드 참조는
+[요구사항 추적표](requirements-traceability.json), 실제 모델이 완성된 뒤의 처리 시간
+측정은 [AI 측정 안내](README-ai-measurement.md)를 확인하세요.
+
 ## 역할
 
 백엔드는 보호 요청을 검사하고 연결된 처리 함수를 호출한 뒤, 결과를 검증해 API 응답으로 반환합니다. 현재 이 폴더에는 실제 블러 알고리즘이 없으며 AI 담당자의 모듈을 연결할 호출 지점과 개발용 Mock이 있습니다. 이 문서는 이 폴더의 코드·설정과 아래 명시한 실행 기록을 기준으로 작성했습니다.
@@ -19,7 +30,8 @@
 | `requirements-dev.txt` | 실행 의존성 포함 및 httpx, pytest 추가 |
 | `README.md` | 구현 기능, 사용법, 테스트 범위와 제한 |
 
-의존성 파일은 패키지 버전을 고정하지 않습니다.
+기존 `requirements.txt`와 `requirements-dev.txt`는 버전을 고정하지 않습니다.
+배포용 `requirements-deploy.txt`는 직접 사용하는 패키지 버전을 별도로 고정합니다.
 
 ## 지금까지 구현한 것
 
