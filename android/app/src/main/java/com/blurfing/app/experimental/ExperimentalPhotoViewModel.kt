@@ -24,7 +24,8 @@ data class ExperimentalPhotoState(
     val serverAddress: String=EXPERIMENTAL_PHOTO_EMULATOR_DEFAULT,
     val busy: Boolean=false,val importing: Boolean=false,val saving: Boolean=false,
     val awaitingSave: Boolean=false,val message: String?=null,
-    val savedResultRequestId: String?=null
+    val savedResultRequestId: String?=null,
+    val replacement: ExperimentalPhotoReplacement?=null
 ) {
     val hasActiveWork: Boolean get() = busy || importing || saving || awaitingSave
     val hasUnsavedResult: Boolean get() = result?.let {
@@ -48,17 +49,69 @@ class ExperimentalPhotoViewModel(
     private data class PendingSave(val generation: Long,val result: ValidatedExperimentalPhoto)
     private var pendingSave: PendingSave?=null
     private var outstandingSaveTicket: String?=null
+    private sealed interface ReplacementAction {
+        data class Engine(val engine: ExperimentalPhotoEngine): ReplacementAction
+        data class Photo(val app: Context, val uri: Uri): ReplacementAction
+        data object Run: ReplacementAction
+    }
+    private data class PendingReplacement(val token: String, val generation: Long,
+        val result: ValidatedExperimentalPhoto, val action: ReplacementAction)
+    private var pendingReplacement: PendingReplacement?=null
 
-    fun setAddress(value: String) { if(!mutable.value.busy)mutable.value=mutable.value.copy(serverAddress=value.take(2048),message=null) }
-    fun setEngine(value: ExperimentalPhotoEngine) { if(!mutable.value.busy && !mutable.value.importing && !mutable.value.saving) {
+    fun setAddress(value: String) { if(!mutable.value.hasActiveWork && pendingReplacement==null)mutable.value=mutable.value.copy(serverAddress=value.take(2048),message=null) }
+    fun setEngine(value: ExperimentalPhotoEngine) {
+        val state=mutable.value
+        if(value==state.engine || state.hasActiveWork || deferReplacement(ReplacementAction.Engine(value)))return
+        changeEngine(value)
+    }
+    private fun changeEngine(value: ExperimentalPhotoEngine) {
         invalidate();mutable.value=mutable.value.copy(engine=value,result=null,message=null,awaitingSave=false,savedResultRequestId=null)
-    } }
+    }
+    /** Keep the result until one decision for this exact generation is confirmed. */
+    private fun deferReplacement(action: ReplacementAction): Boolean {
+        if(pendingReplacement!=null)return true
+        val state=mutable.value
+        if(!state.hasUnsavedResult)return false
+        val token=UUID.randomUUID().toString()
+        pendingReplacement=PendingReplacement(token,generation,state.result!!,action)
+        val kind=when(action) {
+            is ReplacementAction.Engine -> ExperimentalPhotoReplacementKind.ENGINE
+            is ReplacementAction.Photo -> ExperimentalPhotoReplacementKind.PHOTO
+            ReplacementAction.Run -> ExperimentalPhotoReplacementKind.RUN
+        }
+        mutable.value=state.copy(replacement=ExperimentalPhotoReplacement(token,kind,
+            (action as? ReplacementAction.Engine)?.engine))
+        return true
+    }
+    fun dismissReplacement(token: String) {
+        if(token!=pendingReplacement?.token)return
+        pendingReplacement=null;mutable.value=mutable.value.copy(replacement=null)
+    }
+    fun confirmReplacement(token: String) {
+        val pending=pendingReplacement ?: return
+        if(token!=pending.token)return
+        dismissReplacement(token)
+        val state=mutable.value
+        if(pending.generation!=generation || state.result!==pending.result || state.hasActiveWork)return
+        when(val action=pending.action) {
+            is ReplacementAction.Engine -> changeEngine(action.engine)
+            is ReplacementAction.Photo -> loadSelected(action.app,action.uri)
+            ReplacementAction.Run -> runSelected()
+        }
+    }
     private fun invalidate() {
         generation++;requestId?.let { service?.cancel(it) };task?.cancel();saveTask?.cancel()
         requestId=null;task=null;saveTask=null;service=null;pendingSave=null
+        pendingReplacement=null;mutable.value=mutable.value.copy(replacement=null)
     }
     fun select(context: Context,uri: Uri?) {
         if(uri==null)return
+        val state=mutable.value
+        if(state.importing || state.saving || state.awaitingSave ||
+            deferReplacement(ReplacementAction.Photo(context.applicationContext,uri)))return
+        loadSelected(context.applicationContext,uri)
+    }
+    private fun loadSelected(context: Context,uri: Uri) {
         invalidate();val token=generation
         mutable.value=mutable.value.copy(source=null,result=null,busy=false,importing=true,saving=false,awaitingSave=false,message=null,savedResultRequestId=null)
         task=viewModelScope.launch {
@@ -71,8 +124,12 @@ class ExperimentalPhotoViewModel(
         }
     }
     fun start() {
+        val state=mutable.value
+        if(state.source==null || state.hasActiveWork || deferReplacement(ReplacementAction.Run))return
+        runSelected()
+    }
+    private fun runSelected() {
         val state=mutable.value;val source=state.source ?: return
-        if(state.busy || state.importing || state.saving)return
         invalidate();val token=generation;val id=UUID.randomUUID().toString()
         requestId=id
         mutable.value=state.copy(result=null,busy=true,awaitingSave=false,message=null,savedResultRequestId=null)
@@ -91,7 +148,7 @@ class ExperimentalPhotoViewModel(
     fun cancel() { invalidate();mutable.value=mutable.value.copy(busy=false,importing=false,saving=false,awaitingSave=false,message="작업을 취소했습니다. 선택한 원본은 유지됩니다.") }
     fun prepareSave(): String? {
         val s=mutable.value;val result=s.result ?: return null
-        if(s.busy || s.saving || s.awaitingSave || outstandingSaveTicket!=null || !result.presentation.canSaveChangedCopy)return null
+        if(s.hasActiveWork || pendingReplacement!=null || outstandingSaveTicket!=null || !result.presentation.canSaveChangedCopy)return null
         val ticket=UUID.randomUUID().toString();outstandingSaveTicket=ticket
         pendingSave=PendingSave(generation,result);mutable.value=s.copy(awaitingSave=true,message=null);return ticket
     }

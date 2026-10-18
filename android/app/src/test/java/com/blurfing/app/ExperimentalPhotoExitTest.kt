@@ -120,7 +120,9 @@ class ExperimentalPhotoExitTest {
     @Test fun staleSaveTicketCannotMarkAnotherPhotoOrResultSaved() {
         val previousId = vm.state.value.result!!.requestId
         val ticket = vm.prepareSave()
+        vm.cancel() // Explicit cancellation invalidates the outstanding picker before replacement.
         vm.select(context, Uri.parse("content://synthetic/two"))
+        vm.confirmReplacement(vm.state.value.replacement!!.token)
         vm.start()
         val next = vm.state.value.result!!
         assertNotEquals(previousId, next.requestId)
@@ -141,6 +143,19 @@ class ExperimentalPhotoExitTest {
         assertEquals(id, vm.state.value.savedResultRequestId)
         assertFalse(vm.state.value.requiresExitConfirmation)
         assertEquals(1, provider.writes)
+    }
+
+    @Test fun savedResultSurvivesSelectingTheSameEngineAndNewPhotoNeedsNoDiscard() = runBlocking {
+        save()
+        val before = vm.state.value
+        vm.setEngine(before.engine)
+        assertSame(before, vm.state.value)
+        vm.select(context, Uri.parse("content://synthetic/two"))
+        assertNull(vm.state.value.replacement)
+        assertNull(vm.state.value.result)
+        assertSame(source, vm.state.value.source)
+        assertFalse(vm.state.value.hasUnsavedResult)
+        assertArrayEquals(before.result!!.png, provider.file.readBytes())
     }
 
     @Test fun cancellationKeepsAnUnsavedResultAndEngineChangeClearsItsSaveIdentity() = runBlocking {

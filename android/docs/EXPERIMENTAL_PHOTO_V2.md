@@ -18,6 +18,8 @@
 
 선택적 기기 검사는 `ExperimentalWireInstrumentedTest`를 사용한다. 로컬 자료는 adb로 앱의 private filesDir에 일시 배치하고 `private_input`, `expected_rgb_sha256`을 인자로 준다. `private_response`는 기존 실제 응답을 다시 검증하며, `real_backend_url`/`photo_engine`은 Repository→실제 HTTP 경로를 실행한다. 실제 응답·비교 영수증·PNG는 앱 private filesDir에만 기록한다. provider 검사는 숨겨진 임시 MediaStore record를 읽기 검증 후 삭제한다. 이 검사는 AI의 일반 성능이나 보안 증명이 아니다.
 
+미저장 결과를 다른 사진·엔진·재실행으로 교체할 때도 먼저 확인한다. 같은 엔진을 다시 누르거나 사진 선택창·교체 확인을 취소하면 현재 결과를 유지한다. 저장 위치 선택 대기 중에는 교체를 막으며, 이전 확인 응답이 새 작업을 실행하지 못하도록 현재 결과와 일회성 결정을 연결한다. [결과 교체 규칙](../../docs/android-next-13-experimental-replacement.md)을 따른다.
+
 ## 2026-10-16 통합 검증
 
 Android 단위 170개·에뮬레이터 UI 11개가 통과했다. 별도 실제 모델 시험 1회에서 Repository→loopback HTTP→pose V14→MediaStore 저장/readback을 완료했다. 후보 component 7개 중 4개 적용·3개 거절, 변경 438,554픽셀을 관측했으며 거절 영역과 A 밖 RGB 변경은 0이었다. 저장 PNG는 응답과 byte-identical했고 source 보존과 임시 자료 정리를 확인했다. 이는 같은 개발 사진 1장의 통합 검증이며 모든 손가락 검출·일반 보호 성능·독립 최종 평가·Linux 동등성·실물 휴대폰 전반을 승인하지 않는다. [상세 범위](../../ai/docs/PHOTO_DESKTOP_VALIDATION_20261016.md)를 따른다.

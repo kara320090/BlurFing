@@ -120,7 +120,8 @@ class ExperimentalPhotoHttpLifecycleTest {
             val context=RuntimeEnvironment.getApplication();val vm=ExperimentalPhotoViewModel({ service },{ _,_->source });store.put("test",vm)
             vm.select(context,Uri.parse("content://synthetic/one"));vm.start();assertSame(source,vm.state.value.source);assertNull(vm.state.value.result)
             vm.start();assertNotNull(vm.state.value.result);val ticket=vm.prepareSave();assertNotNull(ticket)
-            vm.select(context,Uri.parse("content://synthetic/two"));vm.finishSave(context,null,ticket)
+            vm.cancel();vm.select(context,Uri.parse("content://synthetic/two"))
+            vm.confirmReplacement(vm.state.value.replacement!!.token);vm.finishSave(context,null,ticket)
             assertFalse(vm.state.value.awaitingSave);assertFalse(vm.state.value.saving);assertNull(vm.state.value.result)
         } finally { store.clear();Dispatchers.resetMain() }
     }

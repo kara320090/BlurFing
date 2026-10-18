@@ -33,6 +33,7 @@ class ExperimentalPhotoActivity: ComponentActivity() {
                 var saveTicket by rememberSaveable { mutableStateOf<String?>(null) }
                 var showOverlay by rememberSaveable { mutableStateOf(true) }
                 val picker=rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri: Uri? -> model.select(applicationContext,uri) }
+                ExperimentalPhotoReplacementDialog(state.replacement,model::confirmReplacement,model::dismissReplacement)
                 val save=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("image/png")) { uri: Uri? ->
                     val ticket=saveTicket;saveTicket=null;model.finishSave(applicationContext,uri,ticket)
                 }
@@ -52,20 +53,20 @@ class ExperimentalPhotoActivity: ComponentActivity() {
                         Text("미검증 실험입니다. 미검출·거절 영역에는 원본 지문이 남을 수 있습니다.",color=MaterialTheme.colorScheme.error)
                         Text("사진을 지정한 서버에 업로드하며 원본 파일은 보존합니다.")
                         OutlinedTextField(value=state.serverAddress,onValueChange=model::setAddress,label={Text("실험 서버 주소")},
-                            enabled=!state.busy && !state.importing && !state.saving,singleLine=true,modifier=Modifier.fillMaxWidth())
+                            enabled=!state.hasActiveWork && state.replacement==null,singleLine=true,modifier=Modifier.fillMaxWidth())
                         ExperimentalPhotoEngine.entries.forEach { engine ->
-                            Row { RadioButton(selected=state.engine==engine,onClick={model.setEngine(engine)},enabled=!state.busy && !state.importing && !state.saving)
+                            Row { RadioButton(selected=state.engine==engine,onClick={model.setEngine(engine)},enabled=!state.hasActiveWork && state.replacement==null)
                                 Text(engine.title,modifier=Modifier.padding(top=12.dp)) }
                         }
                         if(state.engine==ExperimentalPhotoEngine.DISTAL)Text("V13은 경계 검토가 필요하며 기존 정답 자료에서 검출 정확도 회귀가 관측됐습니다.",color=MaterialTheme.colorScheme.error)
                         if(state.engine==ExperimentalPhotoEngine.POSE)Text("V14 손 자세 경계는 사람의 확인이 필요합니다. 실제 적용은 지문 품질 검사 결과에 따라 달라집니다.")
                         Button(onClick={picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))},
-                            enabled=!state.importing && !state.saving && saveTicket==null) { Text(if(state.source==null)"실험할 사진 선택" else "다른 사진 선택") }
+                            enabled=!state.importing && !state.saving && !state.awaitingSave && state.replacement==null && saveTicket==null) { Text(if(state.source==null)"실험할 사진 선택" else "다른 사진 선택") }
                         if(state.importing) { LinearProgressIndicator(Modifier.fillMaxWidth());Text("원본 방향·RGB 정규화 중…") }
                         state.source?.let { source ->
                             Text("업로드 원본 · ${source.width} × ${source.height} · 무손실 RGB PNG")
                             Image(source.preview.asImageBitmap(),"정규화된 원본 미리보기",Modifier.fillMaxWidth().height(260.dp))
-                            if(!state.busy)Button(onClick=model::start,enabled=!state.importing && !state.saving && saveTicket==null) { Text("선택한 AI 실험 실행") }
+                            if(!state.busy)Button(onClick=model::start,enabled=!state.hasActiveWork && state.replacement==null && saveTicket==null) { Text("선택한 AI 실험 실행") }
                         }
                         if(state.busy) {
                             LinearProgressIndicator(Modifier.fillMaxWidth());Text("AI 처리와 반환 픽셀·마스크 검증 중… 수 분 걸릴 수 있습니다.")
@@ -80,7 +81,7 @@ class ExperimentalPhotoActivity: ComponentActivity() {
                             Image((if(showOverlay)result.overlayPreview else result.preview).asImageBitmap(),"실제 반환 이미지 비교",Modifier.fillMaxWidth().height(300.dp))
                             Text("색상은 검증된 전체 해상도 마스크의 미리보기입니다. 저장 파일에는 색상 표시가 없습니다.")
                             result.regions.forEach { r -> Text("후보 ${r.regionId}: ${if(r.status=="transformed")"변환됨" else "거절됨"} · ${r.reasonCode}",style=MaterialTheme.typography.bodySmall) }
-                            if(result.presentation.canSaveChangedCopy)Button(onClick={saveWarning=true},enabled=!state.saving && !state.awaitingSave && saveTicket==null) { Text("실험 PNG 복사본 저장") }
+                            if(result.presentation.canSaveChangedCopy)Button(onClick={saveWarning=true},enabled=!state.hasActiveWork && state.replacement==null && saveTicket==null) { Text("실험 PNG 복사본 저장") }
                         }
                         if(state.saving)Text("검증된 원본 해상도 PNG를 저장 중…")
                         state.message?.let { Text(it,color=MaterialTheme.colorScheme.error) }
