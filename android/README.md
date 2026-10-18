@@ -144,3 +144,5 @@ Android 8·9에서는 저장 버튼을 누를 때 `WRITE_EXTERNAL_STORAGE`를 �
 [2026-09-28 Android 8·9 저장 권한 및 오래된 권한 응답 처리](../docs/worklogs/2026-09-28-이봉헌.md)
 
 [시스템 뒤로가기와 처리 취소 확인](../docs/android-next-11-back-navigation.md): 설정·비교 화면에서 편집으로 돌아가고, 처리 중에는 취소 여부를 확인합니다. 편집 화면에서 첫 화면으로 돌아가면 편집 복원용 임시 사본을 정리합니다.
+
+[사진 AI 실험의 결과 교체 확인](../docs/android-next-13-experimental-replacement.md): 미저장 결과의 사진·엔진 변경과 재실행을 확인하며, 같은 엔진 재선택·선택창 취소·계속 보기는 결과를 유지합니다. [2026-10-18 작업·검증 기록](../docs/worklogs/2026-10-18-이봉헌-android-experimental-replacement.md)을 확인하세요.
