@@ -19,7 +19,7 @@ import kotlin.coroutines.resume
 
 /** Android 담당의 통신 어댑터. 서버 구현은 backend/ 담당자가 제공한다. */
 class ApiProtectionRepository(
-    private val baseUrl: String = BackendAddress.EMULATOR_DEFAULT,
+    private val baseUrl: String = BackendAddress.DEFAULT_SERVER,
     private val maxImageSizeBytes: Long = 15 * 1024 * 1024L,
     private val timeoutSeconds: Long = 30L,
     private val client: OkHttpClient = OkHttpClient.Builder()
