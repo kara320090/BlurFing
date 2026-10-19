@@ -239,7 +239,8 @@ class Project:
             return dict(filename=name,sha256=checksum,reviewed=len(selected),unreviewed=len(self.sources)-len(selected))
 
 
-def make_server(project,port=0):
+def make_server(project,port=0,*,assets=None,export_prefix='BlurFing_manual_GT_'):
+    assets=ASSETS if assets is None else Path(assets)
     token=secrets.token_urlsafe(24);prefix='/s/'+token+'/'
     class Handler(BaseHTTPRequestHandler):
         def log_message(self,*args):pass
@@ -261,13 +262,13 @@ def make_server(project,port=0):
                 path,_=self.route()
                 if path in ['','index.html','app.js','style.css']:
                     name=path or 'index.html';types={'index.html':'text/html; charset=utf-8','app.js':'text/javascript; charset=utf-8','style.css':'text/css; charset=utf-8'}
-                    return self.send(200,(ASSETS/name).read_bytes(),types[name])
+                    return self.send(200,(assets/name).read_bytes(),types[name])
                 if path=='api/project':return self.send(200,project.overview())
                 if path.startswith('api/state/'):return self.send(200,project.current(path[len('api/state/'):]))
                 if path.startswith('image/'):return self.send(200,project.image(path[len('image/'):]),'image/png')
                 if path.startswith('download/'):
                     name=path[len('download/'):]
-                    if Path(name).name!=name or not name.startswith('BlurFing_manual_GT_') or not name.endswith(('.zip','.zip.sha256')):raise ValueError('invalid_export_name')
+                    if Path(name).name!=name or not name.startswith(export_prefix) or not name.endswith(('.zip','.zip.sha256')):raise ValueError('invalid_export_name')
                     file=project.state/'exports'/name
                     if file.is_symlink() or not file.is_file():raise ValueError('export_not_found')
                     return self.send(200,file.read_bytes(),'application/octet-stream',name)

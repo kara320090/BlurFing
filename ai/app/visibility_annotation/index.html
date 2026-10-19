@@ -1,0 +1,12 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BlurFing · 지문 가시성 검토</title><link rel="stylesheet" href="style.css">
+<body><header><strong>BlurFing · 지문 가시성 검토</strong><span id="progress"></span><button id="export">검토 자료 ZIP</button><button id="stop">종료</button></header>
+<main><aside><label>사진 <select id="source"></select></label><p class="hint">기존 손끝 마스크는 수정하지 않습니다. 자동 점수는 선입견 방지를 위해 숨깁니다.</p><div id="groups"></div><button id="merge">체크한 조각을 하나로 합치기</button><button id="reset">현재 사진의 그룹 다시 나누기</button><hr>
+<label>선택 영역의 지문선 <select id="label"><option value="">미판정</option><option value="visible">보임</option><option value="not_observed">관찰되지 않음</option><option value="uncertain">불확실</option></select></label>
+<p class="hint">보임: 원본에서 반복되는 지문선을 확인. 관찰되지 않음: 원본과 확대 화면을 확인했으나 지문선이 관찰되지 않음. 흐림·반사·작은 크기 때문에 판정하기 어려우면 불확실을 선택하세요. 낮은 화질은 지문이 없다는 증거가 아닙니다.</p>
+<label>사유 <select id="reason"><option value="">선택 안 함</option><option value="blur">흐림</option><option value="small">너무 작음</option><option value="glare">반사</option><option value="occlusion">가려짐</option><option value="geometry">마스크·그룹 경계 문제</option><option value="non_palmar">손톱·손등 쪽</option><option value="other">기타</option></select></label>
+<label>메모 <textarea id="note" maxlength="1000" rows="2"></textarea></label>
+<button id="box">보이는 지문선의 대표 사각형 그리기</button><button id="clearbox">사각형 지우기</button><p class="hint">‘보임’에는 초록 마스크 안쪽에 대표 사각형이 필요합니다. 선명화·생성 이미지는 사용하지 않습니다.</p>
+<label><input id="attest" type="checkbox">원본을 1:1로 확인했고 모든 영역의 판정·그룹을 검토했습니다.</label>
+<div class="save"><button id="draft">임시 저장</button><button id="review">검토 완료 저장</button></div><p id="message" role="status"></p><div id="download"></div></aside>
+<section><nav><button id="fit">사진 맞춤</button><button id="region">선택 영역 맞춤</button><button id="native">원본 1:1</button><button id="minus">−</button><span id="zoom"></span><button id="plus">+</button><label><input id="overlay" type="checkbox" checked>마스크 표시</label></nav><div id="viewport"><canvas id="canvas"></canvas></div><footer>휠: 확대 · 드래그: 이동 · 사각형 모드에서는 드래그로 표시. 초록 영역은 해부학적 후보이며 지문 가시성 정답이 아닙니다.</footer></section></main>
+<script src="app.js"></script></body></html>
