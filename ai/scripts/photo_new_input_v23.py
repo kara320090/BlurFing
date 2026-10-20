@@ -84,10 +84,36 @@ def decode_upload(raw, folder):
     return rgb, icc, identity
 
 
+def review_candidates(baseline, refined, unanchored_owners):
+    """Do not confuse a rejected protection permission with an absent proposal.
+
+    Only restore pixels belonging to an explicitly unanchored owner. Detached
+    noise removed for other reasons must stay removed. These are suggestions,
+    never automatic protection permissions.
+    """
+    if (not isinstance(baseline, np.ndarray) or not isinstance(refined, np.ndarray)
+            or baseline.dtype != np.bool_ or refined.dtype != np.bool_
+            or not isinstance(unanchored_owners, np.ndarray) or unanchored_owners.dtype != np.bool_
+            or baseline.ndim != 2 or refined.shape != baseline.shape
+            or unanchored_owners.shape != baseline.shape):
+        raise ValueError('review_candidate_mask_contract')
+    restored = baseline & unanchored_owners & ~refined
+    _, count = ndimage.label(restored, np.ones((3, 3), np.uint8))
+    result = refined | restored
+    return result, dict(version='retain_unanchored_review_candidates_v1',
+        restored_candidate_components=int(count), restored_pixels=int(restored.sum()),
+        baseline_pixels=int(baseline.sum()), boundary_refined_pixels=int(refined.sum()),
+        proposed_pixels=int(result.sum()), proposal_pixel_sha256=pixels(result),
+        boundary_review_required=True, protection_authorized=False,
+        whole_finger_coverage_verified=False)
+
+
 def propose(source, model, registry, output):
     """Executed in a separate process: existing detector policies stay unchanged."""
     from protect_photo_pitch_free_v1 import run
     from photo_crease_native_adapter_v1 import prepare
+    from photo_rounded_native_pipeline_v1 import protection_contexts
+    from pad_refinement_data_contract_v2 import read_body, read_mask, native_shape
     from photo_consumed_replay_v1 import development_replay
     import pad_refinement_tiles_v3 as tiles
     rgb, _ = canonical_rgb(source)
@@ -97,6 +123,8 @@ def propose(source, model, registry, output):
                     complete_holes=True, allow_scanner=True, rounded_pads=True)
     with Image.open(detection / 'redacted_mask.png') as image:
         mask = np.asarray(image) > 0
+    baseline = mask.copy()
+    unanchored = np.zeros_like(mask)
     if report.get('input_type') == 'PHOTO' and report.get('rounded_pad_metadata'):
         manifest = json.loads((detection / 'private/dataset/manifest.input.private.json').read_text('utf-8'))
         record = manifest['sources'][0]
@@ -107,13 +135,26 @@ def propose(source, model, registry, output):
         reg, _ = tiles.json_snapshot(registry)
         with development_replay(reg, [tiles.image_identity(source),
                                      tiles.image_identity(Path(record['source_path']))], enabled=True):
-            _, mask, _, _ = prepare(record, rgb, before, report['rounded_pad_metadata'], hand,
-                                    output / 'crease')
+            derived, mask, boundary, pose = prepare(record, rgb, before, report['rounded_pad_metadata'], hand,
+                                                    output / 'crease')
+            rows = boundary['candidates']
+            if any(row.get('unanchored_candidate_excluded') for row in rows):
+                body = read_body(derived)
+                tip = read_mask(derived['tip_path'], derived['tip_sha256'], native_shape(derived))
+                contexts = protection_contexts(body, tip, boundary, pose, complete_native_edges=True)
+                for row, context in zip(rows, contexts):
+                    if row.get('unanchored_candidate_excluded'):
+                        unanchored |= context['body']
+            json_write(output / 'boundary.private.json', boundary)
     if mask.shape != rgb.shape[:2]:
         raise ValueError('detector_mask_shape_mismatch')
+    Image.fromarray(mask.astype(np.uint8) * 255).save(output / 'boundary_refined_mask.png')
+    Image.fromarray(unanchored.astype(np.uint8) * 255).save(output / 'unanchored_owners.png')
+    mask, selection = review_candidates(baseline, mask, unanchored)
     Image.fromarray(mask.astype(np.uint8) * 255).save(output / 'proposal.png')
     json_write(output / 'proposal.private.json', dict(
         source_sha256=file_hash(source), input_type=report.get('input_type'),
+        candidate_selection=selection,
         candidate_only=True, human_reviewed=False, independent_validation=False))
 
 
@@ -138,6 +179,7 @@ class Session:
                 result['photo'] = dict(id=c['id'], name=c['name'], revision=c['revision'],
                     width=c['rgb'].shape[1], height=c['rgb'].shape[0], regions=c['regions'],
                     primary_frame_only=c['identity']['frame_count'] > 1,
+                    candidate_selection=c.get('candidate_selection'),
                     can_undo=bool(c['history']), result=c['result'])
             return result
 
@@ -251,7 +293,7 @@ class Session:
                 history.pop()
             else:
                 history.append(c['revision'])
-            draft = dict(c, labels=labels, decisions=decisions, history=history)
+            draft = dict(c, labels=labels, decisions=decisions, history=history, candidate_selection=None)
             self.save_revision(draft)
             self.current = draft
             self.error = None
@@ -301,12 +343,16 @@ class Session:
                     mask = np.asarray(image) > 0
                 if mask.shape != c['labels'].shape:
                     raise ValueError('proposal_shape_mismatch')
+                selection = binding['candidate_selection']
+                if (selection.get('proposal_pixel_sha256') != pixels(mask)
+                        or selection.get('protection_authorized') is not False):
+                    raise ValueError('proposal_review_contract_mismatch')
                 labels, count = ndimage.label(mask, np.ones((3, 3), np.uint8))
                 if count > 128:
                     raise ValueError('too_many_candidates_manual_edit_available')
                 assert_runtime_sources_unchanged(snapshot)
                 with self.lock:
-                    draft = dict(c, labels=labels.astype(np.uint16), decisions={},
+                    draft = dict(c, labels=labels.astype(np.uint16), decisions={}, candidate_selection=selection,
                                  history=c['history'] + [c['revision']])
                     self.save_revision(draft)  # Detection never authorizes visibility.
                     self.current = draft

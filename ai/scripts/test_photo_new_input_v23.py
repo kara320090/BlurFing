@@ -191,7 +191,9 @@ class NewPhotoTests(unittest.TestCase):
             mask = np.zeros(self.rgb.shape[:2], np.uint8)
             mask[30:70, 20:65] = 255
             Image.fromarray(mask).save(folder/'proposal.png')
-            app.json_write(folder/'proposal.private.json', {'source_sha256':app.file_hash(source)})
+            _, selection = app.review_candidates(mask > 0, mask > 0, np.zeros_like(mask, bool))
+            app.json_write(folder/'proposal.private.json', {
+                'source_sha256':app.file_hash(source), 'candidate_selection':selection})
             return app.subprocess.CompletedProcess([], 0)
         with self.assertRaisesRegex(ValueError, 'replacing'):
             self.session.start_job(self.bind(), 'detect')
@@ -221,6 +223,37 @@ class NewPhotoTests(unittest.TestCase):
         self.assertEqual(self.session.error, 'saved_output_verification_failed')
         self.assertIsNone(self.session.current['result'])
         self.assertTrue(list(self.session.current['folder'].glob('apply-*/INCOMPLETE.txt')))
+
+    def test_unanchored_candidates_remain_reviewable_not_automatically_approved(self):
+        base = np.zeros((120, 180), bool)
+        base[10:65, 10:45] = True
+        base[20:85, 90:135] = True
+        refined = np.zeros_like(base)
+        refined[25:75, 90:130] = True
+        base_before, refined_before = base.copy(), refined.copy()
+        unanchored = np.zeros_like(base)
+        unanchored[:, :60] = True
+        selected, report = app.review_candidates(base, refined, unanchored)
+        expected = refined.copy()
+        expected[10:65, 10:45] = True
+        np.testing.assert_array_equal(selected, expected)
+        np.testing.assert_array_equal(base, base_before)
+        np.testing.assert_array_equal(refined, refined_before)
+        self.assertEqual(report['restored_candidate_components'], 1)
+        self.assertFalse(report['protection_authorized'])
+        self.assertFalse(report['whole_finger_coverage_verified'])
+        empty = np.zeros_like(base)
+        restored, report = app.review_candidates(base, empty, base)
+        np.testing.assert_array_equal(restored, base)
+        self.assertEqual(report['restored_candidate_components'], 2)
+        restored, report = app.review_candidates(empty, empty, empty)
+        self.assertFalse(restored.any())
+        self.assertEqual(report['restored_candidate_components'], 0)
+        unchanged, report = app.review_candidates(base, refined, empty)
+        np.testing.assert_array_equal(unchanged, refined)
+        self.assertEqual(report['restored_pixels'], 0)
+        with self.assertRaisesRegex(ValueError, 'mask_contract'):
+            app.review_candidates(base, empty[:100], empty)
 
     def test_http_origin_host_token_upload_and_result_contract(self):
         server = app.make_server(self.session)

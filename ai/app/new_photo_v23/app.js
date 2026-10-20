@@ -91,7 +91,14 @@ async function poll() {
       if(was==='apply') {
         $('view').value='returned';$('overlay').checked=false;await refresh(state);
         message(`완료: ${state.photo.result.applied_regions}개 영역 적용. 결과를 확대해 남은 지문과 경계를 확인하세요.`);
-      } else message('자동 후보를 불러왔습니다. 경계를 수정하고 각 영역의 지문선 판정을 선택하세요.');
+      } else if(!state.photo.regions.length) {
+        message('손끝 후보를 찾지 못했습니다. 자동 검출은 완료됐지만 보호 범위가 없습니다. 새 영역을 그리거나 다른 사진을 선택하세요.',true);
+      } else {
+        const restored=state.photo.candidate_selection?.restored_candidate_components||0;
+        message(restored
+          ? `후보 ${state.photo.regions.length}개를 불러왔습니다. 경계를 확정하지 못한 ${restored}개 후보는 보정 전 영역으로 표시했습니다. 손끝 경계를 직접 확인·수정하세요.`
+          : '자동 후보를 불러왔습니다. 경계를 수정하고 각 영역의 지문선 판정을 선택하세요.');
+      }
     }
   } catch(e) {message(e.message,true);}
 }
