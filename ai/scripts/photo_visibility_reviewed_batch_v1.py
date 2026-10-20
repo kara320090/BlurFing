@@ -9,7 +9,8 @@ from photo_visibility_reviewed_apply_v1 import run
 from protection_runtime_sources_v1 import capture_runtime_sources, assert_runtime_sources_unchanged
 
 
-def run_batch(roster, state, output, *, source_ids=None, seed=None):
+def run_batch(roster, state, output, *, source_ids=None, seed=None, appearance='v19'):
+    if appearance not in ('v19','silhouette_v21'):raise ValueError('reviewed_appearance_not_supported')
     output=Path(output)
     if output.exists() or output.is_symlink():raise FileExistsError('fresh_reviewed_batch_required')
     if not (Path(state)/'project.json').is_file():raise ValueError('existing_completed_review_required')
@@ -31,7 +32,7 @@ def run_batch(roster, state, output, *, source_ids=None, seed=None):
     rows=[]
     for index,sid in enumerate(ids,1):
         if project.current(sid)!=reviews[sid]:raise ValueError('human_review_changed_during_batch')
-        report=run(roster,state,sid,output/sid,seed=seed,project=project)
+        report=run(roster,state,sid,output/sid,seed=seed,project=project,appearance=appearance)
         rows.append(dict(source_id=sid,status=report['status'],applied_regions=report['applied_region_count'],
                          selected_regions=report['selected_region_count'],review_required=report['review_required_count'],
                          output_RGB_sha256=report['output_RGB_sha256']))
@@ -42,7 +43,7 @@ def run_batch(roster, state, output, *, source_ids=None, seed=None):
         if project.current(sid)!=reviews[sid]:raise ValueError('human_review_changed_during_batch')
         for kind in ('source','mask'):
             checked_bytes(project.sources[sid][kind+'_path'],project.sources[sid][kind+'_sha256'])
-    result=dict(version='human_reviewed_batch_v1',status='completed_reviewed_synthetic_batch',sources=len(rows),rows=rows,
+    result=dict(version='human_reviewed_batch_v1',status='completed_reviewed_synthetic_batch',sources=len(rows),rows=rows,appearance=appearance,
                 inputs_revalidated_at_completion=True,review_revisions={sid:r['revision'] for sid,r in reviews.items()},
                 applied_regions=sum(r['applied_regions'] for r in rows),selected_regions=sum(r['selected_regions'] for r in rows),
                 review_required=sum(r['review_required'] for r in rows),independent_validation=False,privacy_validated=False,
@@ -56,9 +57,10 @@ if __name__=='__main__':
     from protect_fingerprint import JSONArgumentParser,cli_progress_to_stderr
     p=JSONArgumentParser(description=__doc__)
     for name in ('roster','state','output'):p.add_argument('--'+name,type=Path,required=True)
-    p.add_argument('--source-id',action='append');p.add_argument('--seed',type=int);a=p.parse_args()
+    p.add_argument('--source-id',action='append');p.add_argument('--seed',type=int)
+    p.add_argument('--appearance',choices=('v19','silhouette_v21'),default='v19');a=p.parse_args()
     try:
-        with cli_progress_to_stderr():result=run_batch(a.roster,a.state,a.output,source_ids=a.source_id,seed=a.seed)
+        with cli_progress_to_stderr():result=run_batch(a.roster,a.state,a.output,source_ids=a.source_id,seed=a.seed,appearance=a.appearance)
         print(json.dumps(dict(status=result['status'],sources=result['sources'],applied_regions=result['applied_regions'],
                               review_required=result['review_required'],output=str(a.output.resolve()))))
     except Exception as e:

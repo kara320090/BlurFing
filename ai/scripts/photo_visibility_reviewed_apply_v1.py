@@ -53,7 +53,9 @@ def complete_singletons(generated, render_labels, renderer, associations):
     return out,completed
 
 
-def apply_reviewed(rgb, labels, review, *, seed=None):
+def apply_reviewed(rgb, labels, review, *, seed=None, appearance='v19'):
+    if appearance not in ('v19', 'silhouette_v21'):
+        raise ValueError('reviewed_appearance_not_supported')
     if (not isinstance(rgb, np.ndarray) or rgb.dtype != np.uint8 or rgb.ndim != 3 or rgb.shape[2] != 3
             or not isinstance(labels, np.ndarray) or labels.dtype != np.uint16 or labels.shape != rgb.shape[:2]):
         raise ValueError('reviewed_RGB_labels_contract')
@@ -140,6 +142,13 @@ def apply_reviewed(rgb, labels, review, *, seed=None):
         row['generated_singleton_completion_pixels'] = sum(v['pixels'] for k,v in completed.items() if associations[k]==rid)
         row['working_resolution_render_used'] = any(associations[i]==rid for i in large)
     applied = mask & ~np.isin(labels, list(unresolved))
+    appearance_report = None
+    if appearance == 'silhouette_v21':
+        from photo_silhouette_appearance_v21 import refine_regions
+        returned, appearance_report = refine_regions(rgb, returned, applied, labels)
+        for row in rows:
+            target = labels == row['region_id']
+            row['changed_pixels'] = int(np.any(returned[target] != rgb[target], axis=1).sum())
     if not np.array_equal(returned[~applied], rgb[~applied]):
         raise RuntimeError('reviewed_final_preservation_contract')
     return returned, applied, dict(version='human_reviewed_visibility_replacement_v1',
@@ -152,11 +161,12 @@ def apply_reviewed(rgb, labels, review, *, seed=None):
         outside_applied_RGB_preserved=True, output_RGB_sha256=pixels(returned),
         original_RGB_sha256=before[0], original_labels_sha256=before[1],
         automatic_visibility_approved=False, privacy_validated=False, production_approved=False,
-        independent_validation=False, renderer=renderer, generated_singleton_completions=completed,
+        independent_validation=False, renderer=renderer, appearance=appearance, appearance_report=appearance_report,
+        generated_singleton_completions=completed,
         render_component_to_review_region=associations,working_resolution_render_region_count=len(large))
 
 
-def run(roster, state, source_id, output, *, seed=None, project=None):
+def run(roster, state, source_id, output, *, seed=None, project=None, appearance='v19'):
     output = Path(output); state = Path(state)
     if output.exists() or output.is_symlink():
         raise FileExistsError('fresh_reviewed_output_required')
@@ -186,7 +196,7 @@ def run(roster, state, source_id, output, *, seed=None, project=None):
     review = dict(version='explicit_visibility_review_v1', review_origin='human_confirmed', all_regions_reviewed=True,
                   coordinate_system='upright_native_pixels', RGB_sha256=pixels(rgb), labels_sha256=pixels(labels),
                   regions=[dict(region_id=g['component_ids'][0], decision=g['label']) for g in groups])
-    returned, applied, report = apply_reviewed(rgb, labels, review, seed=seed)
+    returned, applied, report = apply_reviewed(rgb, labels, review, seed=seed, appearance=appearance)
     source = project.sources[source_id]; orientation = source['exif_orientation']
     # V19 ran in upright coordinates. Encode back in the original frame and
     # preserve the validated source ICC/EXIF through the existing PNG writer.
@@ -223,10 +233,11 @@ if __name__ == '__main__':
     for name in ('roster','state','output'):
         parser.add_argument('--'+name,type=Path,required=True)
     parser.add_argument('--source-id',required=True);parser.add_argument('--seed',type=int)
+    parser.add_argument('--appearance',choices=('v19','silhouette_v21'),default='v19')
     args=parser.parse_args()
     try:
         with cli_progress_to_stderr():
-            report=run(args.roster,args.state,args.source_id,args.output,seed=args.seed)
+            report=run(args.roster,args.state,args.source_id,args.output,seed=args.seed,appearance=args.appearance)
         print(json.dumps(dict(status=report['status'],output=str(args.output.resolve()),
                               applied_regions=report['applied_region_count'],review_required=report['review_required_count'])))
     except Exception as error:

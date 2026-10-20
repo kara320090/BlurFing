@@ -12,6 +12,20 @@ from photo_visibility_annotation_v1 import component_map
 
 
 class ReviewedApplyTests(unittest.TestCase):
+    def test_explicit_appearance_keeps_review_decisions_and_default(self):
+        rgb,labels,review=self.fixture()
+        old,mask,old_report=module.apply_reviewed(rgb,labels,review,seed=42)
+        new,new_mask,report=module.apply_reviewed(rgb,labels,review,seed=42,appearance='silhouette_v21')
+        self.assertEqual(old_report['appearance'],'v19')
+        self.assertEqual(report['appearance'],'silhouette_v21')
+        np.testing.assert_array_equal(mask,new_mask)
+        np.testing.assert_array_equal(new[~mask],rgb[~mask])
+        self.assertEqual(report['applied_region_count'],old_report['applied_region_count'])
+        self.assertEqual(report['review_required_count'],old_report['review_required_count'])
+        self.assertTrue(all(r['region_id']==1 for r in report['appearance_report']['regions']))
+        self.assertFalse(report['production_approved'])
+        with self.assertRaises(ValueError):module.apply_reviewed(rgb,labels,review,appearance='automatic')
+
     def fixture(self):
         y,x=np.indices((128,270));rgb=np.zeros((128,270,3),np.uint8)
         rgb[:]=[180,137,110];rgb=np.clip(rgb.astype(float)+3*np.sin(x*2*np.pi/8)[:,:,None],0,255).astype(np.uint8)
