@@ -10,7 +10,7 @@ from protection_runtime_sources_v1 import capture_runtime_sources, assert_runtim
 
 
 def run_batch(roster, state, output, *, source_ids=None, seed=None, appearance='v19'):
-    if appearance not in ('v19','silhouette_v21','material_v22'):raise ValueError('reviewed_appearance_not_supported')
+    if appearance not in ('v19','silhouette_v21','material_v22','junction_v23'):raise ValueError('reviewed_appearance_not_supported')
     output=Path(output)
     if output.exists() or output.is_symlink():raise FileExistsError('fresh_reviewed_batch_required')
     if not (Path(state)/'project.json').is_file():raise ValueError('existing_completed_review_required')
@@ -58,7 +58,7 @@ if __name__=='__main__':
     p=JSONArgumentParser(description=__doc__)
     for name in ('roster','state','output'):p.add_argument('--'+name,type=Path,required=True)
     p.add_argument('--source-id',action='append');p.add_argument('--seed',type=int)
-    p.add_argument('--appearance',choices=('v19','silhouette_v21','material_v22'),default='v19');a=p.parse_args()
+    p.add_argument('--appearance',choices=('v19','silhouette_v21','material_v22','junction_v23'),default='v19');a=p.parse_args()
     try:
         with cli_progress_to_stderr():result=run_batch(a.roster,a.state,a.output,source_ids=a.source_id,seed=a.seed,appearance=a.appearance)
         print(json.dumps(dict(status=result['status'],sources=result['sources'],applied_regions=result['applied_regions'],

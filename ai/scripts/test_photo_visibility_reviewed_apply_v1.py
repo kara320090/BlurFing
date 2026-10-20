@@ -29,6 +29,11 @@ class ReviewedApplyTests(unittest.TestCase):
         np.testing.assert_array_equal(material[~mask],rgb[~mask])
         self.assertEqual(material_report['applied_region_count'],old_report['applied_region_count'])
         self.assertEqual(material_report['appearance_report']['version'],'generated_envelope_and_material_v22')
+        junction,junction_mask,junction_report=module.apply_reviewed(rgb,labels,review,seed=42,appearance='junction_v23')
+        np.testing.assert_array_equal(mask,junction_mask)
+        np.testing.assert_array_equal(junction[~mask],rgb[~mask])
+        self.assertEqual(junction_report['applied_region_count'],old_report['applied_region_count'])
+        self.assertEqual(junction_report['appearance_report']['version'],'coarse_2D_junction_v23_experimental')
         with self.assertRaises(ValueError):module.apply_reviewed(rgb,labels,review,appearance='automatic')
 
     def fixture(self):

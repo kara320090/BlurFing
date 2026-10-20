@@ -54,7 +54,7 @@ def complete_singletons(generated, render_labels, renderer, associations):
 
 
 def apply_reviewed(rgb, labels, review, *, seed=None, appearance='v19'):
-    if appearance not in ('v19', 'silhouette_v21', 'material_v22'):
+    if appearance not in ('v19', 'silhouette_v21', 'material_v22', 'junction_v23'):
         raise ValueError('reviewed_appearance_not_supported')
     if (not isinstance(rgb, np.ndarray) or rgb.dtype != np.uint8 or rgb.ndim != 3 or rgb.shape[2] != 3
             or not isinstance(labels, np.ndarray) or labels.dtype != np.uint16 or labels.shape != rgb.shape[:2]):
@@ -143,8 +143,11 @@ def apply_reviewed(rgb, labels, review, *, seed=None, appearance='v19'):
         row['working_resolution_render_used'] = any(associations[i]==rid for i in large)
     applied = mask & ~np.isin(labels, list(unresolved))
     appearance_report = None
-    if appearance in ('silhouette_v21','material_v22'):
-        if appearance == 'material_v22':
+    if appearance in ('silhouette_v21','material_v22','junction_v23'):
+        if appearance == 'junction_v23':
+            from photo_junction_appearance_v23 import refine_complete
+            returned,appearance_report=refine_complete(rgb,returned,applied,labels)
+        elif appearance == 'material_v22':
             from photo_skin_seam_v22 import refine_complete
             returned,appearance_report=refine_complete(rgb,returned,applied,labels)
         else:
@@ -237,7 +240,7 @@ if __name__ == '__main__':
     for name in ('roster','state','output'):
         parser.add_argument('--'+name,type=Path,required=True)
     parser.add_argument('--source-id',required=True);parser.add_argument('--seed',type=int)
-    parser.add_argument('--appearance',choices=('v19','silhouette_v21','material_v22'),default='v19')
+    parser.add_argument('--appearance',choices=('v19','silhouette_v21','material_v22','junction_v23'),default='v19')
     args=parser.parse_args()
     try:
         with cli_progress_to_stderr():
