@@ -79,8 +79,11 @@ class AutomaticV23Tests(unittest.TestCase):
         self.assertEqual(report['evidence'][0]['visibility'],'uncertain')
         self.assertFalse(report['human_reviewed'])
         self.assertEqual(report['precautionary_applied_region_count'],1)
-        self.assertIn('continuous_surface_policy',report['renderer'])
-        self.assertFalse(report['renderer']['continuous_surface_policy']['natural_appearance_validated'])
+        policy=report['renderer']['generated_detail_policy']
+        self.assertEqual(policy['version'],'visible_generated_surface_detail_v27_experimental')
+        self.assertFalse(policy['original_fingerprint_reconstruction'])
+        self.assertFalse(policy['source_ridge_pixels_used'])
+        self.assertFalse(policy['visibility_verified'])
         self.assertEqual(report['regions'][0]['reason_code'],PRECAUTIONARY_REASON)
         np.testing.assert_array_equal(returned[~applied],rgb[~applied])
         content=png(rgb)

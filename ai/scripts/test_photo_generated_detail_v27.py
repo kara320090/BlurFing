@@ -37,6 +37,22 @@ class GeneratedDetailTests(unittest.TestCase):
         np.testing.assert_array_equal(actual,expected)
         self.assertEqual(old,new)
 
+    def test_selected_region_route_uses_preferred_material_and_preserves_other_region(self):
+        from photo_visibility_reviewed_apply_v1 import render_selected_regions
+        rgb,labels=self.scene();before=rgb.copy();selected=[1,2]
+        rows=[dict(region_id=rid,status='pending_render') for rid in selected]
+        expected,_=render(rgb,labels>0,labels,seed=123,detail_regions=[1])
+        actual,applied,report=render_selected_regions(
+            rgb,labels,selected,rows,seed=123,generated_detail_regions=[1])
+        np.testing.assert_array_equal(actual,expected)
+        np.testing.assert_array_equal(applied,labels>0)
+        np.testing.assert_array_equal(actual[~applied],rgb[~applied])
+        np.testing.assert_array_equal(rgb,before)
+        self.assertEqual(rows,[dict(region_id=rid,status='pending_render') for rid in selected])
+        policy=report['renderer']['generated_detail_policy']
+        self.assertEqual(policy['region_ids'],[1])
+        self.assertEqual(policy['version'],'visible_generated_surface_detail_v27_experimental')
+
     def test_invalid_selection_and_seed_are_rejected(self):
         rgb,labels=self.scene()
         for selected in ([1,1],[True],[0],[-1],[1.5],'1'):
