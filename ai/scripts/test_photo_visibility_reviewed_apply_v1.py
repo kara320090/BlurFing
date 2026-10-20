@@ -24,6 +24,11 @@ class ReviewedApplyTests(unittest.TestCase):
         self.assertEqual(report['review_required_count'],old_report['review_required_count'])
         self.assertTrue(all(r['region_id']==1 for r in report['appearance_report']['regions']))
         self.assertFalse(report['production_approved'])
+        material,material_mask,material_report=module.apply_reviewed(rgb,labels,review,seed=42,appearance='material_v22')
+        np.testing.assert_array_equal(mask,material_mask)
+        np.testing.assert_array_equal(material[~mask],rgb[~mask])
+        self.assertEqual(material_report['applied_region_count'],old_report['applied_region_count'])
+        self.assertEqual(material_report['appearance_report']['version'],'generated_envelope_and_material_v22')
         with self.assertRaises(ValueError):module.apply_reviewed(rgb,labels,review,appearance='automatic')
 
     def fixture(self):

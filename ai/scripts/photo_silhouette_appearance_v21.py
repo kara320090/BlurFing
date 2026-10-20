@@ -81,13 +81,15 @@ def _curve(mask, width):
     return nodes, normals, tangent, tangent_half
 
 
-def refine(source, generated, permission, width):
+def refine(source, generated, permission, width, *, texture_mode='local_generated'):
     """Return a fresh RGB8 crop and audit. Crop must include contextual pixels.
 
     Context is read only. Source outside permission contributes coarse profiles,
     never output pixels. Unsupported arcs retain generated RGB, not source RGB.
     Other pads must be processed separately; this accepts one connected region.
     """
+    if texture_mode not in ('local_generated','interior_envelope'):
+        raise ValueError('silhouette_texture_mode_contract')
     if (not isinstance(permission, np.ndarray) or permission.dtype != np.bool_
             or permission.ndim != 2 or permission.size > MAX_CROP_PIXELS
             or max(permission.shape, default=0) > 32768
@@ -145,10 +147,25 @@ def refine(source, generated, permission, width):
     sigma = max(3., .012*width)
     support = ndimage.gaussian_filter(permission.astype(float), sigma, mode='constant')
     texture = np.empty((len(y), 3))
+    envelope=[]
+    interior=permission & (distance>=radius) & (distance<2*radius)
     for c in range(3):
         smoothed = ndimage.gaussian_filter(np.where(permission, generated[..., c], 0.).astype(float),
             sigma, mode='constant') / np.maximum(support, 1e-9)
         texture[:, c] = generated[y, x, c]-smoothed[y, x]
+        if texture_mode == 'interior_envelope' and interior.sum()>=64:
+            # Generated shading errors at the old mask edge are not ridge relief.
+            # Bound them using only generated detail away from that edge.
+            values=generated[...,c][interior]-smoothed[interior]
+            low,high=np.quantile(values,[.01,.99])
+            low,high=min(0.,float(low)),max(0.,float(high))
+            clipped=np.clip(texture[:,c],low,high)
+            envelope.append(dict(channel=c,lower=low,upper=high,
+                clipped_values=int((clipped!=texture[:,c]).sum()),support=int(interior.sum())))
+            texture[:,c]=clipped
+    if texture_mode != 'local_generated':
+        meta.update(texture_mode=texture_mode,generated_interior_envelope=envelope,
+            version='coarse_silhouette_generated_envelope_v22_experimental')
     tree = cKDTree(nodes)
     changed = 0
     for start in range(0, len(y), 4096):
@@ -212,7 +229,7 @@ def refine(source, generated, permission, width):
     return (result if accepted else generated.copy()), meta
 
 
-def refine_regions(source, generated, applied, labels):
+def refine_regions(source, generated, applied, labels, *, texture_mode='local_generated'):
     """Adapter for already-rendered, already-authorized native RGB regions.
 
     No routing, visibility decision, mask dilation, or large-pad downscale is
@@ -259,9 +276,9 @@ def refine_regions(source, generated, applied, labels):
                 rows.append(row | dict(applied=False, reason='appearance_context_limit_V19_retained'));continue
             permission = np.zeros((cy1-cy0,cx1-cx0),bool)
             permission[y0-cy0:y1-cy0,x0-cx0:x1-cx0] = local
-            crop, meta = refine(source[cy0:cy1,cx0:cx1], generated[cy0:cy1,cx0:cx1], permission, width)
+            crop, meta = refine(source[cy0:cy1,cx0:cx1], generated[cy0:cy1,cx0:cx1], permission, width,texture_mode=texture_mode)
             result[cy0:cy1,cx0:cx1][permission] = crop[permission]
             rows.append(row | meta)
-    return result, dict(version=VERSION, regions=rows,
+    return result, dict(version=VERSION if texture_mode=='local_generated' else 'coarse_silhouette_generated_envelope_v22_experimental', regions=rows,
         corrected_components=sum(r['applied'] for r in rows), permission_geometry_changed=False,
         default_promoted=False, privacy_validated=False)
