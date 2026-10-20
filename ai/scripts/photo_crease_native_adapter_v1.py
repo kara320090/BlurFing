@@ -38,8 +38,12 @@ def verify_derived_semantics(source,semantic,purpose):
     if not np.array_equal(tip,parent_tip&body):raise ValueError('RGB_body_tip_lineage_mismatch')
 
 
-def prepare(source,rgb,before,rounding,worker,output,*,partial_observed_pose=False,learned_support=None):
+def prepare(source,rgb,before,rounding,worker,output,*,partial_observed_pose=False,learned_support=None,pose_only=False,search_crease=True):
     """Preserve original assets and write separately hash-bound derived masks."""
+    if type(pose_only) is not bool or type(search_crease) is not bool:raise ValueError('explicit_pose_crease_booleans_required')
+    if pose_only and (not partial_observed_pose or worker is None or learned_support is not None):
+        raise ValueError('pose_only_requires_independent_semantic_observation')
+    if not search_crease and not pose_only:raise ValueError('observed_joint_speed_path_requires_pose_only')
     verify_source(source,'inference')
     if not np.array_equal(rgb,read_source_rgb(source['source_path'],source['source_sha256'])):
         raise ValueError('RGB_body_original_pixels_changed')
@@ -74,9 +78,24 @@ def prepare(source,rgb,before,rounding,worker,output,*,partial_observed_pose=Fal
             hashlib.sha256(learned_support.tobytes()).hexdigest() if learned_support is not None else None)
     else:
         pose=geometry_from_worker(derived,rgb,worker) if worker is not None and worker['hand_count']==1 else None
-    coarse=estimate(refined,tip,preserve_candidates=True)['mask']
-    mask,metadata=crease_pads(rgb,before&refined,coarse,refined,tip,pose_geometry=pose)
+    if pose_only and pose is None:raise ValueError('pose_only_requires_observed_semantic_pose')
+    coarse=np.zeros_like(refined) if pose_only else estimate(refined,tip,preserve_candidates=True)['mask']
+    if search_crease:
+        mask,metadata=crease_pads(rgb,before&refined,coarse,refined,tip,pose_geometry=pose)
+    else:
+        from photo_rounded_pad_v1 import rounded_pads
+        mask,metadata=rounded_pads(before&refined,coarse,refined,tip,pose_geometry=pose)
+        from photo_pose_extent_guard_v32 import bounded_caps
+        mask,metadata=bounded_caps(mask,metadata,pose)
+        for row in metadata['candidates']:
+            if row['status']!='rounded_cap_applied':
+                row.update(unanchored_candidate_excluded=True,review_required=True)
+                mask[pose['owner_labels']==next(a['label'] for a in pose['axes'] if 'pose-'+a['digit']==row['candidate_id'])]=False
+        metadata.update(crease_search_performed=False,proximal_anchor='observed_IP_DIP_joint_not_measured_crease',
+            review_required=True,anatomical_boundary_verified=False)
     (output/'source.private.json').write_text(json.dumps(derived,indent=2),encoding='utf-8')
     metadata['RGB_edge_refinement']=edge
     if partial_observed_pose:metadata['partial_pose']=pose_detail
+    if pose_only:metadata.update(coarse_estimator_used=False,V6_learned_pad_model_used=False,
+        semantic_TIP_support_required=True)
     return derived,mask,metadata,pose

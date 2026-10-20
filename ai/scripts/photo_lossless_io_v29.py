@@ -34,6 +34,7 @@ class State:
         self.cache=OrderedDict();self.bytes=0;self.hits=0;self.encodes=0
         self.files=OrderedDict();self.file_bytes=0;self.pins={};self.file_hits=0
         self.coarse=OrderedDict();self.coarse_bytes=0;self.coarse_hits=0
+        self.components={};self.component_bytes=0;self.component_hits=0
         self.encoded=OrderedDict();self.encoded_bytes=0;self.encode_hits=0
     def verify_files(self):
         for path,sha in self.pins.items():
@@ -41,6 +42,7 @@ class State:
     def clear(self):
         self.cache.clear();self.bytes=0;self.files.clear();self.file_bytes=0;self.pins.clear()
         self.coarse.clear();self.coarse_bytes=0
+        self.components.clear();self.component_bytes=0
         self.encoded.clear();self.encoded_bytes=0
 
 
@@ -147,10 +149,15 @@ def _saved(image,fp,format=None,**params):
     if key in state.encoded:
         content=state.encoded.pop(key);state.encoded[key]=content;state.encode_hits+=1
     else:
-        if image.mode=='RGB':values=cv2.cvtColor(values,cv2.COLOR_RGB2BGR)
-        success,encoded=cv2.imencode('.png',values,[cv2.IMWRITE_PNG_COMPRESSION,level])
-        if not success:raise OSError('lossless_PNG_encode_failed')
-        content=encoded.tobytes();state.encodes+=1
+        if image.mode=='RGB' and level==1 and image.width*image.height>=2_000_000:
+            from photo_parallel_png_v32 import encode
+            content=encode(values)
+        else:
+            if image.mode=='RGB':values=cv2.cvtColor(values,cv2.COLOR_RGB2BGR)
+            success,encoded=cv2.imencode('.png',values,[cv2.IMWRITE_PNG_COMPRESSION,level])
+            if not success:raise OSError('lossless_PNG_encode_failed')
+            content=encoded.tobytes()
+        state.encodes+=1
         if len(content)<=MAX_ENCODE_CACHE:
             while state.encoded and state.encoded_bytes+len(content)>MAX_ENCODE_CACHE:
                 _,old=state.encoded.popitem(last=False);state.encoded_bytes-=len(old)
@@ -172,6 +179,8 @@ def lossless_io():
     # Hooks are inert in other contexts/threads. No raster survives the scope.
     Image.open=_opened;Image.Image.save=_saved;Path.read_bytes=_read_snapshot;Path.open=_opened_file
     import photo_mask_roi_v29 as sparse
+    from photo_coarse_cache_v31 import install_component_cache
+    install_component_cache()
     sparse.install();sparse_token=sparse.enabled.set(True)
     state=State();token=_state.set(state)
     try:yield state

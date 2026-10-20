@@ -23,11 +23,16 @@ def main():
     p=argparse.ArgumentParser();p.add_argument('--model',type=Path,required=True);p.add_argument('--registry',type=Path,required=True)
     p.add_argument('--development-replay',action='store_true');a=p.parse_args()
     wire=sys.stdout;sys.stdout=sys.stderr
+    # Small native color fits must not compete with dozens of BLAS threads.
+    for name in ('OPENBLAS_NUM_THREADS','MKL_NUM_THREADS','OMP_NUM_THREADS'):os.environ[name]='1'
+    import cv2
+    cv2.setNumThreads(1)
     from photo_resident_resources_v29 import Resources
-    from protection_runtime_sources_v1 import capture_runtime_sources,assert_runtime_sources_unchanged
+    from protection_runtime_sources_v1 import capture_runtime_sources,assert_runtime_sources_unchanged,sealed_source_transaction
     from infer_whole_pad_context_v6 import load_model
     from export_photo_permissions_v1 import run
     from photo_lossless_io_v29 import lossless_io
+    from photo_parallel_regions_v32 import region_workers
     snapshot=capture_runtime_sources()
     roi=os.environ.get('BLURFING_PHOTO_HAND_ROI','false')
     if roi not in ('true','false'):raise ValueError('explicit_hand_ROI_boolean_required')
@@ -50,14 +55,13 @@ def main():
             if not line:break
             if len(line)>16384 or not line.endswith('\n'):raise ValueError('photo_worker_frame_limit')
             job=json.loads(line);source,output=validate_job(job)
-            assert_runtime_sources_unchanged(snapshot)
-            if any(digest(path)!=sha for path,sha in assets.items()):raise ValueError('photo_assets_changed_restart_required')
-            with lossless_io():
-                run(source,output,photo_engine='synthetic_v23',photo_model=a.model,consumed_registry=a.registry,
-                    request_id=job['request_id'],development_replay=a.development_replay,execution_context=resources)
-            resources.models.verify()
-            if any(digest(path)!=sha for path,sha in assets.items()):raise ValueError('photo_assets_changed_restart_required')
-            assert_runtime_sources_unchanged(snapshot)
+            with sealed_source_transaction(snapshot):
+                if any(digest(path)!=sha for path,sha in assets.items()):raise ValueError('photo_assets_changed_restart_required')
+                with lossless_io(),region_workers():
+                    run(source,output,photo_engine='synthetic_v23',photo_model=a.model,consumed_registry=a.registry,
+                        request_id=job['request_id'],development_replay=a.development_replay,execution_context=resources)
+                resources.models.verify()
+                if any(digest(path)!=sha for path,sha in assets.items()):raise ValueError('photo_assets_changed_restart_required')
             send(dict(status='ok',id=job['id']))
     finally:resources.close()
     return 0

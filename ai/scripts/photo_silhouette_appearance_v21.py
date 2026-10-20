@@ -250,6 +250,9 @@ def refine_regions(source, generated, applied, labels, *, texture_mode='local_ge
     ids = np.unique(labels[applied])
     if len(ids) > 256:
         raise ValueError('silhouette_region_adapter_count_contract')
+    from photo_parallel_regions_v32 import split_regions
+    parallel=split_regions(refine_regions,source,generated,applied,labels,texture_mode=texture_mode)
+    if parallel is not None:return parallel
     result = generated.copy();rows = [];total_parts = 0
     for rid, sl in enumerate(ndimage.find_objects(labels), 1):
         if sl is None or rid not in ids:

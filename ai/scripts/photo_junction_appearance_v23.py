@@ -234,6 +234,9 @@ def refine_regions(source,generated,applied,labels):
     if np.any(applied&(labels==0)):raise ValueError('junction_region_permission')
     ids=np.unique(labels[applied])
     if len(ids)>256:raise ValueError('junction_region_count')
+    from photo_parallel_regions_v32 import split_regions
+    parallel=split_regions(refine_regions,source,generated,applied,labels)
+    if parallel is not None:return parallel
     result=generated.copy();rows=[];total=0
     for rid,sl in enumerate(ndimage.find_objects(labels),1):
         if sl is None or rid not in ids:continue

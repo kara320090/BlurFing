@@ -86,7 +86,7 @@ def observe(rgb, mask, *, max_windows=MAX_INSPECTED_WINDOWS):
     return record
 
 
-def apply_candidates(rgb, labels, boundary_mask, *, seed=None, observer=observe, surface_permission=None, fit_pool=None):
+def apply_candidates(rgb, labels, boundary_mask, *, seed=None, observer=observe, surface_permission=None, fit_pool=None, appearance='junction_v23'):
     if (rgb.dtype != np.uint8 or rgb.ndim != 3 or rgb.shape[2] != 3
             or labels.dtype != np.uint16 or labels.shape != rgb.shape[:2]
             or boundary_mask.dtype != np.bool_ or boundary_mask.shape != labels.shape
@@ -123,7 +123,7 @@ def apply_candidates(rgb, labels, boundary_mask, *, seed=None, observer=observe,
     from photo_junction_fit_runtime_v1 import fit_session
     precautionary_ids={r['region_id'] for r in evidence if r['reason']==PRECAUTIONARY_REASON}
     with fit_session(**(dict(pool=fit_pool) if fit_pool is not None else {})):
-        returned,applied,report=render_selected_regions(rgb,labels,selected,rows,seed=seed,appearance='junction_v23',
+        returned,applied,report=render_selected_regions(rgb,labels,selected,rows,seed=seed,appearance=appearance,
             **(dict(generated_detail_regions=sorted(precautionary_ids)) if precautionary_ids else {}))
     # The common renderer has no authority to assign human provenance.
     report.update(version='automatic_synthetic_v23_v26',
@@ -178,7 +178,7 @@ def transport(rgb, returned, labels, applied, report, source_sha, request_id, el
             or labels.dtype != np.uint16 or labels.shape != rgb.shape[:2]
             or applied.dtype != np.bool_ or applied.shape != labels.shape):
         raise ValueError('automatic_transport_arrays')
-    changed=np.any(returned!=rgb,axis=2)
+    changed=cv2.cvtColor(cv2.compare(returned,rgb,cv2.CMP_NE),cv2.COLOR_RGB2GRAY)>0
     if np.any(changed & ~applied) or np.any(applied & (labels==0)):
         raise ValueError('automatic_transport_preservation')
     refused=(labels>0)&~applied
@@ -228,6 +228,9 @@ def run(source, output, *, photo_model, consumed_registry, request_id, developme
         automatic_policy='surface_v26',execution_context=None,array_result=False):
     from export_photo_permissions_v1 import _request, ArtifactGuard
     from photo_new_input_v23 import propose
+    fast_profile=getattr(execution_context,'analysis_profile','native')=='fast_v32'
+    if fast_profile:
+        from photo_semantic_pose_proposal_v32 import propose
     from protection_runtime_sources_v1 import capture_runtime_sources, assert_runtime_sources_unchanged
     from fingerprint_input_router import route_input
     from photo_experimental_transport_v1 import require_request_id
@@ -285,6 +288,8 @@ def run(source, output, *, photo_model, consumed_registry, request_id, developme
     surface_permission=np.zeros(rgb.shape[:2],bool)
     if binding.get('partial_pose') is not None:
         from photo_partial_pose_v25 import partition_candidates
+        if fast_profile:
+            from photo_semantic_pose_proposal_v32 import partition as partition_candidates
         guard.pin(proposal/'pose_owners.png')
         with Image.open(proposal/'pose_owners.png') as im: owners=np.array(im)
         if pixels(owners)!=binding['partial_pose']['pixel_sha256']:
@@ -301,8 +306,15 @@ def run(source, output, *, photo_model, consumed_registry, request_id, developme
     labels=labels.astype(np.uint16)
     returned,applied,report=apply_candidates(rgb,labels,boundary,
         surface_permission=surface_permission if automatic_policy=='surface_v26' else None,
+        **(dict(appearance='material_v22') if fast_profile else {}),
         **(dict(fit_pool=execution_context.fit_pool) if execution_context is not None else {}))
     report['automatic_policy']=automatic_policy
+    if fast_profile:
+        report['proposal_profile']=dict(name='fast_v32',V6_learned_pad_model_used=False,
+            semantic_TIP_support_required=True,detector_context_and_masks_changed=True,
+            whole_photo_coverage_verified=False,native_V27_material=True,appearance='material_v22',
+            crease_search_performed=False,V23_junction_fit_performed=False,
+            candidate_grouping='atomic_observed_digit_plus_unassigned_review_group')
     Image.fromarray(surface_permission.astype(np.uint8)*255).save(output/'surface_permission.png')
     report['boundary_recovery']=boundary_report
     if not array_result:

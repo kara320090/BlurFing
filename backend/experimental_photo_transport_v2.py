@@ -16,6 +16,10 @@ from dataclasses import dataclass
 import numpy as np
 from PIL import Image
 from native_photo_result_contract_v1 import _png_preflight
+try:
+    import cv2
+except ImportError:
+    cv2=None
 
 MAX_IMAGE_BYTES = 15 * 1024 * 1024
 MAX_PIXELS = 20_000_000
@@ -98,15 +102,24 @@ def decode_png(content, *, mode, expected_size=None):
     except ValueError as exc:
         raise TransportValidationError("noncanonical_PNG") from exc
     try:
-        with Image.open(io.BytesIO(content)) as image:
-            if (image.format != "PNG" or image.mode != mode or getattr(image, "n_frames", 1) != 1 or
-                    image.size != (width, height)):
-                raise TransportValidationError("PNG_mode_or_frames")
-            orientation = image.getexif().get(274, 1)
-            if type(orientation) is not int or orientation != 1:
-                raise TransportValidationError("PNG_EXIF_1_required")
-            image.load()
-            result = np.asarray(image).copy()
+        if cv2 is not None:
+            # Preflight already checks every chunk, EXIF=1, CRC, exact bounded
+            # scanline stream and opaque RGB8/L8. Decode those same pixels;
+            # never let a native decoder apply orientation or color conversion.
+            result=cv2.imdecode(np.frombuffer(content,np.uint8),cv2.IMREAD_UNCHANGED)
+            shape=(height,width,3) if mode=='RGB' else (height,width)
+            if result is None or result.shape!=shape:raise TransportValidationError('PNG_mode_or_frames')
+            if mode=='RGB':result=cv2.cvtColor(result,cv2.COLOR_BGR2RGB)
+        else:
+            with Image.open(io.BytesIO(content)) as image:
+                if (image.format != "PNG" or image.mode != mode or getattr(image, "n_frames", 1) != 1 or
+                        image.size != (width, height)):
+                    raise TransportValidationError("PNG_mode_or_frames")
+                orientation = image.getexif().get(274, 1)
+                if type(orientation) is not int or orientation != 1:
+                    raise TransportValidationError("PNG_EXIF_1_required")
+                image.load()
+                result = np.asarray(image).copy()
     except TransportValidationError:
         raise
     except Exception as exc:
@@ -179,7 +192,8 @@ def validate_transport(value, upload, *, request_id, engine):
         raise TransportValidationError("returned_RGB_hash")
     accepted = _mask(value.get("accepted_permission_mask"), (width, height))
     rejected = _mask(value.get("rejected_permission_mask"), (width, height))
-    changed = np.any(returned != upload.rgb, axis=2)
+    changed = (cv2.cvtColor(cv2.compare(returned,upload.rgb,cv2.CMP_NE),cv2.COLOR_RGB2GRAY)>0
+        if cv2 is not None else np.any(returned != upload.rgb, axis=2))
     if np.any(accepted & rejected) or np.any(changed & ~accepted):
         raise TransportValidationError("accepted_rejected_changed_partition")
     count = integer(value.get("candidate_components"), MAX_COMPONENTS)

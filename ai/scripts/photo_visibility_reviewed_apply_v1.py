@@ -129,7 +129,8 @@ def render_selected_regions(rgb, labels, selected, rows, *, seed=None, appearanc
         from photo_generated_detail_v27 import render as visible_generated
         detail_parts=tuple(k for k,v in associations.items() if v in generated_detail_regions)
         engine=partial(visible_generated,detail_regions=detail_parts)
-    generated, renderer = engine(rgb, regular_mask, regular_labels, seed=seed)
+    from photo_parallel_material_v32 import render as parallel_material
+    generated, renderer = parallel_material(engine,rgb,regular_mask,regular_labels,seed=seed)
     for rid in large:
         target=render_labels==rid
         (y0,y1,x0,x1),local,metadata=render_large_pad(rgb,target,rid,renderer['seed'],engine)

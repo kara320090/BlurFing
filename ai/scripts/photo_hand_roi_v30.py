@@ -42,6 +42,8 @@ def candidate_labels(folder):
     with Image.open(folder/'candidate_mask.png') as image:mask=np.asarray(image)>0
     binding=json.loads((folder/'proposal/proposal.private.json').read_text('utf-8'))
     if binding.get('partial_pose') is not None:
+        if binding.get('proposal_engine')=='semantic_TIP_observed_pose_v32_experimental':
+            from photo_semantic_pose_proposal_v32 import partition as partition_candidates
         with Image.open(folder/'proposal/pose_owners.png') as image:owners=np.array(image)
         labels,_=partition_candidates(mask,owners,binding['partial_pose']['selected_labels'])
     else:labels,_=ndimage.label(mask,np.ones((3,3),np.uint8))

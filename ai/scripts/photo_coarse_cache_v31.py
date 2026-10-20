@@ -3,8 +3,31 @@ import copy
 import hashlib
 import numpy as np
 from finger_body_distal_estimator import estimate as original
+from finger_body_distal_estimator import component_pad as original_component
 
 MAX_BYTES=64*1024**2
+
+
+def component_pad(component,tip):
+    from photo_lossless_io_v29 import _state
+    state=_state.get()
+    if state is None:return original_component(component,tip)
+    key=(component.shape,component.dtype.str,tip.dtype.str,
+        hashlib.sha256(component.tobytes()).digest(),hashlib.sha256(tip.tobytes()).digest())
+    if key in state.components:
+        state.component_hits+=1
+        return copy.deepcopy(state.components[key])
+    result=original_component(component,tip);size=_size(result)
+    if state.component_bytes+size<=MAX_BYTES:
+        state.components[key]=copy.deepcopy(result);state.component_bytes+=size
+    return result
+
+
+def install_component_cache():
+    # The frozen estimator/training bytes stay intact. Only pure identical
+    # subproblems within the active job reuse independent array copies.
+    import finger_body_distal_estimator as estimator
+    estimator.component_pad=component_pad
 
 
 def _size(value):

@@ -6,6 +6,8 @@ External runtimes/weights/data retain their existing separate asset contracts.
 """
 from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
+from contextvars import ContextVar
 import hashlib,json,os,stat
 from pathlib import Path
 from types import MappingProxyType
@@ -16,6 +18,7 @@ SOURCE_SUFFIXES=frozenset({'.py','.java','.ps1','.c','.cpp','.h','.hpp'})
 EXCLUDED_DIRECTORIES=frozenset({'.git','.venv','venv','__pycache__','.pytest_cache','.mypy_cache','.ruff_cache',
     '.tox','.nox','site-packages','node_modules','vendor','third_party','third-party','thirdparty','external',
     'private','weights','cache','caches'})
+_transaction=ContextVar('owned_private_source_transaction',default=None)
 
 
 def _reparse(path):
@@ -56,7 +59,8 @@ class RuntimeSourceSnapshot:
             selected_directories=list(SOURCE_DIRECTORIES),selected_suffixes=sorted(SOURCE_SUFFIXES),
             excluded_directory_names=sorted(EXCLUDED_DIRECTORIES),file_count=len(files),
             source_set_sha256=hashlib.sha256(serialized).hexdigest(),files=files,
-            training_hash_contract_modified=False,external_assets_included=False)
+            training_hash_contract_modified=False,external_assets_included=False,
+            phase_source_checks_deferred_to_owned_request_seal=_transaction.get() is not None)
 
 
 def capture_runtime_sources(ai_root=None):
@@ -64,6 +68,8 @@ def capture_runtime_sources(ai_root=None):
     if _reparse(root):raise RuntimeError('runtime_AI_root_link_not_supported')
     root=root.resolve(strict=True)
     if not root.is_dir():raise RuntimeError('runtime_AI_root_directory_required')
+    staged=_transaction.get()
+    if staged is not None and staged.root==root:return staged
     files={};pending=[]
     def inventory_error(error):raise RuntimeError('runtime_source_inventory_failed') from error
     for name in SOURCE_DIRECTORIES:
@@ -89,6 +95,23 @@ def capture_runtime_sources(ai_root=None):
         files=dict(pool.map(checked,pending))
     if not files:raise RuntimeError('runtime_source_inventory_empty')
     return RuntimeSourceSnapshot(root,MappingProxyType(dict(sorted(files.items()))))
+
+
+@contextmanager
+def sealed_source_transaction(expected):
+    """Coalesce nested guards only inside an owned, unpublished request.
+
+    Full fresh inventories bookend the transaction. No result may be published
+    until this context exits successfully. Standalone phase guards retain their
+    immediate behavior; this scope must never surround a public result cache.
+    """
+    if _transaction.get() is not None:raise RuntimeError('nested_source_transaction_not_supported')
+    assert_runtime_sources_unchanged(expected)
+    token=_transaction.set(expected)
+    try:yield
+    finally:
+        _transaction.reset(token)
+        assert_runtime_sources_unchanged(expected)
 
 
 def assert_runtime_sources_unchanged(expected):

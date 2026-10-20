@@ -11,14 +11,16 @@ def main():
     p=argparse.ArgumentParser();p.add_argument('--model',required=True);args=p.parse_args()
     wire=sys.stdout;sys.stdout=sys.stderr
     import mediapipe_hand_worker_v1 as hand
+    import numpy as np
     model=Path(args.model)
     def digest(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
-    pins={path:digest(path) for path in (model,Path(hand.__file__),Path(__file__))}
+    pins={path:digest(path) for path in (model,Path(hand.__file__),Path(__file__),Path(__file__).with_name('photo_analysis_profile_v32.py'))}
     if pins[model]!=hand.MODEL_SHA256:raise ValueError('official_hand_model_SHA256_mismatch')
     def verify():
         if any(digest(path)!=sha for path,sha in pins.items()):raise ValueError('hand_assets_changed_restart_required')
     def send(value):wire.write(json.dumps(value,separators=(',',':'))+'\n');wire.flush()
     with hand.create_detector(model) as detector:
+        hand._detect(np.zeros((320,320,3),np.uint8),model,detector)
         verify();send(dict(status='ready',protocol='photo-hand-resident-v31'))
         while True:
             line=sys.stdin.readline(16385)

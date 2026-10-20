@@ -15,12 +15,16 @@ def main():
     from PIL import Image
     from colfispoof_raw_semantics import RawDeepLabRuntime,resolve_preprocessing
     from colfispoof_body_semantics import write_prediction
+    from photo_analysis_profile_v32 import profile,SEMANTIC_INPUT_SIDE
+    analysis_profile=profile(os.environ.get('BLURFING_PHOTO_ANALYSIS_PROFILE','native'))
     def digest(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
     paths=[Path(a.model),resolve_preprocessing(a.external_source)/'Segmentation/DeepLabModel.py',
-        Path(__file__),Path(__file__).with_name('colfispoof_raw_semantics.py'),Path(__file__).with_name('colfispoof_body_semantics.py')]
+        Path(__file__),Path(__file__).with_name('colfispoof_raw_semantics.py'),Path(__file__).with_name('colfispoof_body_semantics.py'),
+        Path(__file__).with_name('photo_analysis_profile_v32.py')]
     pins={p:digest(p) for p in paths}
     runtime=RawDeepLabRuntime(a.external_source,a.model,device=os.environ.get('BLURFING_COLFISPOOF_DEVICE','cpu'),
         dll_directories=json.loads(os.environ.get('BLURFING_COLFISPOOF_DLL_DIRS','[]')))
+    if analysis_profile=='fast_v32':runtime.model.INPUT_SIZE=SEMANTIC_INPUT_SIDE
     def send(value):wire.write(json.dumps(value,separators=(',',':'))+'\n');wire.flush()
     try:
         # Graph/kernel initialization uses synthetic pixels before readiness.
@@ -35,6 +39,11 @@ def main():
             if any(not isinstance(job[k],str) or not job[k] for k in job):raise ValueError('worker_frame_contract')
             if any(digest(p)!=sha for p,sha in pins.items()):raise ValueError('semantic_assets_changed_restart_required')
             write_prediction(runtime,job['input'],job['output'])
+            metadata=Path(job['output'])/'semantics.json'
+            record=json.loads(metadata.read_text('utf-8'))
+            record.update(analysis_profile=analysis_profile,model_input_side=runtime.model.INPUT_SIZE,
+                preprocessing_scale_changed=analysis_profile!='native')
+            metadata.write_text(json.dumps(record,indent=2),encoding='utf-8')
             if any(digest(p)!=sha for p,sha in pins.items()):raise ValueError('semantic_assets_changed_restart_required')
             send(dict(status='ok',id=job['id']))
     finally:runtime.close()

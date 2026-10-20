@@ -36,7 +36,7 @@ def load_config(path):
         if not isinstance(section, dict):
             raise ValueError('runtime_sections_required')
         for key, item in list(section.items()):
-            if key.endswith('_sha256') or key in ('development_replay','colfispoof_device','colfispoof_dll_dirs','resident_worker','hand_roi'):
+            if key.endswith('_sha256') or key in ('development_replay','colfispoof_device','colfispoof_dll_dirs','resident_worker','hand_roi','analysis_profile'):
                 continue
             if not isinstance(item, str) or not item.strip():
                 raise ValueError('runtime_paths_required')
@@ -48,6 +48,9 @@ def load_config(path):
     if type(photo.get('resident_worker',False)) is not bool:raise ValueError('explicit_resident_worker_boolean_required')
     if type(photo.get('hand_roi',False)) is not bool:raise ValueError('explicit_hand_ROI_boolean_required')
     if photo.get('hand_roi',False) and not photo.get('resident_worker',False):raise ValueError('hand_ROI_requires_resident_worker')
+    if photo.get('analysis_profile','native') not in ('native','fast_v32'):raise ValueError('unsupported_photo_analysis_profile')
+    if photo.get('analysis_profile','native')!='native' and not photo.get('hand_roi',False):
+        raise ValueError('fast_analysis_requires_resident_hand_ROI')
     if photo.get('colfispoof_device','cpu') not in ('cpu','cuda'):
         raise ValueError('explicit_colfispoof_device_required')
     directories=photo.get('colfispoof_dll_dirs',[])
@@ -187,6 +190,7 @@ def service_environment(config, name, *, platform=None):
         env['BLURFING_COLFISPOOF_DLL_DIRS']=json.dumps(section.get('colfispoof_dll_dirs',[]))
         env['BLURFING_PHOTO_RESIDENT']=str(section.get('resident_worker',False)).lower()
         env['BLURFING_PHOTO_HAND_ROI']=str(section.get('hand_roi',False)).lower()
+        env['BLURFING_PHOTO_ANALYSIS_PROFILE']=section.get('analysis_profile','native')
     else:
         nbis_key = 'BLURFING_NBIS_WINDOWS_CONFIG' if (platform or sys.platform) == 'win32' else 'BLURFING_NBIS_LINUX_CONFIG'
         for key in ('BLURFING_NBIS_WINDOWS_CONFIG', 'BLURFING_NBIS_LINUX_CONFIG', 'BLURFING_NBIS_CONFIG'):

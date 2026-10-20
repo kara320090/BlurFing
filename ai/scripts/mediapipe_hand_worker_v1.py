@@ -28,7 +28,7 @@ def decode(source):
         if image.mode not in ['RGB','L'] or type(orientation) is not int or orientation not in range(1,9):
             raise ValueError('hand_RGB_L_EXIF_source_contract')
         encoded=np.asarray(image.convert('RGB')).copy()
-        upright=np.asarray(ImageOps.exif_transpose(image).convert('RGB')).copy()
+        upright=encoded.copy() if orientation==1 else np.asarray(ImageOps.exif_transpose(image).convert('RGB')).copy()
     return encoded,upright,orientation
 
 

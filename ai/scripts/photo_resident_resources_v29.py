@@ -85,6 +85,8 @@ class HandClient(ModelClient):
 class Resources:
     def __init__(self):
         from photo_resident_model_v31 import Models
+        from photo_analysis_profile_v32 import profile
+        self.analysis_profile=profile(os.environ.get('BLURFING_PHOTO_ANALYSIS_PROFILE','native'))
         self.models=Models()
         self.semantic=self.hand=None
         self.fit_pool=None
