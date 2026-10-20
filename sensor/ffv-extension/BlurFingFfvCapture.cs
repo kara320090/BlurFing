@@ -61,6 +61,7 @@ internal static class BlurFingFfvCapture
                     save.Click += delegate { SaveImage(form, preview.Image, dataDirectory); };
                     toolbar.Items.Add(new ToolStripSeparator());
                     toolbar.Items.Add(save);
+                    using (BlurFingComparisonBridge bridge = new BlurFingComparisonBridge(preview, toolbar))
                     using (Timer timer = new Timer())
                     {
                         timer.Interval = 300;

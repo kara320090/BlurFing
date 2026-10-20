@@ -45,6 +45,7 @@ android {
     testOptions {
         unitTests.isIncludeAndroidResources = true
     }
+    sourceSets.getByName("androidTest").assets.srcDir("src/test/resources")
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -81,6 +82,7 @@ dependencies {
     testImplementation("org.json:json:20240303")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
+    androidTestImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")

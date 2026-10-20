@@ -1,5 +1,7 @@
 # 사진 AI 실험 연결
 
+2026-10-20: V2 설정 저장·사진 없는 서버 연결 확인·오류 안내, 카메라 입력, 같은 원본 영역 확대·나란히 비교, 검증 PNG 공유, private cache 복원을 연결했다. [구현 범위와 외부 확인 항목](../../docs/android-completion-20261020.md)을 따른다. 학교 서버 실제 연결은 다음 날 확인하며, 준비 응답을 실제 AI 처리·성능 검증으로 표시하지 않는다.
+
 사진 선택 화면의 **사진 AI 보호 실험 (미승인)**에서 별도 화면을 연다. 기존 V1 Gaussian/mock 요청·결과·타임아웃은 변경하지 않는다. V12 학습 후보, V13 기하 후보, V14 손 자세 후보를 명시적으로 선택하며 다른 엔진이나 mock으로 자동 전환하지 않는다.
 
 `POST /v2/photo/protect` multipart는 `image`, `request_id`, `method`, `scope=automatic_photo`, `strength=0.5`만 전송한다. `method`는 `photo_native_v12_experimental`, `photo_distal_v13_geometry_experimental`, `photo_pose_v14_geometry_experimental` 중 하나다. V2 서버를 별도로 구성해야 한다.
@@ -17,6 +19,8 @@
 단위 테스트는 Pillow가 생성·독립 확인한 합성 RGB/L PNG, 필터 0~4, 비정상 PNG·중복 JSON, 실제 HTTP multipart, 취소·늦은 결과·저장 ticket 수명을 검사한다. 실제 사진·모델·정답 자료는 APK에 포함하지 않는다. `tools/generate_experimental_png_fixtures.py`는 합성 fixture만 재생성한다.
 
 선택적 기기 검사는 `ExperimentalWireInstrumentedTest`를 사용한다. 로컬 자료는 adb로 앱의 private filesDir에 일시 배치하고 `private_input`, `expected_rgb_sha256`을 인자로 준다. `private_response`는 기존 실제 응답을 다시 검증하며, `real_backend_url`/`photo_engine`은 Repository→실제 HTTP 경로를 실행한다. 실제 응답·비교 영수증·PNG는 앱 private filesDir에만 기록한다. provider 검사는 숨겨진 임시 MediaStore record를 읽기 검증 후 삭제한다. 이 검사는 AI의 일반 성능이나 보안 증명이 아니다.
+
+미저장 결과를 다른 사진·엔진·재실행으로 교체할 때도 먼저 확인한다. 같은 엔진을 다시 누르거나 사진 선택창·교체 확인을 취소하면 현재 결과를 유지한다. 저장 위치 선택 대기 중에는 교체를 막으며, 이전 확인 응답이 새 작업을 실행하지 못하도록 현재 결과와 일회성 결정을 연결한다. [결과 교체 규칙](../../docs/android-next-13-experimental-replacement.md)을 따른다.
 
 ## 2026-10-16 통합 검증
 

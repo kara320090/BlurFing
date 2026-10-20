@@ -4,6 +4,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 /** 사용자가 선택한 서버 주소만 사용하며 인증정보·쿼리가 섞인 주소는 받지 않는다. */
 object BackendAddress {
+    const val DEFAULT_SERVER = "https://catering-marilyn-parliamentary-stuck.trycloudflare.com"
     const val EMULATOR_DEFAULT = "http://10.0.2.2:8000"
     private val localHosts = setOf("10.0.2.2", "127.0.0.1", "localhost")
 

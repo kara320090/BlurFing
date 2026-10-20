@@ -14,7 +14,8 @@ class ValidatedExperimentalPhoto internal constructor(
     internal val png: ByteArray, val accepted: CompactPermissionMask, val rejected: CompactPermissionMask,
     val presentation: ExperimentalPhotoPresentation, val candidateComponents: Int,
     val transformedComponents: Int, val rejectedComponents: Int, val changedPixels: Long,
-    val regions: List<ExperimentalRegionBounds>, val preview: Bitmap, val overlayPreview: Bitmap
+    val regions: List<ExperimentalRegionBounds>, val preview: Bitmap, val overlayPreview: Bitmap,
+    internal var recoveryResponse: ExperimentalPhotoResponse? = null
 )
 
 /** Validates real returned pixels and full-resolution masks. Boxes are display metadata only. */
@@ -78,7 +79,7 @@ object ExperimentalPhotoDecoder {
                 source.width,source.height,acceptedPixels,rejectedPixels,changed,changedOutside)
             val preview=preview(returned)
             return ValidatedExperimentalPhoto(requestId,engine,returned,returnedPng,accepted,rejected,presentation,r.candidateComponents,
-                r.transformedComponents,r.rejectedComponents,changed,r.regionDisplayBounds,preview,overlay(preview,accepted,rejected,checkActive))
+                r.transformedComponents,r.rejectedComponents,changed,r.regionDisplayBounds,preview,overlay(preview,accepted,rejected,checkActive),r)
         } catch(e: Throwable) { returned.recycle();throw e }
     }
 
