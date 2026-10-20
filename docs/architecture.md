@@ -18,6 +18,8 @@ Android 앱 → 백엔드 API → 영역 추출·보호 알고리즘의 흐름�
 
 ## 사진 AI V2 경계 — 2026-10-16
 
+2026-10-20 추가: 자동 `synthetic_v23`도 같은 V2 계약으로 연결되었습니다. 기존 V12/V13/V14와 구분하고 [최신 자동 경로](../backend/README-photo-v23.md)를 따릅니다. [시연 연결](../demo/README.md)은 학교 Ubuntu의 사진 8001/센서 8002를 SSH로 Windows loopback에 전달하고, debug Android는 USB reverse로 8001에 연결합니다. 센서는 별도 `/v1/scanner/compare`를 유지하며 PHOTO V23로 대체하지 않습니다. PC의 사람 검토 영역을 사용하는 경로는 자동 Android API가 아닙니다.
+
 기존 `backend/main:app`·`/v1/protect`·`gaussian_blur`는 유지한다. 별도 `experimental_photo_main:app`의 `/v2/photo/protect`와 Android 실험 화면에서 V12/V13/V14 중 하나를 명시적으로 선택한다. 다른 엔진·블러·Mock으로 자동 대체하지 않는다. [V2 계약과 실행](../backend/README-photo-v2.md)을 따른다.
 
 HTTP 입력은 클라이언트가 sRGB 및 EXIF 방향을 정규화한 불투명 RGB8 PNG다. 색상 chunk는 허용하지 않으며 서버가 색상을 재변환하지 않는다. Windows 새 PHOTO 경로는 RGB 샘플을 유지하며 유효한 원본 RGB ICC를 출력에 결합하고, GUI만 표시용 sRGB 변환을 한다. 두 입출력 계약은 구분한다. 원본 파일은 보존하고 사본만 저장한다.

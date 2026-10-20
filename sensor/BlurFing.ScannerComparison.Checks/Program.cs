@@ -146,6 +146,7 @@ Check("export retains both PNG bytes, raw score metadata and three panels", () =
         using var image = new Bitmap(Path.Combine(folder, "hstack.png")); Assert(image.Width == 900 && image.Height == 530, "hstack layout");
         using var receipt = JsonDocument.Parse(File.ReadAllText(Path.Combine(folder, "comparison.json")));
         Assert(receipt.RootElement.GetProperty("similarity_score").GetDouble() == 201.75 && receipt.RootElement.GetProperty("input_synthetic").GetBoolean(), "false measurement metadata");
+        Assert(receipt.RootElement.GetProperty("input_origin").GetString() == source.Origin, "input origin lost");
     }
     finally { if (Directory.Exists(scratch)) Directory.Delete(scratch, true); }
 });
