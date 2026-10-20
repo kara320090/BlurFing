@@ -83,6 +83,7 @@ class ExperimentalPhotoActivity: ComponentActivity() {
                 Surface(Modifier.fillMaxSize()) {
                     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
                         Text("사진 AI 보호 실험",style=MaterialTheme.typography.headlineSmall)
+                        Text("실험 버전: ${com.blurfing.app.BuildConfig.SOURCE_REVISION.take(12)}",style=MaterialTheme.typography.bodySmall)
                         Text("미검증 실험입니다. 미검출·거절 영역에는 원본 지문이 남을 수 있습니다.",color=MaterialTheme.colorScheme.error)
                         Text("사진을 지정한 서버에 업로드하며 원본 파일은 보존합니다.")
                         OutlinedTextField(value=state.serverAddress,onValueChange=model::setAddress,label={Text("실험 서버 주소")},
@@ -121,6 +122,15 @@ class ExperimentalPhotoActivity: ComponentActivity() {
                         state.result?.let { result ->
                             Text(result.presentation.title,style=MaterialTheme.typography.titleLarge)
                             Text(result.presentation.detail)
+                            state.runTiming?.takeIf { it.requestId==result.requestId }?.let { timing ->
+                                val label=if(timing.includesImport)"사진 불러오기부터" else "재실행 시작부터"
+                                timing.resultElapsedMs?.let { Text("$label 결과 검증: ${it / 1000.0}초") }
+                                timing.savedElapsedMs?.let {
+                                    Text("$label 저장·재읽기: ${it / 1000.0}초 · 120초 목표 ${if(timing.withinDemoTarget==true)"충족" else "초과"}")
+                                    Text("저장 위치 선택·대기 시간을 포함합니다. AI 성능·전체 보호 성공률이 아닙니다.",style=MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                            Text("요청: ${result.requestId}",style=MaterialTheme.typography.bodySmall)
                             Text("후보 ${result.candidateComponents} · 적용 ${result.transformedComponents} · 거절 ${result.rejectedComponents} · 변경 ${result.changedPixels} 픽셀")
                             if(result.rejectedComponents>0)Text("거절된 영역은 원본 지문이 그대로 남아 있습니다.",color=MaterialTheme.colorScheme.error)
                             Row { Switch(checked=showOverlay,onCheckedChange={showOverlay=it});Text("검증된 마스크 표시 · 초록=적용 / 주황=거절",Modifier.padding(top=12.dp)) }

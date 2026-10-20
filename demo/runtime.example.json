@@ -1,0 +1,25 @@
+{
+  "schema_version": "blurfing-demo-runtime-v1",
+  "photo": {
+    "api_python": "/absolute/path/backend-venv/bin/python",
+    "ai_python": "/absolute/path/ai-venv/bin/python",
+    "model_dir": "/absolute/path/private/v6",
+    "config_sha256": "GET_FROM_HANDOFF",
+    "consumed_registry": "/absolute/path/private/consumed_registry.private.json",
+    "registry_sha256": "GET_FROM_HANDOFF",
+    "colfispoof_python": "/absolute/path/colfispoof-venv/bin/python",
+    "colfispoof_source": "/absolute/path/COLFISPOOF",
+    "colfispoof_model": "/absolute/path/private/deeplab_model.tar.gz",
+    "hand_python": "/absolute/path/hand-venv/bin/python",
+    "hand_model": "/absolute/path/private/hand_landmarker.task",
+    "hand_model_sha256": "GET_FROM_HANDOFF",
+    "development_replay": false
+  },
+  "scanner": {
+    "api_python": "/absolute/path/scanner-api-venv/bin/python",
+    "ai_python": "/absolute/path/scanner-ai-venv/bin/python",
+    "nbis_config": "/absolute/path/private/nbis-runtime.json",
+    "sourceafis_config": "/absolute/path/private/sourceafis_runtime.json",
+    "sourceafis_home": "/absolute/path/sourceafis"
+  }
+}

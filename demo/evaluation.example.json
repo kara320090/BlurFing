@@ -1,0 +1,31 @@
+{
+  "schema_version": "blurfing-photo-evaluation-v1",
+  "consumed_registry": "consumed_registry.private.json",
+  "independence_confirmed_by_provider": false,
+  "samples": [
+    {
+      "sample_id": "DEV-001",
+      "split": "development",
+      "participant_alias": "participant-A",
+      "capture_group": "session-A",
+      "source": "development/source.png",
+      "source_sha256": "ACTUAL_CANONICAL_PNG_SHA256",
+      "response": "development/run-01/response.private.json",
+      "never_used_for_training_or_tuning": false,
+      "all_visible_fingertips_annotated": true,
+      "regions": [{"mask": "development/gt-finger-01.png", "visibility": "visible", "human_reviewed": true}]
+    },
+    {
+      "sample_id": "EVAL-001",
+      "split": "evaluation",
+      "participant_alias": "participant-B",
+      "capture_group": "session-B",
+      "source": "evaluation/source.png",
+      "source_sha256": "ACTUAL_CANONICAL_PNG_SHA256",
+      "response": "evaluation/run-01/response.private.json",
+      "never_used_for_training_or_tuning": true,
+      "all_visible_fingertips_annotated": true,
+      "regions": [{"mask": "evaluation/gt-finger-01.png", "visibility": "uncertain", "human_reviewed": true}]
+    }
+  ]
+}

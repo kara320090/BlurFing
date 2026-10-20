@@ -31,7 +31,8 @@ data class ExperimentalPhotoState(
     val replacement: ExperimentalPhotoReplacement?=null,
     val checkingServer: Boolean=false, val readiness: ExperimentalServerReadiness?=null,
     val sharing: Boolean=false, val pendingShare: ExperimentalPhotoShare?=null,
-    val recoveryWarning: String?=null
+    val recoveryWarning: String?=null,
+    val runTiming: ExperimentalPhotoRunTiming?=null
 ) {
     val hasActiveWork: Boolean get() = busy || importing || saving || awaitingSave || checkingServer || sharing || pendingShare!=null
     val hasUnsavedResult: Boolean get() = result?.let {
@@ -44,7 +45,8 @@ data class ExperimentalPhotoState(
 class ExperimentalPhotoViewModel(
     private val serviceFactory: (String)->ExperimentalPhotoService={ ExperimentalPhotoRepository(it) },
     private val loader: suspend (Context,Uri)->ExperimentalPhotoUpload={ context,uri -> ExperimentalPhotoUpload.load(context,uri) },
-    private val savedState: SavedStateHandle=SavedStateHandle()
+    private val savedState: SavedStateHandle=SavedStateHandle(),
+    private val monotonicMs: ()->Long={ android.os.SystemClock.elapsedRealtime() }
 ): ViewModel() {
     private val mutable=MutableStateFlow(ExperimentalPhotoState())
     val state: StateFlow<ExperimentalPhotoState> = mutable.asStateFlow()
@@ -57,6 +59,7 @@ class ExperimentalPhotoViewModel(
     private var session: ExperimentalPhotoSession?=null
     private var service: ExperimentalPhotoService?=null
     private var requestId: String?=null
+    private var importStartedAtMs: Long?=null
     private data class PendingSave(val generation: Long,val result: ValidatedExperimentalPhoto)
     private var pendingSave: PendingSave?=null
     private var outstandingSaveTicket: String?=null
@@ -178,6 +181,7 @@ class ExperimentalPhotoViewModel(
         }
     }
     private fun invalidate() {
+        importStartedAtMs=null
         generation++;requestId?.let { service?.cancel(it) };task?.cancel();saveTask?.cancel();shareTask?.cancel()
         (pendingReplacement?.action as? ReplacementAction.Photo)?.let { CameraCaptureFiles.discard(it.app,it.uri) }
         app?.let { context -> mutable.value.pendingShare?.let { ExperimentalPhotoShareFiles.discard(context,it) } }
@@ -199,8 +203,9 @@ class ExperimentalPhotoViewModel(
     }
     private fun loadSelected(context: Context,uri: Uri) {
         invalidate();val token=generation
+        importStartedAtMs=if(mutable.value.engine==ExperimentalPhotoEngine.SYNTHETIC)monotonicMs() else null
         session?.clear()
-        mutable.value=mutable.value.copy(source=null,result=null,busy=false,importing=true,saving=false,awaitingSave=false,message=null,savedResultRequestId=null)
+        mutable.value=mutable.value.copy(source=null,result=null,busy=false,importing=true,saving=false,awaitingSave=false,message=null,savedResultRequestId=null,runTiming=null)
         task=viewModelScope.launch {
             try {
                 val source=loader(context.applicationContext,uri);coroutineContext.ensureActive()
@@ -231,10 +236,13 @@ class ExperimentalPhotoViewModel(
         if(state.readiness?.let { state.engine.id !in it.photoEngines }==true) {
             mutable.value=state.copy(message="선택한 엔진이 서버에 구성되어 있지 않습니다. 엔진을 선택하고 연결을 다시 확인해 주세요.");return
         }
+        val includesImport=importStartedAtMs!=null
+        val startedAt=importStartedAtMs ?: monotonicMs()
         invalidate();val token=generation;val id=UUID.randomUUID().toString()
         requestId=id
         session?.clear()
-        mutable.value=state.copy(result=null,busy=true,awaitingSave=false,message=null,savedResultRequestId=null)
+        mutable.value=state.copy(result=null,busy=true,awaitingSave=false,message=null,savedResultRequestId=null,
+            runTiming=ExperimentalPhotoRunTiming(id,startedAt,includesImport))
         task=viewModelScope.launch {
             try {
                 checkpoint(source,null,token)
@@ -242,14 +250,15 @@ class ExperimentalPhotoViewModel(
                 val result=api.protect(source,state.engine,id);coroutineContext.ensureActive()
                 require(result.requestId==id && result.engine==state.engine)
                 checkpoint(source,result,token)
-                if(token==generation)mutable.value=mutable.value.copy(result=result,busy=false)
+                if(token==generation)mutable.value=mutable.value.copy(result=result,busy=false,
+                    runTiming=mutable.value.runTiming?.takeIf { it.requestId==id }?.resultReady(monotonicMs()))
             } catch(e: CancellationException) { throw e }
             catch(_: OutOfMemoryError) { if(token==generation)mutable.value=mutable.value.copy(busy=false,message="메모리가 부족해 처리를 중단했습니다. 선택한 원본은 유지됩니다.") }
             catch(e: Exception) { if(token==generation)mutable.value=mutable.value.copy(busy=false,message=if(e is ExperimentalPhotoException)e.message else "AI 결과의 픽셀·마스크 계약을 확인하지 못했습니다. 선택한 원본은 유지됩니다.") }
             finally { if(token==generation) { requestId=null;service=null } }
         }
     }
-    fun cancel() { invalidate();mutable.value=mutable.value.copy(busy=false,importing=false,saving=false,awaitingSave=false,message="작업을 취소했습니다. 선택한 원본은 유지됩니다.") }
+    fun cancel() { invalidate();mutable.value=mutable.value.copy(busy=false,importing=false,saving=false,awaitingSave=false,runTiming=null,message="작업을 취소했습니다. 선택한 원본은 유지됩니다.") }
     fun discardSession() { invalidate();session?.clear() }
     fun share(context: Context) {
         val state=mutable.value;val result=state.result ?: return
@@ -312,7 +321,9 @@ class ExperimentalPhotoViewModel(
                 };complete=true
                 if(pending.generation==generation) {
                     session?.markSaved(pending.result.requestId)
-                    mutable.value=mutable.value.copy(saving=false,savedResultRequestId=pending.result.requestId,message="검증된 반환 PNG 복사본을 저장했습니다. 전체 지문 보호는 보장되지 않습니다.")
+                    mutable.value=mutable.value.copy(saving=false,savedResultRequestId=pending.result.requestId,
+                        runTiming=mutable.value.runTiming?.takeIf { it.requestId==pending.result.requestId }?.saved(monotonicMs()),
+                        message="검증된 반환 PNG 복사본을 저장했습니다. 전체 지문 보호는 보장되지 않습니다.")
                 }
             } catch(e: CancellationException) { throw e }
             catch(_: Exception) { if(pending.generation==generation)mutable.value=mutable.value.copy(saving=false,message="복사본을 저장하지 못했습니다. 원본과 비교 결과는 유지됩니다.") }

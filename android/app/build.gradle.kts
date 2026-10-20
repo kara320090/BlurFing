@@ -16,6 +16,10 @@ android {
         versionCode = 1
         versionName = "1.0.0"
 
+        val revision = providers.gradleProperty("blurfingRevision").orElse("unrecorded").get()
+        require(revision.matches(Regex("[0-9a-f]{7,40}|unrecorded")))
+        buildConfigField("String", "SOURCE_REVISION", "\"$revision\"")
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true

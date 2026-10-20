@@ -14,6 +14,7 @@ internal static class ComparisonExport
         var receipt = new
         {
             schema_version = "scanner-comparison-v1", request_id = result.RequestId, input_synthetic = input.Synthetic,
+            input_origin = input.Origin,
             source_sha256 = input.Sha, source_pixel_sha256 = input.PixelSha, processed_sha256 = ScannerInput.Hash(result.Png),
             width = input.Width, height = input.Height, protection_status = result.ProtectionStatus,
             changed_pixels = result.ChangedPixels, matcher = "SourceAFIS", matcher_version = result.EngineVersion,
