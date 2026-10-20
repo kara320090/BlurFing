@@ -612,8 +612,21 @@ def test_fixed_schema_and_synthetic_example_match_actual_response_contract():
             warnings = warnings_for(engine, rejected)
             assert set(warnings) <= set(schema["properties"]["warnings"]["items"]["enum"])
             assert len(warnings) <= schema["properties"]["warnings"]["maxItems"]
-    source = png(np.full((12, 16, 3), 120, np.uint8))
-    validate_transport(example, UploadedPhoto.decode(source), request_id="synthetic-contract-example", engine="native_v12")
+    # The contract binds encoded bytes as well as pixels. PNG compression can
+    # differ across platforms/zlib builds even when decoded samples are equal.
+    source = (contracts / "photo-experimental-v2.synthetic-source.png").read_bytes()
+    upload = UploadedPhoto.decode(source)
+    np.testing.assert_array_equal(upload.rgb, np.full((12, 16, 3), 120, np.uint8))
+    validate_transport(example, upload, request_id="synthetic-contract-example", engine="native_v12")
+
+    # Re-encoding identical pixels must not bypass the original byte binding.
+    stream = io.BytesIO()
+    Image.fromarray(upload.rgb).save(stream, format="PNG", compress_level=0)
+    alternate = UploadedPhoto.decode(stream.getvalue())
+    assert alternate.source_sha256 != upload.source_sha256
+    np.testing.assert_array_equal(alternate.rgb, upload.rgb)
+    with pytest.raises(TransportValidationError, match="source_binding"):
+        validate_transport(example, alternate, request_id="synthetic-contract-example", engine="native_v12")
 
 
 @pytest.mark.parametrize("engine", ["native_v12", "distal_v13", "pose_v14"])
