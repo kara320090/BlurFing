@@ -5,6 +5,7 @@
 AI 계산은 Android 내부가 아니라 **PC/서버**에서 실행합니다.
 
 - 다음 담당자는 [한글 인수인계와 남은 작업](HANDOFF_KO.md)부터 읽으세요.
+- [새 담당 환경에서의 실제 인수 재현](../docs/worklogs/2026-10-20-이봉헌-private-handoff-replay.md): 비공개 자산 복원·고정 시드 RGB/마스크 일치·에뮬레이터 실제 모델 저장 확인. 현재 PC의 약 177초는 120초 목표 미달이며 독립 성능 검증은 아닙니다.
 - [공개·비공개 파일 구분](PUBLIC_PRIVATE_DATA_KO.md)에 따라 개인 자료를 별도로 인계합니다.
 - [이번 공개 준비 검사](docs/PUBLICATION_20261020.md): AI 50개·backend/실행기 108개 회귀 통과. 실제 모델의 독립 성능 검증과 구분합니다.
 - [실행 안내](../backend/README-photo-v23.md), [자동 연동 검증](docs/PHOTO_AUTOMATIC_V23_20261020.md), [최신 속도 검증](docs/PHOTO_V23_PERFORMANCE_20261020.md)을 함께 확인하세요.

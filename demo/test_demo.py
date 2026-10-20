@@ -112,6 +112,19 @@ def test_missing_assets_do_not_execute_any_probe(configured, monkeypatch):
     assert not runtime.preflight(configured, 'photo', probe=True)['configured']
 
 
+@pytest.mark.parametrize('platform,expected,other', [
+    ('win32', 'BLURFING_NBIS_WINDOWS_CONFIG', 'BLURFING_NBIS_LINUX_CONFIG'),
+    ('linux', 'BLURFING_NBIS_LINUX_CONFIG', 'BLURFING_NBIS_WINDOWS_CONFIG')])
+def test_scanner_uses_only_the_selected_platform_runtime(configured, monkeypatch, platform, expected, other):
+    monkeypatch.setenv('BLURFING_NBIS_WINDOWS_CONFIG', 'stale-windows-config')
+    monkeypatch.setenv('BLURFING_NBIS_LINUX_CONFIG', 'stale-linux-config')
+    monkeypatch.setenv('BLURFING_NBIS_CONFIG', 'stale-generic-config')
+    env = runtime.service_environment(configured, 'scanner', platform=platform)
+    assert env[expected] == configured['scanner']['nbis_config']
+    assert other not in env and 'BLURFING_NBIS_CONFIG' not in env
+    assert env['BLURFING_SCANNER_AI_ROOT'] == str(runtime.ROOT / 'ai')
+
+
 @pytest.mark.parametrize('target', ['-oProxyCommand=bad', 'user@host;bad', 'a\nb', 'host bad', '$(bad)'])
 def test_tunnel_arguments_cannot_be_shell_options(target):
     with pytest.raises(ValueError):
