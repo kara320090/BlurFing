@@ -20,6 +20,8 @@ import subprocess
 
 import tempfile
 
+import time
+
 from PIL import Image
 
 def sha(path):
@@ -54,13 +56,55 @@ def inspect_runtime(config_path=None):
     runtime['exe'] = str(exe)
     return runtime
 
-def run_nbis_job(images, pairs, *, run_name):
+def _launch(args, folder, verify, audit, command, persist, max_launch_retries):
+    """Optionally retry only a failed CreateProcess, never an executed command.
+
+    WinError 5 has been observed intermittently for an unchanged, otherwise
+    executable bridge. This is an opt-in bounded diagnostic recovery, not a
+    workaround for a persistent policy denial. Budget is shared by the job.
+    """
+    while True:
+        verify()
+        attempt = dict(status='starting')
+        command.setdefault('launch_attempts', []).append(attempt)
+        persist()
+        try:
+            process = subprocess.Popen(args, cwd=folder, stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='replace', shell=False)
+        except OSError as exc:
+            attempt.update(status='launch_failure', errno=exc.errno,
+                           winerror=getattr(exc, 'winerror', None), message=str(exc))
+            retry = getattr(exc, 'winerror', None) == 5 and audit['retry_count'] < max_launch_retries
+            if retry:
+                delay = .5 * 2**audit['retry_count']
+                audit['retry_count'] += 1
+                attempt['retry_delay_seconds'] = delay
+            persist()
+            if not retry:
+                raise
+            time.sleep(delay)
+            continue
+        attempt.update(status='launched', pid=process.pid)
+        try:
+            persist()
+        except BaseException:
+            process.kill()
+            process.wait()
+            raise
+        return process
+
+
+def run_nbis_job(images, pairs, *, run_name, max_launch_retries=0):
     """Extract raw8 at nominal 500 DPI and match sequentially in /tmp.
 
     Native policy: MINDTCT V2 -> lfs2nist_format -> bz_prune(max150),
     min_computable_minutiae=10. Low feature counts are not valid nonmatches.
-    Failures raise and retain audit evidence; there are no automatic retries.
+    Failures raise and retain audit evidence. Default is no retry. An explicit
+    Windows-only budget of at most two retries can recover a pre-start WinError
+    5 after 0.5/1 seconds. Exits, timeouts, IO and malformed outputs never retry.
     """
+    if type(max_launch_retries) is not int or not 0 <= max_launch_retries <= 2:
+        raise ValueError('Windows launch retry budget must be an integer 0..2')
     if not isinstance(run_name, str) or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]{0,69}', run_name):
         raise ValueError('ASCII run name of at most 70 characters required')
     if not images:
@@ -89,24 +133,41 @@ def run_nbis_job(images, pairs, *, run_name):
             im.load()
     folder = Path(tempfile.mkdtemp(prefix='blurfing_nbis_windows_' + run_name + '_', dir=tempfile.gettempdir()))
     audit_path = folder / 'audit.json'
-    audit = dict(status='running', commands=[], retry_count=0, failure_is_nonmatch=False,
+    audit = dict(status='running', commands=[], retry_count=0, max_launch_retries=max_launch_retries,
+                 retry_scope='CreateProcess_WinError5_only_shared_job_budget', failure_is_nonmatch=False,
                  output_folder=str(folder), runtime_sha256=runtime['exe_sha256'])
     def persist():
         audit_path.write_text(json.dumps(audit, indent=2), encoding='utf-8')
     def run(args, stage):
-        if sha(runtime['exe']) != runtime['exe_sha256']:
-            raise RuntimeError('Windows runtime changed during job')
+        def verify_launch():
+            if sha(runtime['exe']) != runtime['exe_sha256']:
+                raise RuntimeError('Windows runtime changed during job')
+            if args[0] == 'raw' and Path(args[-1]).exists():
+                raise RuntimeError('Fresh NBIS extraction output required before launch')
         command = dict(stage=stage, args=args, status='running')
         audit['commands'].append(command); persist()
         try:
-            result = subprocess.run([runtime['exe']] + args, cwd=folder,
-                                    capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=45, shell=False)
+            process = _launch([runtime['exe']] + args, folder, verify_launch,
+                              audit, command, persist, max_launch_retries)
+            with process:
+                try:
+                    stdout, stderr = process.communicate(timeout=45)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.communicate()
+                    raise
+                except BaseException:
+                    process.kill()
+                    process.wait()
+                    raise
+            result = subprocess.CompletedProcess(process.args, process.returncode, stdout, stderr)
         except subprocess.TimeoutExpired as exc:
             command.update(status='timeout', message=str(exc))
             persist()
             raise
         except OSError as exc:
-            command.update(status='process_launch_failure', message=str(exc))
+            launched = command.get('launch_attempts', [{}])[-1].get('status') == 'launched'
+            command.update(status='process_io_failure' if launched else 'process_launch_failure', message=str(exc))
             persist()
             raise
         command.update(exit_code=result.returncode, stdout=result.stdout, stderr=result.stderr,
@@ -153,7 +214,8 @@ def run_nbis_job(images, pairs, *, run_name):
         result = dict(matcher='NBIS5.0.0 MINDTCT/BOZORTH3', dpi=500, threshold=None,
             images=records, pairs=scores, independent_extraction=True, max_features=150,
             min_features=10, runtime_sha256=runtime['exe_sha256'], output_folder=str(folder),
-            audit_path=str(audit_path), windows_equivalence_verified=False, native_batch=False)
+            audit_path=str(audit_path), windows_equivalence_verified=False, native_batch=False,
+            process_launch_retries=audit['retry_count'], max_launch_retries=max_launch_retries)
         (folder / 'nbis_raw.json').write_text(json.dumps(result, indent=2), encoding='utf-8')
         audit['status'] = 'complete'; persist()
         return result
