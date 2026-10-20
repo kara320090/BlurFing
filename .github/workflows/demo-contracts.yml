@@ -27,3 +27,7 @@ jobs:
         env:
           PYTHONPATH: ai/scripts
         run: python -m pytest ai/scripts/test_photo_partial_pose_v25.py ai/scripts/test_photo_automatic_v23.py ai/scripts/test_photo_local_axis_v24.py ai/scripts/test_photo_rounded_pad_v1.py ai/scripts/test_protect_photo_pitch_free_v1.py ai/scripts/test_photo_generated_detail_v27.py ai/scripts/test_photo_continuous_surface_v28.py ai/scripts/test_photo_worker_overlap_v1.py ai/scripts/test_colfispoof_raw_semantics.py ai/scripts/test_photo_lossless_io_v29.py ai/scripts/test_photo_mask_roi_v29.py ai/scripts/test_photo_semantic_sampling_v29.py ai/scripts/test_photo_hand_roi_v30.py -q
+      - name: Resident resource reuse and exact boundary fit regressions
+        env:
+          PYTHONPATH: ai/scripts
+        run: python -m pytest ai/scripts/test_photo_fast_resources_v31.py ai/scripts/test_photo_v23_performance_v1.py -q

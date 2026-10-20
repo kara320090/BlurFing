@@ -61,7 +61,7 @@ class PerformanceParityTests(unittest.TestCase):
                 self.assertEqual([], runtime.fit_patches([], fit_patch))
             with runtime.fit_session(1):
                 self.assertEqual([3, 7], runtime.fit_patches([(1,2), (3,4)], lambda a,b:a+b))
-        for value in (0, 5, True, 1.5):
+        for value in (0, 9, True, 1.5):
             with self.assertRaisesRegex(ValueError, 'junction_worker_limit'):
                 with runtime.fit_session(value):
                     pass

@@ -1,4 +1,6 @@
 import io
+import hashlib
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -61,6 +63,43 @@ class LosslessIOTests(unittest.TestCase):
                     self.assertEqual(state.file_hits,1)
                     path.write_bytes(b'modified without another read')
             self.assertFalse(state.files);self.assertFalse(state.pins)
+
+    def test_binary_asset_stream_reuses_bytes_but_keeps_SHA_checks_and_file_descriptor(self):
+        from pad_refinement_data_contract_v2 import checked_bytes
+        with tempfile.TemporaryDirectory() as td:
+            path=Path(td)/'weights.pt';content=b'fresh synthetic weights'
+            path.write_bytes(content);expected=hashlib.sha256(content).hexdigest()
+            with lossless_io() as state:
+                for _ in range(2):self.assertEqual(checked_bytes(path,expected),content)
+                self.assertGreaterEqual(state.file_hits,1)
+                with path.open('rb') as stream:
+                    self.assertEqual(os.fstat(stream.fileno()).st_size,len(content))
+                    self.assertEqual(stream.read(5),content[:5]);stream.seek(0)
+                    self.assertEqual(stream.read(),content)
+                with self.assertRaisesRegex(ValueError,'asset_hash_mismatch'):
+                    checked_bytes(path,'0'*64)
+            self.assertFalse(state.files);self.assertFalse(state.pins)
+            path.write_bytes(b'changed');self.assertEqual(path.read_bytes(),b'changed')
+
+    def test_binary_stream_snapshot_cannot_hide_later_mutation(self):
+        with tempfile.TemporaryDirectory() as td:
+            path=Path(td)/'asset.npz';path.write_bytes(b'original')
+            with self.assertRaisesRegex(ValueError,'snapshot_changed'):
+                with lossless_io():
+                    with path.open('rb') as stream:self.assertEqual(stream.read(),b'original')
+                    path.write_bytes(b'modified')
+
+    def test_repeated_samples_share_encoding_but_EXIF_remains_per_output(self):
+        image=Image.new('RGB',(48,32),'pink');exif=Image.Exif();exif[274]=1
+        with lossless_io() as state:
+            first=io.BytesIO();image.save(first,format='PNG',exif=exif)
+            second=io.BytesIO();image.copy().save(second,format='PNG')
+            self.assertEqual(state.encodes,1);self.assertEqual(state.encode_hits,1)
+            self.assertNotEqual(first.getvalue(),second.getvalue())
+            with Image.open(io.BytesIO(first.getvalue())) as a,Image.open(io.BytesIO(second.getvalue())) as b:
+                self.assertEqual(a.getexif().get(274),1);self.assertNotIn(274,b.getexif())
+                np.testing.assert_array_equal(np.array(a),np.array(b))
+        self.assertFalse(state.encoded);self.assertEqual(state.encoded_bytes,0)
 
 
 if __name__=='__main__':unittest.main()
