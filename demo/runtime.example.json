@@ -13,7 +13,10 @@
     "hand_python": "/absolute/path/hand-venv/bin/python",
     "hand_model": "/absolute/path/private/hand_landmarker.task",
     "hand_model_sha256": "GET_FROM_HANDOFF",
-    "development_replay": false
+    "development_replay": false,
+    "resident_worker": false,
+    "hand_roi": false,
+    "analysis_profile": "native"
   },
   "scanner": {
     "api_python": "/absolute/path/scanner-api-venv/bin/python",

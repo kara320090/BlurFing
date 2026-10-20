@@ -90,6 +90,20 @@ def test_explicit_cuda_paths_are_isolated_and_missing_paths_fail_preflight(confi
     with pytest.raises(ValueError):runtime.load_config(path)
 
 
+def test_fast_semantic_profile_is_explicit_and_native_overrides_stale_environment(configured,tmp_path,monkeypatch):
+    path=tmp_path/'runtime.json'
+    configured['photo'].update(resident_worker=True,hand_roi=True,analysis_profile='fast_v32')
+    path.write_text(json.dumps(configured))
+    loaded=runtime.load_config(path)
+    assert runtime.service_environment(loaded,'photo')['BLURFING_PHOTO_ANALYSIS_PROFILE']=='fast_v32'
+    configured['photo'].pop('analysis_profile');monkeypatch.setenv('BLURFING_PHOTO_ANALYSIS_PROFILE','fast_v32')
+    assert runtime.service_environment(configured,'photo')['BLURFING_PHOTO_ANALYSIS_PROFILE']=='native'
+    for name,roi in [('unknown',True),('fast_v32',False)]:
+        configured['photo'].update(analysis_profile=name,hand_roi=roi)
+        path.write_text(json.dumps(configured))
+        with pytest.raises(ValueError):runtime.load_config(path)
+
+
 @pytest.mark.parametrize('field', ['config_sha256', 'registry_sha256', 'hand_model_sha256'])
 def test_missing_or_wrong_asset_hash_rejected(configured, field):
     configured['photo'].pop(field)

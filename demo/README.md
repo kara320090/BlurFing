@@ -144,7 +144,11 @@ python demo/evaluate_scanner.py --reference private/reference.png --original pri
 손 전체와 여유 공간을 원본 격자로 잘라 처리하므로 전체 화면 경로와 마스크가 달라질 수 있고,
 ROI를 얻지 못한 전체 화면 경로·대기열·큰 손 사진은 60초를 넘을 수 있다.
 
-사진의 예방적 합성 영역에는 [V28 연속 지문선 재질](../ai/docs/PHOTO_CONTINUOUS_SURFACE_V28_20261020.md)을 적용한다.
+사진의 예방적 합성 영역에는 [V27 생성 지문 재질](../ai/docs/PHOTO_GENERATED_DETAIL_V27_20261020.md)을 적용한다.
+추가 속도 모드는 [V32 고속 경로](../ai/docs/PHOTO_FAST_V32_20261021.md)를 따른다.
+비공개 설정에서 `resident_worker: true`, `hand_roi: true`, `analysis_profile: "fast_v32"`를 함께 설정하고 서버를 재시작한다.
+기본값 `native`는 기존 V6 경로를 사용한다. 고속 모드는 semantic TIP와 관측된 관절을 사용하고 V6 타일 추론·주름 탐색·V23 junction fit을 생략한다.
+원본 크기와 V27 생성 재질은 유지하지만 검출·경계·합성 RGB는 기본 모드와 달라질 수 있다. 두 모드의 성능·외관·적용 영역을 구분해 평가한다.
 비공개 `photo.colfispoof_device`는 `cpu`(기본) 또는 `cuda`만 받는다.
 Windows CUDA DLL을 별도 폴더로 준비했다면 `photo.colfispoof_dll_dirs`에 그 디렉터리들의 목록을 넣는다.
 경로는 설정 파일 기준으로 해석하며 자식 프로세스에만 전달한다. GPU 실패는 오류로 반환한다.

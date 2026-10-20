@@ -10,6 +10,16 @@ import java.io.File
 class ExperimentalPngCodecTest {
     private fun fixture(name: String)=javaClass.getResourceAsStream("/experimental-png/$name")!!.use { it.readBytes() }
     private fun rejects(block: ()->Unit) { try { block();fail("Invalid PNG was accepted") } catch(_: IllegalArgumentException) { } catch(_: java.io.IOException) { } }
+    @Test fun parallelDeflateFullFlushBlocksDecodeAsOneStream() {
+        val png=ExperimentalPngCodec.parse(fixture("RGB-parallel-deflate.png"),2)
+        val decoded=ByteArrayOutputStream()
+        ExperimentalPngCodec.rows(png) { _,row -> decoded.write(row) }
+        val expected=ArrayList<Byte>()
+        repeat(7) { y -> repeat(9) { x ->
+            listOf((x*29+y*7)%256,(x*11+y*31)%256,(x*43+y*17)%256).forEach { expected.add(it.toByte()) }
+        } }
+        assertArrayEquals(expected.toByteArray(),decoded.toByteArray())
+    }
     @Test fun allFiveFiltersAndPillowFilesMatchIndependentPixelsAndSha() {
         val manifest=JSONObject(fixture("manifest.json").toString(Charsets.UTF_8))
         for(mode in listOf("RGB","L")) for(ending in (0..4).map { "filter$it" }+"pillow") {

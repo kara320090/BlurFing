@@ -22,7 +22,7 @@ jobs:
       - run: python -m pip install -r ai/requirements.txt -r backend/requirements-photo-v2.txt -r backend/requirements-dev.txt
       - run: python -m pytest demo/test_demo.py -q
       - name: Resident photo process lifecycle and wire regressions
-        run: python -m pytest backend/test_photo_resident_v29.py backend/test_experimental_photo_v2.py backend/test_native_photo_result_contract_v1.py backend/test_measure_photo_ai.py -q
+        run: python -m pytest backend/test_photo_resident_v29.py backend/test_experimental_photo_v2.py backend/test_native_photo_result_contract_v1.py backend/test_measure_photo_ai.py backend/test_photo_png_decode_v32.py -q
       - name: Automatic photo digit geometry and rendering regressions
         env:
           PYTHONPATH: ai/scripts
@@ -30,4 +30,4 @@ jobs:
       - name: Resident resource reuse and exact boundary fit regressions
         env:
           PYTHONPATH: ai/scripts
-        run: python -m pytest ai/scripts/test_photo_fast_resources_v31.py ai/scripts/test_photo_v23_performance_v1.py -q
+        run: python -m pytest ai/scripts/test_photo_fast_resources_v31.py ai/scripts/test_photo_v23_performance_v1.py ai/scripts/test_photo_latency_v32.py -q
