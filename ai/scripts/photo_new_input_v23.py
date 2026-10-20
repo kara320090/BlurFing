@@ -108,7 +108,7 @@ def review_candidates(baseline, refined, unanchored_owners):
         whole_finger_coverage_verified=False)
 
 
-def propose(source, model, registry, output):
+def propose(source, model, registry, output, *, allow_development_replay=True):
     """Executed in a separate process: existing detector policies stay unchanged."""
     from protect_photo_pitch_free_v1 import run
     from photo_crease_native_adapter_v1 import prepare
@@ -118,7 +118,7 @@ def propose(source, model, registry, output):
     import pad_refinement_tiles_v3 as tiles
     rgb, _ = canonical_rgb(source)
     detection = output / 'detection'
-    _, report = run(source, model, registry, detection, development_replay=True,
+    _, report = run(source, model, registry, detection, development_replay=allow_development_replay,
                     include_observed_pose=True, include_coarse_pad=True,
                     complete_holes=True, allow_scanner=True, rounded_pads=True)
     with Image.open(detection / 'redacted_mask.png') as image:
@@ -134,7 +134,7 @@ def propose(source, model, registry, output):
         hand = json.loads(worker.read_text('utf-8')) if worker.exists() else None
         reg, _ = tiles.json_snapshot(registry)
         with development_replay(reg, [tiles.image_identity(source),
-                                     tiles.image_identity(Path(record['source_path']))], enabled=True):
+                                     tiles.image_identity(Path(record['source_path']))], enabled=allow_development_replay):
             derived, mask, boundary, pose = prepare(record, rgb, before, report['rounded_pad_metadata'], hand,
                                                     output / 'crease')
             rows = boundary['candidates']

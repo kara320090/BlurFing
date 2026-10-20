@@ -90,7 +90,8 @@ class ExperimentalPhotoDecoderTest {
         val s=source();val base=response(s)
         for(engine in ExperimentalPhotoEngine.entries) {
             val warning=when(engine) { ExperimentalPhotoEngine.NATIVE->emptyList();ExperimentalPhotoEngine.DISTAL->listOf("GEOMETRY_BOUNDARIES_REQUIRE_REVIEW_ACCURACY_REGRESSION_OBSERVED")
-                ExperimentalPhotoEngine.POSE->listOf("POSE_GEOMETRY_BOUNDARIES_REQUIRE_REVIEW") }
+                ExperimentalPhotoEngine.POSE->listOf("POSE_GEOMETRY_BOUNDARIES_REQUIRE_REVIEW")
+                ExperimentalPhotoEngine.SYNTHETIC->listOf("AUTOMATIC_VISIBILITY_UNCALIBRATED","SYNTHETIC_REPLACEMENT_V23") }
             val dto=base.copy(photoEngine=engine.id,method=engine.method,warnings=base.warnings+warning)
             assertEquals(engine,ExperimentalPhotoDecoder.decode(dto,s,engine,"synthetic",checkMemory=false).engine)
             if(engine!=ExperimentalPhotoEngine.NATIVE)rejects { ExperimentalPhotoDecoder.decode(dto.copy(warnings=base.warnings),s,engine,"synthetic",checkMemory=false) }

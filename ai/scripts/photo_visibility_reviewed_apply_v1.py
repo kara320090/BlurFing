@@ -82,6 +82,22 @@ def apply_reviewed(rgb, labels, review, *, seed=None, appearance='v19'):
             selected.append(rid)
         rows.append(dict(region_id=rid, human_decision=label, status='pending_render' if label == 'visible' else
                          ('review_required' if label == 'uncertain' else 'not_applied_human_not_observed')))
+    return render_selected_regions(rgb, labels, selected, rows, seed=seed, appearance=appearance)
+
+
+def render_selected_regions(rgb, labels, selected, rows, *, seed=None, appearance='v19'):
+    """Shared rendering only; callers own selection provenance, never fabricate human review."""
+    if (not isinstance(rgb, np.ndarray) or rgb.dtype != np.uint8 or rgb.ndim != 3 or rgb.shape[2] != 3
+            or not isinstance(labels, np.ndarray) or labels.dtype != np.uint16 or labels.shape != rgb.shape[:2]):
+        raise ValueError('selected_RGB_labels_contract')
+    validate_resize(*labels.shape, 1.)
+    if appearance not in ('v19', 'silhouette_v21', 'material_v22', 'junction_v23'):
+        raise ValueError('selected_appearance_not_supported')
+    ids = {int(i) for i in np.unique(labels) if i}
+    if (len(selected) != len(set(selected)) or not set(selected) <= ids
+            or len(rows) != len(ids) or {r['region_id'] for r in rows} != ids):
+        raise ValueError('selected_region_partition_contract')
+    rows = [dict(row) for row in rows]
     mask = np.isin(labels, selected)
     # A shared group may contain diagonally connected fragments. Give the
     # unchanged renderer separate four-connected components, with provenance.

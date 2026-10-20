@@ -92,7 +92,7 @@ class ExperimentalWireInstrumentedTest {
         try {
             withContext(Dispatchers.Main) { store.put("fixture",vm);vm.setEngine(engine);vm.select(context,Uri.fromFile(file)) }
             withTimeout(10000) { vm.state.first { it.source!=null && !it.importing } }
-            withContext(Dispatchers.Main) { vm.start() }
+            if(engine!=ExperimentalPhotoEngine.SYNTHETIC) withContext(Dispatchers.Main) { vm.start() }
             withTimeout(10000) { vm.state.first { it.result!=null && !it.busy } }
             if(result.changedPixels>0) {
                 val uri=saveTarget(saveFile)
@@ -115,8 +115,8 @@ class ExperimentalWireInstrumentedTest {
         try {
             withContext(Dispatchers.Main) { store.put("actual-http",vm);vm.setEngine(engine);vm.select(context,Uri.fromFile(file)) }
             withTimeout(10000) { vm.state.first { it.source!=null && !it.importing } }
-            withContext(Dispatchers.Main) { vm.start() }
-            val final=withTimeout(750000) { vm.state.first { !it.busy } }
+            if(engine!=ExperimentalPhotoEngine.SYNTHETIC) withContext(Dispatchers.Main) { vm.start() }
+            val final=withTimeout(750000) { vm.state.first { it.result!=null || (!it.hasActiveWork && it.message!=null) } }
             assertNull(final.message);val result=final.result!!
             val saveFile=File(context.filesDir,"android-actual-http-return.private.png")
             if(result.changedPixels>0) {

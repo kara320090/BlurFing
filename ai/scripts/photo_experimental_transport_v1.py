@@ -20,7 +20,8 @@ import numpy as np
 from PIL import Image
 
 ENGINES={'native_v12':'photo_native_v12_experimental','distal_v13':'photo_distal_v13_geometry_experimental',
-         'pose_v14':'photo_pose_v14_geometry_experimental'}
+         'pose_v14':'photo_pose_v14_geometry_experimental',
+         'synthetic_v23':'photo_synthetic_v23_automatic_experimental'}
 ENTRYPOINTS={'native_v12':'single_photo_whole_pad_context_native_v1_experimental','distal_v13':'photo_distal_native_v13_experimental',
              'pose_v14':'single_photo_pose_native_v14_experimental'}
 MAX_PIXELS=20_000_000
@@ -218,6 +219,7 @@ class ValidatedExperimentalPhotoResult:
         if self.rejected:warnings.append('REJECTED_REGIONS_RETAIN_ORIGINAL_PIXELS')
         if self.engine=='distal_v13':warnings.append('GEOMETRY_BOUNDARIES_REQUIRE_REVIEW_ACCURACY_REGRESSION_OBSERVED')
         if self.engine=='pose_v14':warnings.append('POSE_GEOMETRY_BOUNDARIES_REQUIRE_REVIEW')
+        if self.engine=='synthetic_v23':warnings.extend(['AUTOMATIC_VISIBILITY_UNCALIBRATED','SYNTHETIC_REPLACEMENT_V23'])
         return dict(contract_version='photo-experimental-v2',request_id=request_id,result_kind='experimental',
             method=ENGINES[self.engine],photo_engine=self.engine,status=self.status,
             image_base64=base64.b64encode(self.returned_png).decode('ascii'),mime_type='image/png',
@@ -239,7 +241,7 @@ def validate_native_result(source_rgb,returned_rgb,permission,labels,report,*,so
     and verify those artifact hashes before calling. Bounding boxes cannot
     replace labels. This function never re-renders or relaxes a quality gate.
     """
-    if engine not in ENGINES:raise ValueError('unsupported_experimental_engine')
+    if engine not in ENTRYPOINTS:raise ValueError('unsupported_experimental_engine')
     if not isinstance(report,dict):raise ValueError('region_report_contract')
     if report.get('single_photo_entrypoint')!=ENTRYPOINTS[engine]:raise ValueError('selected_engine_binding_mismatch')
     if (type(orientation) is not int or orientation not in range(1,9) or

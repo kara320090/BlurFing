@@ -25,6 +25,7 @@ ENGINE_METHODS = {
     "native_v12": "photo_native_v12_experimental",
     "distal_v13": "photo_distal_v13_geometry_experimental",
     "pose_v14": "photo_pose_v14_geometry_experimental",
+    "synthetic_v23": "photo_synthetic_v23_automatic_experimental",
 }
 RESPONSE_KEYS = frozenset({
     "contract_version", "request_id", "result_kind", "method", "photo_engine", "status",
@@ -70,6 +71,8 @@ def warnings_for(engine, rejected):
         warnings.append("GEOMETRY_BOUNDARIES_REQUIRE_REVIEW_ACCURACY_REGRESSION_OBSERVED")
     if engine == "pose_v14":
         warnings.append("POSE_GEOMETRY_BOUNDARIES_REQUIRE_REVIEW")
+    if engine == "synthetic_v23":
+        warnings.extend(["AUTOMATIC_VISIBILITY_UNCALIBRATED", "SYNTHETIC_REPLACEMENT_V23"])
     return warnings
 
 

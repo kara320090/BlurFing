@@ -606,11 +606,17 @@ def test_fixed_schema_and_synthetic_example_match_actual_response_contract():
     assert set(schema["properties"]) == RESPONSE_KEYS == set(schema["required"])
     assert schema["additionalProperties"] is False
     assert schema["properties"]["photo_engine"]["enum"] == list(ENGINE_METHODS)
+    assert schema["properties"]["method"]["enum"] == list(ENGINE_METHODS.values())
+    for engine in ENGINE_METHODS:
+        for rejected in (0, 1):
+            warnings = warnings_for(engine, rejected)
+            assert set(warnings) <= set(schema["properties"]["warnings"]["items"]["enum"])
+            assert len(warnings) <= schema["properties"]["warnings"]["maxItems"]
     source = png(np.full((12, 16, 3), 120, np.uint8))
     validate_transport(example, UploadedPhoto.decode(source), request_id="synthetic-contract-example", engine="native_v12")
 
 
-@pytest.mark.parametrize("engine", list(ENGINE_METHODS))
+@pytest.mark.parametrize("engine", ["native_v12", "distal_v13", "pose_v14"])
 def test_real_core_response_and_independent_server_validator_have_identical_contract(engine):
     from native_photo_result_contract_v1 import ENTRYPOINTS
     from test_native_photo_result_contract_v1 import ExperimentalPhotoContractTests
@@ -679,3 +685,12 @@ def test_actual_http_server_real_subprocess_transport_probe(configured, content)
         process.terminate()
         process.wait(timeout=10)
     assert not list(config.temp_root.iterdir())
+
+
+def test_automatic_engine_uses_own_wire_contract(content):
+    payload = synthetic_payload(content, "auto-wire", "synthetic_v23")
+    validate_transport(payload, UploadedPhoto.decode(content), request_id="auto-wire", engine="synthetic_v23")
+    assert "AUTOMATIC_VISIBILITY_UNCALIBRATED" in payload["warnings"]
+    assert payload["complete_photo_protection_verified"] is False
+    # Actual V23 renderer -> independent server validation is exercised by
+    # ai/scripts/test_photo_automatic_v23.py; native gates do not authorize V23.

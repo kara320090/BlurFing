@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 import kotlinx.coroutines.withContext
 import java.util.UUID
 import java.security.MessageDigest
@@ -204,7 +205,16 @@ class ExperimentalPhotoViewModel(
             try {
                 val source=loader(context.applicationContext,uri);coroutineContext.ensureActive()
                 checkpoint(source,null,token)
-                if(token==generation)mutable.value=mutable.value.copy(source=source,importing=false)
+                if(token==generation) {
+                    mutable.value=mutable.value.copy(source=source,importing=false)
+                    if(mutable.value.engine==ExperimentalPhotoEngine.SYNTHETIC) viewModelScope.launch {
+                        // Let import cleanup finish. A replacement, cancellation or engine
+                        // change invalidates this exact pending automatic request.
+                        yield()
+                        if(token==generation && mutable.value.source===source &&
+                            mutable.value.engine==ExperimentalPhotoEngine.SYNTHETIC) start()
+                    }
+                }
             } catch(e: CancellationException) { throw e }
             catch(_: OutOfMemoryError) { if(token==generation)mutable.value=mutable.value.copy(importing=false,message="메모리가 부족해 사진을 불러오지 못했습니다. 원본 파일은 변경되지 않았습니다.") }
             catch(e: Exception) { if(token==generation)mutable.value=mutable.value.copy(importing=false,message=if(e is ExperimentalPhotoException)e.message else "사진을 불러오지 못했습니다. 15MiB · 2,000만 화소 제한과 방향 정보를 확인해 주세요.") }

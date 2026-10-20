@@ -6,6 +6,8 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddPhotoAlternate
@@ -63,7 +65,7 @@ fun ImagePickerScreen(
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.padding(24.dp)
+                        modifier = Modifier.verticalScroll(rememberScrollState()).padding(24.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.AddPhotoAlternate,
@@ -78,12 +80,21 @@ fun ImagePickerScreen(
                             textAlign = TextAlign.Center
                         )
                         Text(
-                            text = "사진을 촬영하거나 갤러리에서 선택하고\n직접 손끝 영역을 확인한 뒤 처리하세요.\n15MB · 2,000만 화소 이하 사진을 지원합니다.",
+                            text = if (onExperimentalPhoto != null)
+                                "자동 처리 화면에서 사진을 선택하면\n손끝 검출과 지문 합성을 시작합니다.\n15MB · 2,000만 화소 이하 사진을 지원합니다."
+                                else "사진을 촬영하거나 갤러리에서 선택하고\n직접 손끝 영역을 확인한 뒤 처리하세요.\n15MB · 2,000만 화소 이하 사진을 지원합니다.",
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(8.dp))
+                        onExperimentalPhoto?.let { open ->
+                            Button(onClick=open,enabled=!isCameraPending,
+                                contentPadding=PaddingValues(horizontal=24.dp,vertical=14.dp)) {
+                                Text("자동 지문 보호 · V23 실험")
+                            }
+                            Text("아래는 기존 수동 영역 지정 방식입니다.",style=MaterialTheme.typography.bodySmall)
+                        }
                         Button(
                             onClick = onTakePhoto,
                             enabled = !isCameraPending,
@@ -108,7 +119,6 @@ fun ImagePickerScreen(
                         ) {
                             Text("갤러리에서 사진 선택")
                         }
-                        onExperimentalPhoto?.let { open -> OutlinedButton(onClick=open,enabled=!isCameraPending) { Text("사진 AI 보호 실험 (미승인)") } }
                     }
                 }
 
@@ -155,7 +165,7 @@ fun ImagePickerScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        onExperimentalPhoto?.let { open -> OutlinedButton(onClick=open,enabled=!isCameraPending) { Text("별도 사진 AI 보호 실험 (미승인)") } }
+                        onExperimentalPhoto?.let { open -> OutlinedButton(onClick=open,enabled=!isCameraPending) { Text("자동 지문 보호 · V23 실험") } }
 
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),

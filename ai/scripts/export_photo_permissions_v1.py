@@ -154,6 +154,10 @@ def run(source,output,*,photo_engine,consumed_registry,request_id,photo_model=No
     _request_id(request_id)
     if type(development_replay) is not bool:raise ValueError('development_replay_flag_must_be_boolean')
     if photo_engine not in ENGINES:raise ValueError('unsupported_experimental_engine')
+    if photo_engine == 'synthetic_v23':
+        from photo_automatic_v23 import run as automatic_run
+        return automatic_run(source,output,photo_model=photo_model,consumed_registry=consumed_registry,
+                             request_id=request_id,development_replay=development_replay)
     validate_photo_options(photo_engine,photo_model,consumed_registry,development_replay)
     source,output,registry_path=Path(source),Path(output),Path(consumed_registry)
     if output.exists():raise FileExistsError('fresh_export_output_required')

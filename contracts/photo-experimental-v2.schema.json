@@ -51,14 +51,16 @@
       "enum": [
         "photo_native_v12_experimental",
         "photo_distal_v13_geometry_experimental",
-        "photo_pose_v14_geometry_experimental"
+        "photo_pose_v14_geometry_experimental",
+        "photo_synthetic_v23_automatic_experimental"
       ]
     },
     "photo_engine": {
       "enum": [
         "native_v12",
         "distal_v13",
-        "pose_v14"
+        "pose_v14",
+        "synthetic_v23"
       ]
     },
     "status": {
@@ -285,7 +287,7 @@
     "warnings": {
       "type": "array",
       "minItems": 3,
-      "maxItems": 5,
+      "maxItems": 6,
       "uniqueItems": true,
       "items": {
         "enum": [
@@ -294,7 +296,9 @@
           "COUNTS_ARE_PERMISSION_COMPONENTS_NOT_FINGERS",
           "REJECTED_REGIONS_RETAIN_ORIGINAL_PIXELS",
           "GEOMETRY_BOUNDARIES_REQUIRE_REVIEW_ACCURACY_REGRESSION_OBSERVED",
-          "POSE_GEOMETRY_BOUNDARIES_REQUIRE_REVIEW"
+          "POSE_GEOMETRY_BOUNDARIES_REQUIRE_REVIEW",
+          "AUTOMATIC_VISIBILITY_UNCALIBRATED",
+          "SYNTHETIC_REPLACEMENT_V23"
         ]
       }
     },

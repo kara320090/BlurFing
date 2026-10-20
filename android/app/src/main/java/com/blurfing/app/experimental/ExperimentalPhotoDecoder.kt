@@ -45,7 +45,8 @@ object ExperimentalPhotoDecoder {
         val warnings=setOf("EXPERIMENTAL_UNAPPROVED","UNDETECTED_FINGERPRINTS_POSSIBLE","COUNTS_ARE_PERMISSION_COMPONENTS_NOT_FINGERS")+
             (if(r.rejectedComponents>0)setOf("REJECTED_REGIONS_RETAIN_ORIGINAL_PIXELS") else emptySet())+
             (when(engine) { ExperimentalPhotoEngine.DISTAL->setOf("GEOMETRY_BOUNDARIES_REQUIRE_REVIEW_ACCURACY_REGRESSION_OBSERVED")
-                ExperimentalPhotoEngine.POSE->setOf("POSE_GEOMETRY_BOUNDARIES_REQUIRE_REVIEW");else->emptySet() })
+                ExperimentalPhotoEngine.POSE->setOf("POSE_GEOMETRY_BOUNDARIES_REQUIRE_REVIEW")
+                ExperimentalPhotoEngine.SYNTHETIC->setOf("AUTOMATIC_VISIBILITY_UNCALIBRATED","SYNTHETIC_REPLACEMENT_V23");else->emptySet() })
         require(r.warnings.size<=32 && r.warnings.toSet()==warnings && r.warnings.size==warnings.size)
         val base64Chars=r.imageBase64.length.toLong()+r.acceptedPermissionMask.imageBase64.length+r.rejectedPermissionMask.imageBase64.length
         val returnedSize=(r.imageBase64.length.toLong()/4*3).coerceAtMost(ExperimentalPhotoMemory.MAX_PNG_BYTES.toLong()).toInt()

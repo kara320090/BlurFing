@@ -35,6 +35,10 @@ class ExperimentalPhotoActivity: ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         model.initialize(applicationContext)
+        if(savedInstanceState==null && intent.getStringExtra("preferred_engine")=="synthetic_v23" &&
+            model.state.value.source==null && !model.state.value.hasActiveWork) {
+            model.setEngine(ExperimentalPhotoEngine.SYNTHETIC)
+        }
         setContent {
             BlurFingTheme {
                 val state by model.state.collectAsState()
@@ -95,6 +99,7 @@ class ExperimentalPhotoActivity: ComponentActivity() {
                         }
                         if(state.engine==ExperimentalPhotoEngine.DISTAL)Text("V13은 경계 검토가 필요하며 기존 정답 자료에서 검출 정확도 회귀가 관측됐습니다.",color=MaterialTheme.colorScheme.error)
                         if(state.engine==ExperimentalPhotoEngine.POSE)Text("V14 손 자세 경계는 사람의 확인이 필요합니다. 실제 적용은 지문 품질 검사 결과에 따라 달라집니다.")
+                        if(state.engine==ExperimentalPhotoEngine.SYNTHETIC)Text("사진을 선택하면 지정한 서버로 자동 전송하여 V23 지문 합성을 실행합니다. 경계·지문선 증거가 불확실한 후보는 처리하지 않고 결과에 표시합니다.")
                         Button(onClick={picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))},
                             enabled=!state.importing && !state.saving && !state.awaitingSave && !state.checkingServer && !state.sharing && state.pendingShare==null && cameraPending==null && state.replacement==null && saveTicket==null) { Text(if(state.source==null)"실험할 사진 선택" else "다른 사진 선택") }
                         OutlinedButton(onClick={
@@ -121,7 +126,7 @@ class ExperimentalPhotoActivity: ComponentActivity() {
                             Row { Switch(checked=showOverlay,onCheckedChange={showOverlay=it});Text("검증된 마스크 표시 · 초록=적용 / 주황=거절",Modifier.padding(top=12.dp)) }
                             state.source?.let { ExperimentalPhotoComparison(it,result,showOverlay) }
                             Text("색상은 검증된 전체 해상도 마스크의 미리보기입니다. 저장 파일에는 색상 표시가 없습니다.")
-                            result.regions.forEach { r -> Text("후보 ${r.regionId}: ${if(r.status=="transformed")"변환됨" else "거절됨"} · ${r.reasonCode}",style=MaterialTheme.typography.bodySmall) }
+                            result.regions.forEach { r -> Text("후보 ${r.regionId}: ${r.userExplanation()}",style=MaterialTheme.typography.bodySmall) }
                             if(result.presentation.canSaveChangedCopy) {
                                 Button(onClick={saveWarning=true},enabled=!state.hasActiveWork && state.replacement==null && saveTicket==null && cameraPending==null) { Text("실험 PNG 복사본 저장") }
                                 OutlinedButton(onClick={shareWarning=true},enabled=!state.hasActiveWork && state.replacement==null && saveTicket==null && cameraPending==null) { Text("실험 PNG 처리본 공유") }

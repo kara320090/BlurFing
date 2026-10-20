@@ -90,8 +90,8 @@ class PhotoRuntimeConfig:
                     not (self.model / "final_context_whole_pad.pt").is_file()):
                 raise ValueError("Configured model directory must contain config and checkpoint.")
             object.__setattr__(self, "model", self.model.resolve(strict=True))
-        if "native_v12" in self.engines and self.model is None:
-            raise ValueError("native_v12 requires an explicit model.")
+        if set(self.engines) & {"native_v12", "synthetic_v23"} and self.model is None:
+            raise ValueError("Selected engine requires an explicit model.")
         if self.temp_root is not None:
             if not isinstance(self.temp_root, Path) or not self.temp_root.is_dir():
                 raise ValueError("Configured temporary root must already exist.")
@@ -232,7 +232,7 @@ class PhotoSubprocessRuntime:
             command = [str(self.config.python), str(self.config.bridge), "--input", str(source),
                        "--output", str(output), "--photo-engine", engine,
                        "--consumed-registry", str(self.config.consumed_registry), "--request-id", request_id]
-            if self.config.model is not None and engine == "native_v12":
+            if self.config.model is not None and engine in ("native_v12", "synthetic_v23"):
                 command.extend(["--photo-model", str(self.config.model)])
             if self.config.development_replay:
                 command.append("--development-replay")

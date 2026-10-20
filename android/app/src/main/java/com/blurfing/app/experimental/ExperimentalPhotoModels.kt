@@ -12,7 +12,8 @@ const val EXPERIMENTAL_PHOTO_EMULATOR_DEFAULT = "http://10.0.2.2:8001"
 enum class ExperimentalPhotoEngine(val id: String, val method: String, val title: String) {
     NATIVE("native_v12", "photo_native_v12_experimental", "학습 모델 영역 (V12)"),
     DISTAL("distal_v13", "photo_distal_v13_geometry_experimental", "손끝 기하 영역 (V13)"),
-    POSE("pose_v14", "photo_pose_v14_geometry_experimental", "한 손 자세 영역 (V14)");
+    POSE("pose_v14", "photo_pose_v14_geometry_experimental", "한 손 자세 영역 (V14)"),
+    SYNTHETIC("synthetic_v23", "photo_synthetic_v23_automatic_experimental", "자동 지문 합성 (V23 · 검증 중)");
     companion object {
         fun fromId(id: String): ExperimentalPhotoEngine =
             entries.singleOrNull { it.id == id } ?: throw IllegalArgumentException("지원하지 않는 AI 실험입니다.")
@@ -39,6 +40,15 @@ data class ExperimentalRegionBounds(
     val x: Double, val y: Double, val width: Double, val height: Double,
     @SerialName("bounds_are_not_filled_permission") val boundsAreNotFilledPermission: Boolean
 )
+
+fun ExperimentalRegionBounds.userExplanation(): String = when(reasonCode) {
+    "TRANSFORMED" -> "지문 합성 적용"
+    "REJECT_BOUNDARY_UNCERTAIN" -> "손끝 경계를 확인하지 못했습니다. 손끝과 첫 관절이 모두 보이게 촬영해 주세요."
+    "REJECT_VISIBILITY_UNCERTAIN" -> "지문선을 확인하기 어렵습니다. 반사를 줄이고 초점을 맞춰 촬영해 주세요."
+    "REJECT_OBSERVATION_BUDGET" -> "분석 범위 제한에 도달했습니다. 손끝을 중심으로 다시 촬영해 주세요."
+    "REJECT_RENDERER_UNRESOLVED" -> "합성 결과 검사를 통과하지 못해 원본을 유지했습니다."
+    else -> "처리 조건을 충족하지 못해 원본을 유지했습니다."
+}
 
 @Serializable
 data class ExperimentalPhotoResponse(

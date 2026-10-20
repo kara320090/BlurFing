@@ -5,6 +5,8 @@ SNS 사진 속 손가락 지문 노출을 줄이는 Android 보호 앱 프로젝
 
 ## 현재 상태
 
+2026-10-20 자동 연동 개발판: Android 사진 선택으로 `synthetic_v23` 서버 처리를 시작하고 실제 반환 마스크·RGB를 검증해 PNG 사본을 저장하는 경로를 추가했습니다. 엄지 방향 추정 오류를 별도 V24 경계 보완으로 수정했습니다. 실제 모델을 사용한 에뮬레이터 HTTP·저장 검증 1회가 통과했습니다. 실물 기기·새 촬영 그룹의 누락/오탐·일반 보호 성능은 아직 미검증입니다. [실행 방법](backend/README-photo-v23.md), [검증과 한계](ai/docs/PHOTO_AUTOMATIC_V23_20261020.md).
+
 2026-10-20 Android 마무리: 사진 AI V2의 전용 설정 저장·서버 준비 확인·상태별 오류 안내, 카메라 입력, 같은 원본 좌표의 확대·나란히 비교, 검증 PNG 공유, 재생성 시 private 작업 복원을 연결했습니다. [구현 범위와 남은 외부 확인](docs/android-completion-20261020.md), [당일 검증 기록](docs/worklogs/2026-10-20-이봉헌-android-completion.md)을 따릅니다. 학교 Ubuntu 실제 연결은 사용자 요청에 따라 10월 21일 확인하며, 실물 휴대폰 호환성·일반 AI 보호 성능·Play 출시는 별도 검증입니다.
 
 2026-10-20 Windows 추가: [FFV 센서 원본·서버 AI 처리본·매칭 점수 3열 프로그램](sensor/SCANNER_COMPARISON.md)을 구현했습니다. 합성 자료로 Windows·실제 loopback HTTP 21개, 센서 비교 API 28개, 기존 센서 수집 16개 검사를 통과했습니다. FFV 확장과 Windows x64 실행 파일을 빌드했으며 학교 Ubuntu 실제 연결·실센서 전체 흐름은 사용자 요청에 따라 다음 날 확인합니다. [작업·검증 기록](docs/worklogs/2026-10-20-이봉헌-scanner-comparison.md)을 따릅니다.
