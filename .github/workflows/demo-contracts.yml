@@ -2,9 +2,9 @@ name: Demo handoff synthetic contracts
 on:
   push:
     branches: [main]
-    paths: ['demo/**', 'ai/scripts/**', 'backend/experimental_photo_transport_v2.py', '.github/workflows/demo-contracts.yml']
+    paths: ['demo/**', 'ai/scripts/**', 'backend/**', '.github/workflows/demo-contracts.yml']
   pull_request:
-    paths: ['demo/**', 'ai/scripts/**', 'backend/experimental_photo_transport_v2.py', '.github/workflows/demo-contracts.yml']
+    paths: ['demo/**', 'ai/scripts/**', 'backend/**', '.github/workflows/demo-contracts.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -21,7 +21,9 @@ jobs:
           python-version: '3.11'
       - run: python -m pip install -r ai/requirements.txt -r backend/requirements-photo-v2.txt -r backend/requirements-dev.txt
       - run: python -m pytest demo/test_demo.py -q
+      - name: Resident photo process lifecycle and wire regressions
+        run: python -m pytest backend/test_photo_resident_v29.py backend/test_experimental_photo_v2.py backend/test_native_photo_result_contract_v1.py backend/test_measure_photo_ai.py -q
       - name: Automatic photo digit geometry and rendering regressions
         env:
           PYTHONPATH: ai/scripts
-        run: python -m pytest ai/scripts/test_photo_partial_pose_v25.py ai/scripts/test_photo_automatic_v23.py ai/scripts/test_photo_local_axis_v24.py ai/scripts/test_photo_rounded_pad_v1.py ai/scripts/test_protect_photo_pitch_free_v1.py ai/scripts/test_photo_generated_detail_v27.py ai/scripts/test_photo_continuous_surface_v28.py ai/scripts/test_photo_worker_overlap_v1.py ai/scripts/test_colfispoof_raw_semantics.py -q
+        run: python -m pytest ai/scripts/test_photo_partial_pose_v25.py ai/scripts/test_photo_automatic_v23.py ai/scripts/test_photo_local_axis_v24.py ai/scripts/test_photo_rounded_pad_v1.py ai/scripts/test_protect_photo_pitch_free_v1.py ai/scripts/test_photo_generated_detail_v27.py ai/scripts/test_photo_continuous_surface_v28.py ai/scripts/test_photo_worker_overlap_v1.py ai/scripts/test_colfispoof_raw_semantics.py ai/scripts/test_photo_lossless_io_v29.py ai/scripts/test_photo_mask_roi_v29.py ai/scripts/test_photo_semantic_sampling_v29.py ai/scripts/test_photo_hand_roi_v30.py -q

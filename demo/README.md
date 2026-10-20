@@ -138,6 +138,12 @@ python demo/evaluate_scanner.py --reference private/reference.png --original pri
 
 ## 공개 합성 회귀
 
+사진 서버는 [상주 모델·손 영역 처리](../ai/docs/PHOTO_RESIDENT_ROI_V30_20261021.md)를 비공개 `photo.resident_worker: true`,
+`photo.hand_roi: true`로 켤 수 있다. 서버를 재시작하고 실제 모델 준비 뒤 `/ready`를 확인한다.
+기존 Android의 `synthetic_v23` 계약은 같다. 첫 서버 준비 시간은 사진 처리 시간과 구분한다.
+손 전체와 여유 공간을 원본 격자로 잘라 처리하므로 전체 화면 경로와 마스크가 달라질 수 있고,
+ROI를 얻지 못한 전체 화면 경로·대기열·큰 손 사진은 60초를 넘을 수 있다.
+
 사진의 예방적 합성 영역에는 [V28 연속 지문선 재질](../ai/docs/PHOTO_CONTINUOUS_SURFACE_V28_20261020.md)을 적용한다.
 비공개 `photo.colfispoof_device`는 `cpu`(기본) 또는 `cuda`만 받는다.
 Windows CUDA DLL을 별도 폴더로 준비했다면 `photo.colfispoof_dll_dirs`에 그 디렉터리들의 목록을 넣는다.

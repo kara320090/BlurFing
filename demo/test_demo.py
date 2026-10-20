@@ -59,6 +59,23 @@ def test_asset_checks_never_promote_configuration_to_inference(configured):
     assert env['BLURFING_PHOTO_DEVELOPMENT_REPLAY'] == 'false'
 
 
+def test_resident_ROI_is_explicit_and_environment_does_not_retain_stale_flags(configured,tmp_path,monkeypatch):
+    path=tmp_path/'runtime.json'
+    configured['photo'].update(resident_worker=True,hand_roi=True)
+    path.write_text(json.dumps(configured),encoding='utf-8')
+    loaded=runtime.load_config(path)
+    environment=runtime.service_environment(loaded,'photo')
+    assert environment['BLURFING_PHOTO_RESIDENT']=='true'
+    assert environment['BLURFING_PHOTO_HAND_ROI']=='true'
+    configured['photo'].update(resident_worker=False,hand_roi=False)
+    monkeypatch.setenv('BLURFING_PHOTO_RESIDENT','true');monkeypatch.setenv('BLURFING_PHOTO_HAND_ROI','true')
+    environment=runtime.service_environment(configured,'photo')
+    assert environment['BLURFING_PHOTO_RESIDENT']==environment['BLURFING_PHOTO_HAND_ROI']=='false'
+    configured['photo']['hand_roi']=True
+    path.write_text(json.dumps(configured),encoding='utf-8')
+    with pytest.raises(ValueError,match='requires_resident'):runtime.load_config(path)
+
+
 def test_explicit_cuda_paths_are_isolated_and_missing_paths_fail_preflight(configured,tmp_path):
     configured['photo'].update(colfispoof_device='cuda',colfispoof_dll_dirs=['cuda/bin'])
     path=tmp_path/'runtime.private.json';path.write_text(json.dumps(configured))
