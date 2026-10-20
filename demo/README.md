@@ -138,6 +138,13 @@ python demo/evaluate_scanner.py --reference private/reference.png --original pri
 
 ## 공개 합성 회귀
 
+사진의 예방적 합성 영역에는 [V27 생성 지문선 강도 보완](../ai/docs/PHOTO_GENERATED_DETAIL_V27_20261020.md)을 적용한다.
+비공개 `photo.colfispoof_device`는 `cpu`(기본) 또는 `cuda`만 받는다.
+Windows CUDA DLL을 별도 폴더로 준비했다면 `photo.colfispoof_dll_dirs`에 그 디렉터리들의 목록을 넣는다.
+경로는 설정 파일 기준으로 해석하며 자식 프로세스에만 전달한다. GPU 실패는 오류로 반환한다.
+preflight 경로 통과 후에도 실제 모델 실행과 CPU 기준의 마스크 비교가 필요하다.
+이 설정은 COLFISPOOF용이며 Torch·센서 실행 장치를 자동으로 바꾸지 않는다.
+
 ```bash
 python -m pytest demo/test_demo.py -q
 ```

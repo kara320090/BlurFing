@@ -24,4 +24,4 @@ jobs:
       - name: Automatic photo digit geometry and rendering regressions
         env:
           PYTHONPATH: ai/scripts
-        run: python -m pytest ai/scripts/test_photo_partial_pose_v25.py ai/scripts/test_photo_automatic_v23.py ai/scripts/test_photo_local_axis_v24.py ai/scripts/test_photo_rounded_pad_v1.py ai/scripts/test_protect_photo_pitch_free_v1.py -q
+        run: python -m pytest ai/scripts/test_photo_partial_pose_v25.py ai/scripts/test_photo_automatic_v23.py ai/scripts/test_photo_local_axis_v24.py ai/scripts/test_photo_rounded_pad_v1.py ai/scripts/test_protect_photo_pitch_free_v1.py ai/scripts/test_photo_generated_detail_v27.py ai/scripts/test_photo_worker_overlap_v1.py ai/scripts/test_colfispoof_raw_semantics.py -q

@@ -2,10 +2,14 @@
 import ast,unittest
 import numpy as np
 import cv2
-from colfispoof_raw_semantics import prepare,restore,vote_masks,FINGERTIP_CLASS
+from colfispoof_raw_semantics import prepare,restore,vote_masks,FINGERTIP_CLASS,RawDeepLabRuntime
 
 class RawSemanticTests(unittest.TestCase):
     def test_class_id(self):self.assertEqual(FINGERTIP_CLASS,2)
+    def test_invalid_device_paths_and_threads_rejected_before_tensorflow(self):
+        for options in (dict(device='auto'),dict(threads=True),dict(threads=0),
+                        dict(dll_directories='bad'),dict(dll_directories=['relative'])):
+            with self.assertRaises(ValueError):RawDeepLabRuntime('unused','unused',**options)
     def test_all_rotations_full_foreground_and_background(self):
         rgb=np.zeros((97,143,3),np.uint8)
         for k in range(4):

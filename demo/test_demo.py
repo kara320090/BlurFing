@@ -59,6 +59,20 @@ def test_asset_checks_never_promote_configuration_to_inference(configured):
     assert env['BLURFING_PHOTO_DEVELOPMENT_REPLAY'] == 'false'
 
 
+def test_explicit_cuda_paths_are_isolated_and_missing_paths_fail_preflight(configured,tmp_path):
+    configured['photo'].update(colfispoof_device='cuda',colfispoof_dll_dirs=['cuda/bin'])
+    path=tmp_path/'runtime.private.json';path.write_text(json.dumps(configured))
+    loaded=runtime.load_config(path)
+    assert loaded['photo']['colfispoof_dll_dirs']==[str(tmp_path/'cuda/bin')]
+    env=runtime.service_environment(loaded,'photo')
+    assert env['BLURFING_COLFISPOOF_DEVICE']=='cuda'
+    assert json.loads(env['BLURFING_COLFISPOOF_DLL_DIRS'])==[str(tmp_path/'cuda/bin')]
+    assert not runtime.preflight(loaded,'photo')['configured']
+    configured['photo']['colfispoof_device']='auto'
+    path.write_text(json.dumps(configured))
+    with pytest.raises(ValueError):runtime.load_config(path)
+
+
 @pytest.mark.parametrize('field', ['config_sha256', 'registry_sha256', 'hand_model_sha256'])
 def test_missing_or_wrong_asset_hash_rejected(configured, field):
     configured['photo'].pop(field)
