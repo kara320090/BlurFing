@@ -108,6 +108,26 @@ def review_candidates(baseline, refined, unanchored_owners):
         whole_finger_coverage_verified=False)
 
 
+def read_raw_v6_support(detection, source, model_sha256):
+    """Reload the actual prediction, never the downstream pose union mask."""
+    from pad_refinement_data_contract_v2 import checked_bytes, read_mask, native_shape
+    private = Path(detection) / 'private'
+    prediction = json.loads((private / 'predictions/inference.private.json').read_text('utf-8'))
+    manifest = json.loads(checked_bytes(private / 'dataset/manifest.input.private.json',
+                                      prediction['input_manifest_sha256']))
+    rows = prediction.get('rows', [])
+    if (prediction.get('model_sha256') != model_sha256 or manifest.get('sources') != [source]
+            or len(rows) != 1 or rows[0].get('source_id') != source['source_id']
+            or rows[0].get('source_sha256') != source['source_sha256']
+            or rows[0].get('native_shape') != list(native_shape(source))):
+        raise ValueError('partial_pose_raw_V6_binding_mismatch')
+    # The single-photo detector always writes this fixed ID; do not interpret
+    # untrusted source IDs as file paths.
+    if source['source_id'] != 'INPUT':
+        raise ValueError('partial_pose_raw_V6_source_id')
+    return read_mask(private / 'predictions/INPUT.png', rows[0]['prediction_sha256'], native_shape(source))
+
+
 def propose(source, model, registry, output, *, allow_development_replay=True, minimal_artifacts=False, partial_observed_pose=False):
     """Executed in a separate process: existing detector policies stay unchanged."""
     from protect_photo_pitch_free_v1 import run
@@ -132,6 +152,8 @@ def propose(source, model, registry, output, *, allow_development_replay=True, m
     if report.get('input_type') == 'PHOTO' and report.get('rounded_pad_metadata'):
         manifest = json.loads((detection / 'private/dataset/manifest.input.private.json').read_text('utf-8'))
         record = manifest['sources'][0]
+        learned_support = (read_raw_v6_support(detection, record, report['model_sha256'])
+                           if partial_observed_pose else None)
         with Image.open(detection / 'before_rounding_mask.png') as image:
             before = np.asarray(image) > 0
         worker = detection / 'private/hand.private.json'
@@ -140,7 +162,8 @@ def propose(source, model, registry, output, *, allow_development_replay=True, m
         with development_replay(reg, [tiles.image_identity(source),
                                      tiles.image_identity(Path(record['source_path']))], enabled=allow_development_replay):
             derived, mask, boundary, pose = prepare(record, rgb, before, report['rounded_pad_metadata'], hand,
-                                                    output / 'crease',partial_observed_pose=partial_observed_pose)
+                                                    output / 'crease',partial_observed_pose=partial_observed_pose,
+                                                    learned_support=learned_support)
             rows = boundary['candidates']
             if partial_observed_pose and pose is not None:
                 owners = pose['owner_labels']

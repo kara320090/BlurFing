@@ -97,7 +97,7 @@ def run(source,model,registry_path,output,*,photo_semantics=None,development_rep
         try:
             if partial_observed_pose:
                 from photo_partial_pose_v25 import geometry_from_worker as partial_geometry
-                geometry,detail=partial_geometry(record,rgb,hand_record)
+                geometry,detail=partial_geometry(record,rgb,hand_record,learned_support=learned)
             else:
                 geometry=geometry_from_worker(record,rgb,hand_record)
         except ValueError as error:

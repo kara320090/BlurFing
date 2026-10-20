@@ -1,9 +1,10 @@
-"""Per-digit observed pose, with independent semantic TIP evidence.
+"""Per-digit observed pose, supported by semantic TIP or raw V6 evidence.
 
 Folded or occluded digits cannot invalidate another digit. This experimental
 geometry is not anatomical truth or a ridge-visibility classifier. Source,
 worker/model, BODY, and per-region raw-ridge checks remain authoritative.
 """
+import hashlib
 import numpy as np
 from scipy import ndimage
 from photo_resize_safety_v1 import validate_resize
@@ -12,21 +13,28 @@ from photo_pose_permissions_v1 import (
     tip_connected_component,
 )
 
-VERSION = 'semantic_tip_anchored_partial_pose_v25_experimental'
+VERSION = 'model_supported_partial_pose_v25_2_experimental'
 
 
-def partial_permissions(body, semantic_tip, native_xy):
+def partial_permissions(body, semantic_tip, native_xy, *, learned_support=None):
     _body_contract(body)
     points = _points(native_xy)
     if (not isinstance(semantic_tip, np.ndarray) or semantic_tip.dtype != np.bool_
             or semantic_tip.shape != body.shape or np.any(semantic_tip & ~body)):
         raise ValueError('partial_pose_semantic_tip_contract')
+    if learned_support is not None and (
+            not isinstance(learned_support, np.ndarray) or learned_support.dtype != np.bool_
+            or learned_support.shape != body.shape or np.any(learned_support & ~body)):
+        raise ValueError('partial_pose_learned_support_contract')
+    # Only the raw, source-bound V6 prediction is admissible here. Pose unions
+    # and rounded candidates would circularly support their own geometry.
+    learned_labels = ndimage.label(learned_support)[0] if learned_support is not None else None
     height, width = body.shape
     axes = []; skipped = []
     for label, ((tip_id, dip_id), digit) in enumerate(zip(PAIRS, DIGITS), 1):
         tip, dip = points[tip_id], points[dip_id]
         delta = tip - dip; squared = float(delta @ delta)
-        reason = None
+        reason = None; support_source = None; semantic_observed = False
         if any(not (0 <= p[0] <= width - 1 and 0 <= p[1] <= height - 1) for p in (tip, dip)):
             reason = 'axis_endpoint_out_of_frame'
         elif not np.isfinite(squared) or squared <= 0:
@@ -37,8 +45,16 @@ def partial_permissions(body, semantic_tip, native_xy):
                 if not body[y, x]:
                     reason = name + '_outside_BODY'; break
             x, y = np.floor(tip + .5).astype(int)
-            if reason is None and not semantic_tip[y, x]:
-                reason = 'observed_TIP_not_supported_by_semantic_TIP'
+            if reason is None:
+                semantic_observed = bool(semantic_tip[y, x])
+                mx, my = np.floor((tip + dip) / 2 + .5).astype(int)
+                if semantic_observed:
+                    support_source = 'semantic_TIP'
+                elif (learned_labels is not None and learned_labels[y, x] != 0
+                        and learned_labels[y, x] == learned_labels[my, mx]):
+                    support_source = 'V6_native_distal_tip_midpoint'
+                else:
+                    reason = 'observed_TIP_not_supported_by_independent_models'
         if reason:
             skipped.append(dict(label=label, digit=digit, reason=reason)); continue
         axis = delta / np.sqrt(squared)
@@ -46,10 +62,14 @@ def partial_permissions(body, semantic_tip, native_xy):
             tip_native_xy=tip.tolist(), DIP_or_IP_native_xy=dip.tolist(),
             axis_native_xy=axis.tolist(), axis_native_yx=axis[::-1].tolist(),
             length_native_pixels=float(np.sqrt(squared)),
-            semantic_TIP_at_observed_TIP=True, anatomical_axis_ground_truth=False))
+            semantic_TIP_at_observed_TIP=semantic_observed, support_source=support_source,
+            anatomical_axis_ground_truth=False))
     diagnostic = dict(version=VERSION, selected_digits=[a['digit'] for a in axes],
         skipped_digits=skipped, GT_used=False, anatomical_wholepad_verified=False,
-        privacy_validated=False, semantic_TIP_support_required=True)
+        privacy_validated=False, semantic_TIP_support_required=False,
+        model_support_required=True, learned_support_connectivity=4,
+        learned_support_boolean_sha256=(hashlib.sha256(learned_support.tobytes()).hexdigest()
+                                       if learned_support is not None else None))
     if not axes:
         return None, diagnostic
     owners = np.zeros(body.shape, np.uint8); proposed = np.zeros_like(owners)
@@ -131,7 +151,7 @@ def partition_candidates(mask, owners, selected_labels, *, maximum=128):
     return labels, count
 
 
-def geometry_from_worker(source, rgb, record):
+def geometry_from_worker(source, rgb, record, *, learned_support=None):
     # Keep malformed, raced, foreign-source and unpinned worker records fatal.
     from photo_pose_native_pipeline_v1 import verify_worker
     from pad_refinement_data_contract_v2 import read_body, read_mask, native_shape
@@ -143,4 +163,4 @@ def geometry_from_worker(source, rgb, record):
     tip = read_mask(source['tip_path'], source['tip_sha256'], native_shape(source))
     native = normalized_landmarks_to_native(record['hands'][0]['normalized_xy'], body.shape,
                                             source['source_exif_orientation'])
-    return partial_permissions(body, tip, native)
+    return partial_permissions(body, tip, native, learned_support=learned_support)
