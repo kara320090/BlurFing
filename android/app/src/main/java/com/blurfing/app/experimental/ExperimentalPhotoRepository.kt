@@ -24,6 +24,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 interface ExperimentalPhotoService {
+    suspend fun readiness(): ExperimentalServerReadiness = throw ExperimentalPhotoException("서버 준비 상태 확인을 지원하지 않습니다.")
     suspend fun protect(source: ExperimentalPhotoUpload,engine: ExperimentalPhotoEngine,requestId: String): ValidatedExperimentalPhoto
     fun cancel(requestId: String)
 }
@@ -38,10 +39,50 @@ class ExperimentalPhotoRepository(
     private val checkMemory: Boolean=true,
     private val responseObserver: ((String)->Unit)?=null
 ): ExperimentalPhotoService {
-    private val baseUrl=BackendAddress.normalize(serverAddress,allowLocalHttp)
+    private val baseUrl=try { BackendAddress.normalize(serverAddress,allowLocalHttp) }
+        catch(e: IllegalArgumentException) { throw ExperimentalPhotoException(e.message ?: "사진 AI 서버 주소를 확인해 주세요.",e) }
     private val calls=ConcurrentHashMap<String,Call>()
     private val json=Json { ignoreUnknownKeys=false;isLenient=false;coerceInputValues=false }
     override fun cancel(requestId: String) { calls.remove(requestId)?.cancel() }
+    override suspend fun readiness(): ExperimentalServerReadiness = withContext(Dispatchers.IO) {
+        val probeClient = client.newBuilder().callTimeout(30,TimeUnit.SECONDS).readTimeout(30,TimeUnit.SECONDS).build()
+        val call = probeClient.newCall(Request.Builder().url("$baseUrl/ready").get().build())
+        val text = suspendCancellableCoroutine<String> { continuation ->
+            continuation.invokeOnCancellation { call.cancel() }
+            call.enqueue(object: Callback {
+                override fun onFailure(call: Call,e: IOException) {
+                    if(continuation.isActive)continuation.resumeWithException(ExperimentalPhotoException("서버에 연결하지 못했습니다. 주소·네트워크·서버 실행 상태를 확인해 주세요.",e))
+                }
+                override fun onResponse(call: Call,response: Response) {
+                    try {
+                        val value=response.use { r ->
+                            if(!r.isSuccessful)throw experimentalHttpFailure(r.code)
+                            require(r.header("Content-Type")?.substringBefore(';')?.trim()?.lowercase()=="application/json")
+                            val body=requireNotNull(r.body)
+                            require(body.contentLength()==-1L || body.contentLength() in 1..32768)
+                            val output=ByteArrayOutputStream()
+                            body.byteStream().use { input ->
+                                val buffer=ByteArray(4096)
+                                while(true) {
+                                    if(!continuation.isActive)throw IOException("cancelled")
+                                    val n=input.read(buffer);if(n<0)break
+                                    require(output.size()+n<=32768);output.write(buffer,0,n)
+                                }
+                            }
+                            require(output.size()>0 && (body.contentLength()<0 || output.size().toLong()==body.contentLength()))
+                            output.toString(Charsets.UTF_8.name())
+                        }
+                        if(continuation.isActive)continuation.resume(value)
+                    } catch(e: Exception) { if(continuation.isActive)continuation.resumeWithException(e) }
+                }
+            })
+        }
+        coroutineContext.ensureActive()
+        try {
+            ExperimentalJsonGuard.verify(text)
+            json.decodeFromString<ExperimentalServerReadiness>(text).verify()
+        } catch(e: Exception) { throw ExperimentalPhotoException("사진 AI V2 준비 응답을 확인하지 못했습니다. 서버 주소와 버전을 확인해 주세요.",e) }
+    }
     override suspend fun protect(source: ExperimentalPhotoUpload,engine: ExperimentalPhotoEngine,requestId: String): ValidatedExperimentalPhoto = withContext(Dispatchers.IO) {
         require(requestId.isNotBlank() && requestId.length<=200 && requestId.all { it.code in 33..126 })
         val context=coroutineContext
@@ -60,7 +101,7 @@ class ExperimentalPhotoRepository(
                     override fun onResponse(call: Call,response: Response) {
                         try {
                             val value=response.use { r ->
-                                if(!r.isSuccessful)throw ExperimentalPhotoException("AI 서버가 요청을 거절했습니다 (HTTP ${r.code}). 원본은 유지됩니다.")
+                                if(!r.isSuccessful)throw experimentalHttpFailure(r.code)
                                 require(r.header("Content-Type")?.substringBefore(';')?.trim()=="application/json")
                                 val body=r.body ?: throw IOException("empty body")
                                 val length=body.contentLength();require(length==-1L || length in 1..MAX_RESPONSE_BYTES)
