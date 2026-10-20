@@ -5,7 +5,7 @@ from contextvars import ContextVar
 import multiprocessing
 import os
 
-MAX_WORKERS = 4
+MAX_WORKERS = 8
 MAX_TASKS = 96
 _session = ContextVar("junction_fit_session", default=None)
 
@@ -38,7 +38,7 @@ class _Session:
 def fit_session(workers=None, *, pool=None):
     """Reuse a lazy pool across fingers; never retain patient pixels across requests."""
     if workers is None:
-        workers = min(MAX_WORKERS, os.cpu_count() or 1)
+        workers = min(MAX_WORKERS if pool is not None else 4, os.cpu_count() or 1)
     if type(workers) is not int or not 1 <= workers <= MAX_WORKERS:
         raise ValueError("junction_worker_limit")
     if _session.get() is not None:

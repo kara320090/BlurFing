@@ -32,7 +32,7 @@ def decode(source):
     return encoded,upright,orientation
 
 
-def _detect(upright,model):
+def create_detector(model):
     import importlib.metadata
     import mediapipe as mp
     version=importlib.metadata.version('mediapipe')
@@ -41,7 +41,18 @@ def _detect(upright,model):
         base_options=mp.tasks.BaseOptions(model_asset_path=str(model),delegate=mp.tasks.BaseOptions.Delegate.CPU),
         running_mode=mp.tasks.vision.RunningMode.IMAGE,num_hands=CONFIGURATION['num_hands'],
         min_hand_detection_confidence=.5,min_hand_presence_confidence=.5,min_tracking_confidence=.5)
-    with mp.tasks.vision.HandLandmarker.create_from_options(options) as detector:
+    return mp.tasks.vision.HandLandmarker.create_from_options(options)
+
+
+def _detect(upright,model,detector=None):
+    import importlib.metadata
+    import mediapipe as mp
+    version=importlib.metadata.version('mediapipe')
+    if version!=MEDIAPIPE_VERSION:raise ValueError('hand_mediapipe_version_not_pinned')
+    if detector is None:
+        with create_detector(model) as current:
+            result=current.detect(mp.Image(image_format=mp.ImageFormat.SRGB,data=upright))
+    else:
         result=detector.detect(mp.Image(image_format=mp.ImageFormat.SRGB,data=upright))
     hands=[]
     for index,landmarks in enumerate(result.hand_landmarks):
@@ -53,12 +64,13 @@ def _detect(upright,model):
                       numpy_version=np.__version__,Pillow_version=importlib.metadata.version('Pillow'))
 
 
-def run(source,model,output):
+def run(source,model,output,*,detector=None):
     source,model,output=map(Path,(source,model,output))
     if output.exists():raise FileExistsError('fresh_hand_observation_JSON_required')
     source_sha=digest(source);model_sha=digest(model);code_sha=digest(__file__)
     if model_sha!=MODEL_SHA256:raise ValueError('official_hand_model_SHA256_mismatch')
-    encoded,upright,orientation=decode(source);hands,runtime=_detect(upright,model)
+    encoded,upright,orientation=decode(source)
+    hands,runtime=(_detect(upright,model) if detector is None else _detect(upright,model,detector))
     if runtime.get('mediapipe_version')!=MEDIAPIPE_VERSION:raise ValueError('hand_mediapipe_version_not_pinned')
     if not isinstance(hands,list) or len(hands)>CONFIGURATION['num_hands']:raise ValueError('hand_result_count_contract')
     result=dict(version=VERSION,status='observed' if hands else 'no_hand_observed',source_sha256=source_sha,

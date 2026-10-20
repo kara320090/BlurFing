@@ -7,7 +7,7 @@ The existing estimator, masks, numeric thresholds and learned pixels are kept.
 """
 import numpy as np
 from scipy import ndimage
-from finger_body_distal_estimator import estimate
+from photo_coarse_cache_v31 import estimate
 from photo_candidate_context_v1 import candidate_contexts
 from photo_native_owner_context_v1 import restore_contexts
 from photo_resize_safety_v1 import validate_resize

@@ -22,20 +22,26 @@ _state=ContextVar('photo_lossless_io',default=None)
 _open=Image.open
 _save=Image.Image.save
 _read_bytes=Path.read_bytes
+_path_open=Path.open
 MAX_ENCODED=32*1024**2
 MAX_CACHE=192*1024**2
 MAX_FILE_CACHE=128*1024**2
+MAX_ENCODE_CACHE=64*1024**2
 
 
 class State:
     def __init__(self):
         self.cache=OrderedDict();self.bytes=0;self.hits=0;self.encodes=0
         self.files=OrderedDict();self.file_bytes=0;self.pins={};self.file_hits=0
+        self.coarse=OrderedDict();self.coarse_bytes=0;self.coarse_hits=0
+        self.encoded=OrderedDict();self.encoded_bytes=0;self.encode_hits=0
     def verify_files(self):
         for path,sha in self.pins.items():
-            if hashlib.sha256(_read_bytes(path)).digest()!=sha:raise ValueError('request_file_snapshot_changed')
+            if hashlib.sha256(_fresh_bytes(path)).digest()!=sha:raise ValueError('request_file_snapshot_changed')
     def clear(self):
         self.cache.clear();self.bytes=0;self.files.clear();self.file_bytes=0;self.pins.clear()
+        self.coarse.clear();self.coarse_bytes=0
+        self.encoded.clear();self.encoded_bytes=0
 
 
 def _identity(path):
@@ -43,9 +49,13 @@ def _identity(path):
     return stat.st_dev,stat.st_ino,stat.st_size,stat.st_mtime_ns,stat.st_ctime_ns
 
 
+def _fresh_bytes(path):
+    with _path_open(path,'rb') as stream:return stream.read()
+
+
 def _read_snapshot(path):
     state=_state.get()
-    if state is None or path.suffix.lower() not in ('.png','.pt','.npz','.json'):return _read_bytes(path)
+    if state is None or path.suffix.lower() not in ('.png','.pt','.npz','.json'):return _fresh_bytes(path)
     path=path.absolute();identity=_identity(path)
     if path in state.files:
         previous,data=state.files.pop(path)
@@ -53,7 +63,7 @@ def _read_snapshot(path):
             state.files[path]=(previous,data);state.file_hits+=1
             return data
         state.file_bytes-=len(data)
-    data=_read_bytes(path)
+    data=_fresh_bytes(path)
     if _identity(path)!=identity:raise ValueError('request_file_changed_during_read')
     state.pins[path]=hashlib.sha256(data).digest()
     if len(data)<=MAX_FILE_CACHE:
@@ -61,6 +71,27 @@ def _read_snapshot(path):
             _,(_,old)=state.files.popitem(last=False);state.file_bytes-=len(old)
         state.files[path]=(identity,data);state.file_bytes+=len(data)
     return data
+
+
+class _SnapshotFile(io.BytesIO):
+    def __init__(self,path,data):
+        self._file=_path_open(path,'rb')
+        super().__init__(data)
+        self.name=self._file.name;self.mode='rb'
+    def fileno(self):return self._file.fileno()
+    def close(self):
+        try:self._file.close()
+        finally:super().close()
+
+
+def _opened_file(path,mode='r',buffering=-1,encoding=None,errors=None,newline=None):
+    # Frozen asset validators still check their expected SHA for every read.
+    # Keep a real descriptor for fstat/mmap consumers and fresh final rehash.
+    if (_state.get() is not None and mode=='rb' and buffering==-1 and
+            encoding is None and errors is None and newline is None and
+            path.suffix.lower() in ('.png','.pt','.npz','.json') and path.stat().st_size<=MAX_FILE_CACHE):
+        return _SnapshotFile(path,_read_snapshot(path))
+    return _path_open(path,mode,buffering,encoding,errors,newline)
 
 
 def _content(fp):
@@ -112,10 +143,18 @@ def _saved(image,fp,format=None,**params):
     if not isinstance(exif,bytes):return _save(image,fp,format,**params)
     if exif.startswith(b'Exif\0\0'):exif=exif[6:]
     values=np.asarray(image)
-    if image.mode=='RGB':values=cv2.cvtColor(values,cv2.COLOR_RGB2BGR)
-    success,encoded=cv2.imencode('.png',values,[cv2.IMWRITE_PNG_COMPRESSION,level])
-    if not success:raise OSError('lossless_PNG_encode_failed')
-    content=encoded.tobytes()
+    key=(image.mode,image.size,level,hashlib.sha256(values.tobytes()).digest())
+    if key in state.encoded:
+        content=state.encoded.pop(key);state.encoded[key]=content;state.encode_hits+=1
+    else:
+        if image.mode=='RGB':values=cv2.cvtColor(values,cv2.COLOR_RGB2BGR)
+        success,encoded=cv2.imencode('.png',values,[cv2.IMWRITE_PNG_COMPRESSION,level])
+        if not success:raise OSError('lossless_PNG_encode_failed')
+        content=encoded.tobytes();state.encodes+=1
+        if len(content)<=MAX_ENCODE_CACHE:
+            while state.encoded and state.encoded_bytes+len(content)>MAX_ENCODE_CACHE:
+                _,old=state.encoded.popitem(last=False);state.encoded_bytes-=len(old)
+            state.encoded[key]=content;state.encoded_bytes+=len(content)
     if exif:
         chunk=b'eXIf'+exif
         content=content[:33]+struct.pack('>I',len(exif))+chunk+struct.pack('>I',zlib.crc32(chunk)&0xffffffff)+content[33:]
@@ -126,13 +165,12 @@ def _saved(image,fp,format=None,**params):
     if isinstance(fp,(str,bytes,os.PathLike)):
         with open(fp,'wb') as stream:stream.write(content)
     else:fp.write(content)
-    state.encodes+=1
 
 
 @contextmanager
 def lossless_io():
     # Hooks are inert in other contexts/threads. No raster survives the scope.
-    Image.open=_opened;Image.Image.save=_saved;Path.read_bytes=_read_snapshot
+    Image.open=_opened;Image.Image.save=_saved;Path.read_bytes=_read_snapshot;Path.open=_opened_file
     import photo_mask_roi_v29 as sparse
     sparse.install();sparse_token=sparse.enabled.set(True)
     state=State();token=_state.set(state)

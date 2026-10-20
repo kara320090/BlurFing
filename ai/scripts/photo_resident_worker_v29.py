@@ -39,10 +39,10 @@ def main():
             return roi_run(source,output,**options)
     def digest(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
     assets={path:digest(path) for path in (a.registry,a.model/'final_config.private.json',a.model/'final_context_whole_pad.pt')}
-    load_model(a.model)
     resources=Resources()
     def send(value):wire.write(json.dumps(value,separators=(',',':'))+'\n');wire.flush()
     try:
+        load_model(a.model)
         assert_runtime_sources_unchanged(snapshot)
         send(dict(status='ready',protocol='photo-resident-v29'))
         while True:
@@ -55,6 +55,7 @@ def main():
             with lossless_io():
                 run(source,output,photo_engine='synthetic_v23',photo_model=a.model,consumed_registry=a.registry,
                     request_id=job['request_id'],development_replay=a.development_replay,execution_context=resources)
+            resources.models.verify()
             if any(digest(path)!=sha for path,sha in assets.items()):raise ValueError('photo_assets_changed_restart_required')
             assert_runtime_sources_unchanged(snapshot)
             send(dict(status='ok',id=job['id']))

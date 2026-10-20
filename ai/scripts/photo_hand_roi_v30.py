@@ -69,9 +69,12 @@ def run(source,output,*,photo_model,consumed_registry,request_id,development_rep
     snapshot=capture_runtime_sources();started=time.perf_counter()
     output.mkdir(parents=True);(output/'INCOMPLETE.txt').write_text('ROI photo not completed.',encoding='utf-8')
     observation=output/'whole-hand.private.json'
-    subprocess.run([os.environ['BLURFING_HAND_PYTHON'],str(Path(hand.__file__)),'--input',str(source),
-        '--model',os.environ['BLURFING_HAND_MODEL'],'--output',str(observation)],check=True,timeout=60,
-        stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+    if execution_context is not None:
+        with execution_context.hand_job(source.resolve(),observation.resolve()) as job:job.finish()
+    else:
+        subprocess.run([os.environ['BLURFING_HAND_PYTHON'],str(Path(hand.__file__)),'--input',str(source),
+            '--model',os.environ['BLURFING_HAND_MODEL'],'--output',str(observation)],check=True,timeout=60,
+            stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
     record=json.loads(observation.read_text('utf-8'))
     binding=dict(source_path=str(source),source_sha256=source_sha,source_RGB_sha256=automatic.pixels(rgb),source_exif_orientation=1)
     verify_worker(binding,rgb,record)
@@ -89,15 +92,15 @@ def run(source,output,*,photo_model,consumed_registry,request_id,development_rep
     x0,y0,x1,y1=box
     crop=output/'hand-input.png';Image.fromarray(rgb[y0:y1,x0:x1]).save(crop)
     local=output/'hand-result'
-    automatic.run(crop,local,photo_model=photo_model,consumed_registry=consumed_registry,request_id=request_id,
-        development_replay=development_replay,execution_context=execution_context)
-    with Image.open(local/'returned.png') as image:generated=np.array(image)
-    with Image.open(local/'applied_mask.png') as image:small_applied=np.asarray(image)>0
-    small_labels=candidate_labels(local)
+    result=automatic.run(crop,local,photo_model=photo_model,consumed_registry=consumed_registry,request_id=request_id,
+        development_replay=development_replay,execution_context=execution_context,array_result=True)
+    if not isinstance(result,automatic.AutomaticArrays) or result.source_sha256!=hashlib.sha256(crop.read_bytes()).hexdigest():
+        raise ValueError('ROI_array_result_binding')
+    generated,small_applied,small_labels=result.returned,result.applied,result.labels
     labels=np.zeros(rgb.shape[:2],np.uint16);labels[y0:y1,x0:x1]=small_labels
     applied=np.zeros(rgb.shape[:2],bool);applied[y0:y1,x0:x1]=small_applied
     returned=rgb.copy();view=returned[y0:y1,x0:x1];view[small_applied]=generated[small_applied]
-    report=json.loads((local/'result.private.json').read_text('utf-8'))
+    report=result.report
     for evidence in report.get('evidence',[]):
         if 'source_bbox_xyxy' in evidence:
             a,b,c,d=evidence['source_bbox_xyxy'];evidence['source_bbox_xyxy']=[a+x0,b+y0,c+x0,d+y0]

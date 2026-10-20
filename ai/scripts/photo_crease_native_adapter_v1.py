@@ -8,7 +8,7 @@ from pad_refinement_data_contract_v2 import (verify_source,read_body,read_mask,n
 from photo_rgb_body_refinement_v1 import refine_body,VERSION as EDGE_VERSION,CONFIG as EDGE_CONFIG
 from photo_crease_pad_v1 import crease_pads
 from photo_pose_native_pipeline_v1 import geometry_from_worker
-from finger_body_distal_estimator import estimate
+from photo_coarse_cache_v31 import estimate
 
 KIND='RGB_REFINED_BODY_V1'
 

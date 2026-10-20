@@ -7,6 +7,7 @@ Unanchored boundaries and unresolved rendering remain non-application outcomes.
 """
 import json
 import time
+from dataclasses import dataclass
 from pathlib import Path
 import cv2
 import numpy as np
@@ -214,8 +215,17 @@ def transport(rgb, returned, labels, applied, report, source_sha, request_id, el
     return result.response(request_id,elapsed_ms)
 
 
+@dataclass(frozen=True)
+class AutomaticArrays:
+    returned:np.ndarray
+    applied:np.ndarray
+    labels:np.ndarray
+    report:dict
+    source_sha256:str
+
+
 def run(source, output, *, photo_model, consumed_registry, request_id, development_replay=False,
-        automatic_policy='surface_v26',execution_context=None):
+        automatic_policy='surface_v26',execution_context=None,array_result=False):
     from export_photo_permissions_v1 import _request, ArtifactGuard
     from photo_new_input_v23 import propose
     from protection_runtime_sources_v1 import capture_runtime_sources, assert_runtime_sources_unchanged
@@ -225,7 +235,7 @@ def run(source, output, *, photo_model, consumed_registry, request_id, developme
     require_request_id(request_id)
     if automatic_policy not in AUTOMATIC_POLICIES:
         raise ValueError('unsupported_automatic_selection_policy')
-    if type(development_replay) is not bool or photo_model is None:
+    if type(development_replay) is not bool or type(array_result) is not bool or photo_model is None:
         raise ValueError('automatic_model_and_explicit_replay_required')
     output=Path(output)
     if output.exists() or output.is_symlink():
@@ -246,6 +256,10 @@ def run(source, output, *, photo_model, consumed_registry, request_id, developme
         labels=np.zeros(rgb.shape[:2],np.uint16);applied=np.zeros(rgb.shape[:2],bool)
         report=dict(regions=[],input_route=route,reason='input_route_requires_review',
                     absence_inferred=False,human_reviewed=False,privacy_validated=False)
+        if array_result:
+            guard.unchanged();report['runtime_sources']=assert_runtime_sources_unchanged(snapshot)
+            (output/'INCOMPLETE.txt').unlink()
+            return AutomaticArrays(rgb.copy(),applied,labels,report,source_sha)
         value=transport(rgb,rgb,labels,applied,report,source_sha,request_id,int((time.perf_counter()-started)*1000))
         guard.unchanged();assert_runtime_sources_unchanged(snapshot)
         Image.fromarray(rgb).save(output/'returned.png')
@@ -291,14 +305,15 @@ def run(source, output, *, photo_model, consumed_registry, request_id, developme
     report['automatic_policy']=automatic_policy
     Image.fromarray(surface_permission.astype(np.uint8)*255).save(output/'surface_permission.png')
     report['boundary_recovery']=boundary_report
-    value=transport(rgb,returned,labels,applied,report,source_sha,request_id,int((time.perf_counter()-started)*1000))
-    Image.fromarray(returned).save(output/'returned.png')
-    Image.fromarray(applied.astype(np.uint8)*255).save(output/'applied_mask.png')
+    if not array_result:
+        value=transport(rgb,returned,labels,applied,report,source_sha,request_id,int((time.perf_counter()-started)*1000))
+        Image.fromarray(returned).save(output/'returned.png')
+        Image.fromarray(applied.astype(np.uint8)*255).save(output/'applied_mask.png')
     guard.unchanged()
     report['runtime_sources']=assert_runtime_sources_unchanged(snapshot)
     (output/'result.private.json').write_text(json.dumps(report,indent=2,allow_nan=False),encoding='utf-8')
     target=output/'result.transport.json'
-    target.write_text(json.dumps(value,separators=(',',':'),allow_nan=False),encoding='utf-8')
+    if not array_result:target.write_text(json.dumps(value,separators=(',',':'),allow_nan=False),encoding='utf-8')
     guard.unchanged();assert_runtime_sources_unchanged(snapshot)
     (output/'INCOMPLETE.txt').unlink()
-    return target
+    return AutomaticArrays(returned,applied,labels,report,source_sha) if array_result else target

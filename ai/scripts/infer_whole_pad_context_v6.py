@@ -41,7 +41,8 @@ def load_model(folder):
         hash_json(config.get('protocol'))!=PROTOCOL_SHA256 or
         checkpoint_source_compatibility(config.get('source_code_sha256'),runtime_code) is None or
         config.get('threshold')!=.5): raise ValueError('completed_whole_pad_context_V6_development_checkpoint_required')
-    seed_all(PROTOCOL['seed']);model=load_checkpoint(folder/'final_context_whole_pad.pt',config['model_sha256'])
+    from photo_resident_model_v31 import verified_checkpoint
+    seed_all(PROTOCOL['seed']);model=verified_checkpoint(folder/'final_context_whole_pad.pt',config['model_sha256'],loader=load_checkpoint)
     if encoder_identity(model.context_encoder)!=config.get('context_encoder_sha256'): raise ValueError('context_checkpoint_encoder_mismatch')
     if code_hashes()!=runtime_code: raise ValueError('context_runtime_sources_changed_during_load')
     unchanged(folder/'final_config.private.json',sha);return model,config

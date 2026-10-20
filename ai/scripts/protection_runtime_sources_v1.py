@@ -20,7 +20,7 @@ EXCLUDED_DIRECTORIES=frozenset({'.git','.venv','venv','__pycache__','.pytest_cac
 
 def _reparse(path):
     info=path.lstat()
-    return path.is_symlink() or bool(getattr(info,'st_file_attributes',0)&getattr(stat,'FILE_ATTRIBUTE_REPARSE_POINT',0))
+    return stat.S_ISLNK(info.st_mode) or bool(getattr(info,'st_file_attributes',0)&getattr(stat,'FILE_ATTRIBUTE_REPARSE_POINT',0))
 
 
 def _identity(info):

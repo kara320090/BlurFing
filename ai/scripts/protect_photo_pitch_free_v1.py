@@ -75,8 +75,11 @@ def run(source,model,registry_path,output,*,photo_semantics=None,development_rep
                 '--external-source',runtime[1],'--model',runtime[2]]))
         if include_observed_pose:
             worker=private/'hand.private.json'
-            hand_job=workers.enter_context(pending_worker([hand_runtime[0],str(Path(hand.__file__)),
-                '--input',str(inference_source.resolve()),'--model',hand_runtime[1],'--output',str(worker.resolve())]))
+            if execution_context is not None:
+                hand_job=workers.enter_context(execution_context.hand_job(inference_source.resolve(),worker.resolve()))
+            else:
+                hand_job=workers.enter_context(pending_worker([hand_runtime[0],str(Path(hand.__file__)),
+                    '--input',str(inference_source.resolve()),'--model',hand_runtime[1],'--output',str(worker.resolve())]))
         from infer_whole_pad_context_v6 import load_model,run as infer
         network,config=load_model(model);del network
         if config['consumed_registry_sha256']!=tiles.hash_json(registry):raise ValueError('frozen_consumed_registry_mismatch')
