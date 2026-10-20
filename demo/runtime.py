@@ -36,7 +36,7 @@ def load_config(path):
         if not isinstance(section, dict):
             raise ValueError('runtime_sections_required')
         for key, item in list(section.items()):
-            if key.endswith('_sha256') or key == 'development_replay':
+            if key.endswith('_sha256') or key in ('development_replay','colfispoof_device','colfispoof_dll_dirs'):
                 continue
             if not isinstance(item, str) or not item.strip():
                 raise ValueError('runtime_paths_required')
@@ -44,6 +44,16 @@ def load_config(path):
             section[key] = str(candidate if candidate.is_absolute() else path.parent / candidate)
     if type(value['photo'].get('development_replay')) is not bool:
         raise ValueError('explicit_replay_boolean_required')
+    photo=value['photo']
+    if photo.get('colfispoof_device','cpu') not in ('cpu','cuda'):
+        raise ValueError('explicit_colfispoof_device_required')
+    directories=photo.get('colfispoof_dll_dirs',[])
+    if not isinstance(directories,list) or any(not isinstance(p,str) or not p.strip() for p in directories):
+        raise ValueError('colfispoof_DLL_directories_required')
+    if 'colfispoof_dll_dirs' in photo:
+        photo['colfispoof_dll_dirs']=[str(Path(p) if Path(p).is_absolute() else path.parent/p) for p in directories]
+    if directories and photo.get('colfispoof_device','cpu')!='cuda':
+        raise ValueError('colfispoof_DLL_directories_require_CUDA')
     return value
 
 
@@ -103,6 +113,8 @@ def preflight(config, service='all', probe=False):
             check('colfispoof_source_exists', bool(section.get('colfispoof_source')) and Path(section['colfispoof_source']).is_dir())
             file(section, 'colfispoof_model', COLFISPOOF_SHA)
             file(section, 'hand_model', section.get('hand_model_sha256') or '')
+            check('colfispoof_device_selection',section.get('colfispoof_device','cpu') in ('cpu','cuda'))
+            check('colfispoof_DLL_directories',all(Path(p).is_dir() for p in section.get('colfispoof_dll_dirs',[])))
         else:
             file(section, 'nbis_config')
             file(section, 'sourceafis_config')
@@ -167,6 +179,8 @@ def service_environment(config, name, *, platform=None):
         env.update(BLURFING_PHOTO_ENGINES='synthetic_v23', BLURFING_PHOTO_TIMEOUT_SECONDS='600',
                    BLURFING_PHOTO_BRIDGE=str(ROOT / 'ai/scripts/export_photo_permissions_v1.py'),
                    BLURFING_PHOTO_DEVELOPMENT_REPLAY=str(section['development_replay']).lower())
+        env['BLURFING_COLFISPOOF_DEVICE']=section.get('colfispoof_device','cpu')
+        env['BLURFING_COLFISPOOF_DLL_DIRS']=json.dumps(section.get('colfispoof_dll_dirs',[]))
     else:
         nbis_key = 'BLURFING_NBIS_WINDOWS_CONFIG' if (platform or sys.platform) == 'win32' else 'BLURFING_NBIS_LINUX_CONFIG'
         for key in ('BLURFING_NBIS_WINDOWS_CONFIG', 'BLURFING_NBIS_LINUX_CONFIG', 'BLURFING_NBIS_CONFIG'):

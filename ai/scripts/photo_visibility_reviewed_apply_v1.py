@@ -85,7 +85,7 @@ def apply_reviewed(rgb, labels, review, *, seed=None, appearance='v19'):
     return render_selected_regions(rgb, labels, selected, rows, seed=seed, appearance=appearance)
 
 
-def render_selected_regions(rgb, labels, selected, rows, *, seed=None, appearance='v19'):
+def render_selected_regions(rgb, labels, selected, rows, *, seed=None, appearance='v19',generated_detail_regions=()):
     """Shared rendering only; callers own selection provenance, never fabricate human review."""
     if (not isinstance(rgb, np.ndarray) or rgb.dtype != np.uint8 or rgb.ndim != 3 or rgb.shape[2] != 3
             or not isinstance(labels, np.ndarray) or labels.dtype != np.uint16 or labels.shape != rgb.shape[:2]):
@@ -98,6 +98,11 @@ def render_selected_regions(rgb, labels, selected, rows, *, seed=None, appearanc
             or len(rows) != len(ids) or {r['region_id'] for r in rows} != ids):
         raise ValueError('selected_region_partition_contract')
     rows = [dict(row) for row in rows]
+    if (not isinstance(generated_detail_regions,(tuple,list)) or
+            len(set(generated_detail_regions))!=len(generated_detail_regions) or
+            any(type(i) is not int for i in generated_detail_regions) or
+            not set(generated_detail_regions)<=set(selected)):
+        raise ValueError('generated_detail_selection_contract')
     mask = np.isin(labels, selected)
     # A shared group may contain diagonally connected fragments. Give the
     # unchanged renderer separate four-connected components, with provenance.
@@ -116,10 +121,16 @@ def render_selected_regions(rgb, labels, selected, rows, *, seed=None, appearanc
         if int(target.sum())>MAX_REGION_PIXELS or target.size>MAX_BOUNDING_PIXELS:
             large.append(rid);regular_labels[render_labels==rid]=0
     regular_mask=regular_labels>0
-    generated, renderer = render(rgb, regular_mask, regular_labels, seed=seed)
+    engine=render
+    if generated_detail_regions:
+        from functools import partial
+        from photo_generated_detail_v27 import render as visible_generated
+        detail_parts=tuple(k for k,v in associations.items() if v in generated_detail_regions)
+        engine=partial(visible_generated,detail_regions=detail_parts)
+    generated, renderer = engine(rgb, regular_mask, regular_labels, seed=seed)
     for rid in large:
         target=render_labels==rid
-        (y0,y1,x0,x1),local,metadata=render_large_pad(rgb,target,rid,renderer['seed'],render)
+        (y0,y1,x0,x1),local,metadata=render_large_pad(rgb,target,rid,renderer['seed'],engine)
         take=target[y0:y1,x0:x1];generated[y0:y1,x0:x1][take]=local[take]
         renderer['regions'].append(metadata)
     if large:

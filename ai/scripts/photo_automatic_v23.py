@@ -120,13 +120,14 @@ def apply_candidates(rgb, labels, boundary_mask, *, seed=None, observer=observe,
         rows.append(dict(region_id=rid,automatic_decision=observation['visibility'],
                          reason_code=observation['reason'],status='pending_render' if rid in selected else 'review_required'))
     from photo_junction_fit_runtime_v1 import fit_session
+    precautionary_ids={r['region_id'] for r in evidence if r['reason']==PRECAUTIONARY_REASON}
     with fit_session():
-        returned,applied,report=render_selected_regions(rgb,labels,selected,rows,seed=seed,appearance='junction_v23')
+        returned,applied,report=render_selected_regions(rgb,labels,selected,rows,seed=seed,appearance='junction_v23',
+            **(dict(generated_detail_regions=sorted(precautionary_ids)) if precautionary_ids else {}))
     # The common renderer has no authority to assign human provenance.
     report.update(version='automatic_synthetic_v23_v26',
                   selection_basis=SURFACE_POLICY if surface_permission is not None else POLICY,
                   human_reviewed=False,evidence=evidence,automatic_visibility_approved=False)
-    precautionary_ids={r['region_id'] for r in evidence if r['reason']==PRECAUTIONARY_REASON}
     for row in report['regions']:
         if row['status']=='synthetic_applied_unverified':
             row['reason_code']=PRECAUTIONARY_REASON if row['region_id'] in precautionary_ids else 'TRANSFORMED'

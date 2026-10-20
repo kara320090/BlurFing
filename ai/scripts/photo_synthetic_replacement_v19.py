@@ -40,14 +40,18 @@ def organic_ridges(gu,gv,width,length,seed):
         source_orientation_transferred=False,source_ridge_phase_transferred=False)
 
 
-def render(rgb,mask,labels,*,seed=None):
+def render(rgb,mask,labels,*,seed=None,generated_style=None):
     prepared={};bases=[];cached_bytes=0
     def prepare(pixels,u,v,width,length):
         base,meta=photographic_skin(pixels,u,v,width,length)
         prepared['curves']=meta['macro_creases']['curves']
         return base,meta
     def shade(local,u,v,width,length,child,stats,base):
-        return coupled_material(local,u,v,width,length,child,stats,base,prepared['curves'],
+        actual=stats if generated_style is None else generated_style(child,stats.copy())
+        if (not isinstance(actual,np.ndarray) or actual.shape!=stats.shape or
+                not np.isfinite(actual).all() or np.any(actual<0) or np.any(actual>16)):
+            raise ValueError('generated_style_summary_contract')
+        return coupled_material(local,u,v,width,length,child,actual,base,prepared['curves'],
             ridge_fn=organic_ridges,micro_fn=quiet_micro,light_fn=photographic_light)
     def boundary(base,pixels,u,v,width,length,local):
         nonlocal cached_bytes

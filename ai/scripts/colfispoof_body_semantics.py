@@ -1,5 +1,5 @@
 """External model adapter exposing class 1+2 body and class 2 tip separately."""
-import argparse,json,hashlib
+import argparse,json,hashlib,os
 from pathlib import Path
 import numpy as np
 from PIL import Image
@@ -21,9 +21,11 @@ if __name__=='__main__':
     if a.output.exists():raise FileExistsError('fresh private output directory required')
     sha=hashlib.sha256(a.input.read_bytes()).hexdigest()
     with Image.open(a.input) as im:rgb=np.asarray(im.convert('RGB')).copy()
-    runtime=RawDeepLabRuntime(a.external_source,a.model)
+    runtime=RawDeepLabRuntime(a.external_source,a.model,
+        device=os.environ.get('BLURFING_COLFISPOOF_DEVICE','cpu'),
+        dll_directories=json.loads(os.environ.get('BLURFING_COLFISPOOF_DLL_DIRS','[]')))
     try:result=predict_body(runtime,rgb)
     finally:runtime.close()
     assert hashlib.sha256(a.input.read_bytes()).hexdigest()==sha;a.output.mkdir(parents=True)
     for key in ['body','tip']:Image.fromarray(result[key].astype(np.uint8)*255).save(a.output/(key+'.png'))
-    (a.output/'semantics.json').write_text(json.dumps(dict(source_sha256=sha,image_width=rgb.shape[1],image_height=rgb.shape[0],body_classes=[1,2],tip_class=2,minimum_votes=2,coordinate_system='encoded_original_pixels',body_sha256=hashlib.sha256((a.output/'body.png').read_bytes()).hexdigest(),tip_sha256=hashlib.sha256((a.output/'tip.png').read_bytes()).hexdigest()),indent=2))
+    (a.output/'semantics.json').write_text(json.dumps(dict(source_sha256=sha,image_width=rgb.shape[1],image_height=rgb.shape[0],body_classes=[1,2],tip_class=2,minimum_votes=2,coordinate_system='encoded_original_pixels',body_sha256=hashlib.sha256((a.output/'body.png').read_bytes()).hexdigest(),tip_sha256=hashlib.sha256((a.output/'tip.png').read_bytes()).hexdigest(),execution_device=runtime.device),indent=2))

@@ -4,6 +4,7 @@ This separate experimental entrypoint has no pitch/feature acceptance gate.
 Detection masks remain unverified; absent predictions remain unredacted.
 """
 import json,os,subprocess
+from contextlib import ExitStack
 from pathlib import Path
 import numpy as np
 from PIL import Image
@@ -44,29 +45,39 @@ def run(source,model,registry_path,output,*,photo_semantics=None,development_rep
         return scanner_redaction(source,rgb,identity,route,output,registry_path,registry_sha,snapshot,development_replay)
     if route['input_type']!='PHOTO':
         raise ValueError('fingerprint_image_requires_scanner_mode' if route['input_type']=='FINGERPRINT_IMAGE' else 'input_type_uncertain_review_required')
-    from infer_whole_pad_context_v6 import load_model,run as infer
-    network,config=load_model(model);del network
-    if config['consumed_registry_sha256']!=tiles.hash_json(registry):raise ValueError('frozen_consumed_registry_mismatch')
     if photo_semantics is None:
         runtime=[os.environ.get(k) for k in ['BLURFING_COLFISPOOF_PYTHON','BLURFING_COLFISPOOF_SOURCE','BLURFING_COLFISPOOF_MODEL']]
         if not all(runtime) or not all(Path(v).exists() for v in runtime):raise ValueError('photo_runtime_not_configured')
     if include_observed_pose:
-        from protect_photo_pose_native_v1 import hand_configuration
-        hand_runtime=hand_configuration()
+        # Validate this small configuration without importing another complete
+        # protection pipeline (and Torch) before independent workers can start.
+        import mediapipe_hand_worker_v1 as hand
+        hand_runtime=[os.environ.get(k) for k in ('BLURFING_HAND_PYTHON','BLURFING_HAND_MODEL')]
+        if not all(hand_runtime) or not all(Path(v).is_file() for v in hand_runtime):raise ValueError('hand_runtime_not_configured')
+        if hand.digest(hand_runtime[1])!=hand.MODEL_SHA256:raise ValueError('official_hand_model_SHA256_mismatch')
     output.mkdir(parents=True,exist_ok=False);private=output/'private';private.mkdir()
     canonical=private/'canonical_input.png';exif=Image.Exif();exif[274]=identity['source_exif_orientation']
     Image.fromarray(rgb).save(canonical,exif=exif)
     if not np.array_equal(read_source_rgb(canonical,digest(canonical)),rgb):raise ValueError('canonical_RGB_roundtrip_mismatch')
     canonical_identity=tiles.image_identity(canonical)
     inference_source=source if photo_semantics is not None and identity['source_mode'] in ['RGB','L'] else canonical
-    with replay_scope(registry,[original_identity,canonical_identity],enabled=development_replay):
+    from photo_worker_overlap_v1 import pending_worker
+    with ExitStack() as workers,replay_scope(registry,[original_identity,canonical_identity],enabled=development_replay):
         tiles.exclude_consumed(original_identity,registry);tiles.exclude_consumed(canonical_identity,registry)
+        semantic_job=None;hand_job=None
         if photo_semantics is None:
             photo_semantics=private/'semantics'
-            subprocess.run([runtime[0],str(Path(shared.__file__).with_name('colfispoof_body_semantics.py')),
+            semantic_job=workers.enter_context(pending_worker([runtime[0],str(Path(shared.__file__).with_name('colfispoof_body_semantics.py')),
                 '--input',str(inference_source.resolve()),'--output',str(photo_semantics.resolve()),
-                '--external-source',runtime[1],'--model',runtime[2]],shell=False,check=True,timeout=300,
-                stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
+                '--external-source',runtime[1],'--model',runtime[2]]))
+        if include_observed_pose:
+            worker=private/'hand.private.json'
+            hand_job=workers.enter_context(pending_worker([hand_runtime[0],str(Path(hand.__file__)),
+                '--input',str(inference_source.resolve()),'--model',hand_runtime[1],'--output',str(worker.resolve())]))
+        from infer_whole_pad_context_v6 import load_model,run as infer
+        network,config=load_model(model);del network
+        if config['consumed_registry_sha256']!=tiles.hash_json(registry):raise ValueError('frozen_consumed_registry_mismatch')
+        if semantic_job is not None:semantic_job.finish()
         shared.load_semantics(inference_source,rgb,photo_semantics)
         inputs=[dict(source_id='INPUT',source_path=str(inference_source.resolve()),source_sha256=digest(inference_source),
             semantics=str(Path(photo_semantics).resolve()),acquisition_group='unknown',group_provenance='unverified_user_input')]
@@ -74,6 +85,7 @@ def run(source,model,registry_path,output,*,photo_semantics=None,development_rep
         predictions=infer(model,private/'dataset',private/'predictions')
         tiles.unchanged(private/'dataset/manifest.input.private.json',predictions['input_manifest_sha256'])
         tiles.check_tiles(private/'dataset',manifest,'inference')
+        if hand_job is not None:hand_job.finish()
     record=manifest['sources'][0];mask_path=private/'predictions/INPUT.png'
     mask=read_mask(mask_path,predictions['rows'][0]['prediction_sha256'],native_shape(record))
     from pad_refinement_data_contract_v2 import read_body
@@ -89,9 +101,6 @@ def run(source,model,registry_path,output,*,photo_semantics=None,development_rep
         import mediapipe_hand_worker_v1 as hand
         from photo_pose_native_pipeline_v1 import geometry_from_worker
         worker=private/'hand.private.json'
-        subprocess.run([hand_runtime[0],str(Path(hand.__file__)),'--input',str(inference_source.resolve()),
-            '--model',hand_runtime[1],'--output',str(worker.resolve())],shell=False,check=True,timeout=300,
-            stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
         hand_record,worker_sha=tiles.json_snapshot(worker)
         detail=None
         try:

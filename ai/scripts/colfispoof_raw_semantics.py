@@ -6,6 +6,7 @@ External source and weights are supplied by callers, never vendored here.
 """
 import hashlib
 import importlib.util
+import os
 import time
 from pathlib import Path
 import cv2
@@ -66,16 +67,38 @@ def vote_masks(masks, minimum_votes=2):
 
 
 class RawDeepLabRuntime:
-    def __init__(self, external_preprocessing, model, threads=8):
+    def __init__(self, external_preprocessing, model, threads=8, *, device='cpu', dll_directories=()):
+        if device not in ('cpu','cuda') or type(threads) is not int or not 1<=threads<=32:
+            raise ValueError('explicit_semantic_device_and_thread_contract')
+        if (not isinstance(dll_directories,(tuple,list)) or
+                any(not isinstance(p,str) or not Path(p).is_absolute() or not Path(p).is_dir() for p in dll_directories)):
+            raise ValueError('semantic_DLL_directories_contract')
+        if dll_directories and (device!='cuda' or os.name!='nt'):
+            raise ValueError('semantic_DLL_directories_require_Windows_CUDA')
+        self._dll_handles=[];self._previous_path=None;self.device=device
         model=Path(model)
         if hashlib.sha256(model.read_bytes()).hexdigest()!=MODEL_SHA256:raise ValueError('model_SHA256_mismatch')
-        import tensorflow as tf
-        tf.config.threading.set_intra_op_parallelism_threads(threads)
-        tf.config.threading.set_inter_op_parallelism_threads(1)
-        tf.config.set_visible_devices([], 'GPU')
-        path=resolve_preprocessing(external_preprocessing)/'Segmentation/DeepLabModel.py'
-        spec=importlib.util.spec_from_file_location('blurfing_external_deeplab',path);module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
-        self.model=module.DeepLabModel(str(model));self.framework_version=tf.__version__;self.source_sha256=hashlib.sha256(path.read_bytes()).hexdigest()
+        try:
+            if dll_directories:
+                self._previous_path=os.environ.get('PATH','')
+                os.environ['PATH']=os.pathsep.join(list(dll_directories)+[self._previous_path])
+                for directory in dll_directories:self._dll_handles.append(os.add_dll_directory(directory))
+            import tensorflow as tf
+            tf.config.threading.set_intra_op_parallelism_threads(threads)
+            tf.config.threading.set_inter_op_parallelism_threads(1)
+            if device=='cpu':
+                tf.config.set_visible_devices([], 'GPU')
+            else:
+                tf.config.experimental.enable_tensor_float_32_execution(False)
+                devices=tf.config.list_physical_devices('GPU')
+                if not devices:raise ValueError('configured_CUDA_device_unavailable')
+                tf.config.set_visible_devices(devices[:1],'GPU')
+                tf.config.experimental.set_memory_growth(devices[0],True)
+            path=resolve_preprocessing(external_preprocessing)/'Segmentation/DeepLabModel.py'
+            spec=importlib.util.spec_from_file_location('blurfing_external_deeplab',path);module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+            self.model=module.DeepLabModel(str(model));self.framework_version=tf.__version__;self.source_sha256=hashlib.sha256(path.read_bytes()).hexdigest()
+        except BaseException:
+            self._release_dlls();raise
 
     def predict(self, rgb):
         if rgb.ndim!=3 or rgb.shape[2]!=3 or rgb.dtype!=np.uint8:raise ValueError('uint8_RGB_required')
@@ -92,4 +115,12 @@ class RawDeepLabRuntime:
         tick=time.perf_counter();consensus=vote_masks(masks);vote_time=time.perf_counter()-tick
         return dict(mask=consensus,rotation_masks=masks,rotations=records,timing=dict(preprocessing=prep_time,one_rotation_inference=infer_time/4,four_rotation_inference=infer_time,inverse_mapping=inverse_time,consensus=vote_time,total=time.perf_counter()-start),fingertip_class=FINGERTIP_CLASS,minimum_votes=2,cleanup='none',coordinate_system='encoded_original_pixels')
 
-    def close(self):self.model.sess.close()
+    def close(self):
+        try:self.model.sess.close()
+        finally:self._release_dlls()
+
+    def _release_dlls(self):
+        for handle in self._dll_handles:handle.close()
+        self._dll_handles=[]
+        if self._previous_path is not None:
+            os.environ['PATH']=self._previous_path;self._previous_path=None
