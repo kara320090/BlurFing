@@ -1,15 +1,18 @@
 import json
+import hashlib
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 import numpy as np
 from scipy import ndimage
+from PIL import Image
 
 from photo_partial_pose_v25 import partial_permissions, geometry_from_worker, partition_candidates
 from photo_pose_permissions_v1 import pose_permissions
 from photo_rounded_pad_v1 import rounded_pads
 from photo_automatic_v23 import apply_candidates, recover_proposal
+from photo_new_input_v23 import read_raw_v6_support
 
 
 class PartialPoseTests(unittest.TestCase):
@@ -49,6 +52,75 @@ class PartialPoseTests(unittest.TestCase):
         self.assertIsNone(geometry)
         self.assertFalse(detail['selected_digits'])
         self.assertFalse(detail['privacy_validated'])
+
+    def test_empty_semantic_tip_can_use_connected_raw_V6_at_both_distal_points(self):
+        body, learned, points = self.scene()
+        geometry, detail = partial_permissions(body, np.zeros_like(learned), points,
+                                               learned_support=learned)
+        self.assertEqual(detail['selected_digits'], ['index', 'middle'])
+        self.assertEqual(detail['learned_support_boolean_sha256'],
+                         hashlib.sha256(learned.tobytes()).hexdigest())
+        self.assertEqual({a['support_source'] for a in geometry['axes']},
+                         {'V6_native_distal_tip_midpoint'})
+        self.assertFalse(any(a['semantic_TIP_at_observed_TIP'] for a in geometry['axes']))
+        caps, info = rounded_pads(np.zeros_like(body), learned, body, np.zeros_like(body),
+                                  pose_geometry=geometry)
+        self.assertEqual(info['applied_caps'], 2)
+        self.assertEqual(ndimage.label(caps)[1], 2)
+
+    def test_single_endpoint_or_disconnected_V6_never_authorizes_a_digit(self):
+        body, tip, points = self.scene()
+        for rows in ([45], [75], [45, 75]):
+            learned = np.zeros_like(body)
+            for y in rows:
+                learned[y, [64, 170]] = True
+            geometry, detail = partial_permissions(body, np.zeros_like(tip), points,
+                                                   learned_support=learned)
+            self.assertIsNone(geometry)
+            self.assertFalse(detail['selected_digits'])
+        # A diagonal-only connection is insufficient under the four-neighbour
+        # component rule, even though the two observations are both positive.
+        points[8], points[7] = [64, 45], [84, 65]
+        learned = np.zeros_like(body)
+        learned[np.arange(45, 56), np.arange(64, 75)] = True
+        geometry, _ = partial_permissions(body, np.zeros_like(tip), points, learned_support=learned)
+        self.assertIsNone(geometry)
+
+    def test_raw_V6_shape_dtype_and_BODY_exterior_remain_fatal(self):
+        body, tip, points = self.scene()
+        invalid = tip.copy(); invalid[0, 0] = True
+        for mask in (invalid, tip.astype(np.uint8), tip[:-1]):
+            with self.assertRaisesRegex(ValueError, 'learned_support_contract'):
+                partial_permissions(body, tip, points, learned_support=mask)
+
+    def test_raw_prediction_reloaded_with_manifest_source_model_and_pixel_binding(self):
+        body, learned, _ = self.scene()
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp); private = root / 'private'
+            (private / 'dataset').mkdir(parents=True); (private / 'predictions').mkdir()
+            source = dict(source_id='INPUT', source_sha256='1'*64, height=240, width=240,
+                          coordinate_system='encoded_original_pixels')
+            manifest = private / 'dataset/manifest.input.private.json'
+            manifest.write_text(json.dumps(dict(sources=[source])), encoding='utf-8')
+            target = private / 'predictions/INPUT.png'
+            Image.fromarray(learned.astype(np.uint8)*255).save(target)
+            sha = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+            prediction = dict(model_sha256='2'*64, input_manifest_sha256=sha(manifest), rows=[
+                dict(source_id='INPUT', source_sha256='1'*64, native_shape=[240, 240], prediction_sha256=sha(target))])
+            report = private / 'predictions/inference.private.json'
+            report.write_text(json.dumps(prediction), encoding='utf-8')
+            np.testing.assert_array_equal(read_raw_v6_support(root, source, '2'*64), learned)
+            with self.assertRaisesRegex(ValueError, 'binding_mismatch'):
+                read_raw_v6_support(root, source, '3'*64)
+            with self.assertRaisesRegex(ValueError, 'binding_mismatch'):
+                read_raw_v6_support(root, dict(source, source_sha256='4'*64), '2'*64)
+            Image.fromarray(np.zeros_like(body, np.uint8)).save(target)
+            with self.assertRaises(ValueError):
+                read_raw_v6_support(root, source, '2'*64)
+            Image.fromarray(learned.astype(np.uint8)*255).save(target)
+            manifest.write_text(json.dumps(dict(sources=[dict(source, width=241)])), encoding='utf-8')
+            with self.assertRaises(ValueError):
+                read_raw_v6_support(root, source, '2'*64)
 
     def test_quarter_turns_and_mirror_keep_digit_permissions(self):
         body, tip, points = self.scene()
