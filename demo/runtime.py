@@ -129,7 +129,10 @@ def preflight(config, service='all', probe=False):
                     "from infer_whole_pad_context_v6 import load_model; "
                     "load_model(sys.argv[2])") if name == 'photo' else (
                     "import sys; sys.path.insert(0,sys.argv[1]); "
-                    "import protect_fingerprint, sourceafis_matcher")
+                    "import protect_fingerprint, sourceafis_matcher; "
+                    "from nbis_matcher import inspect_runtime; "
+                    "from platform_loader import load_adapter; "
+                    "inspect_runtime(); load_adapter('sourceafis')._runtime()")
             args = [section['ai_python'], '-c', code, str(ROOT / 'ai/scripts')]
             if name == 'photo':
                 args.append(section['model_dir'])
@@ -151,7 +154,7 @@ def preflight(config, service='all', probe=False):
                 inference_verified=False, physical_devices_verified=False, privacy_validated=False)
 
 
-def service_environment(config, name):
+def service_environment(config, name, *, platform=None):
     env = os.environ.copy()
     section = config[name]
     if name == 'photo':
@@ -165,8 +168,11 @@ def service_environment(config, name):
                    BLURFING_PHOTO_BRIDGE=str(ROOT / 'ai/scripts/export_photo_permissions_v1.py'),
                    BLURFING_PHOTO_DEVELOPMENT_REPLAY=str(section['development_replay']).lower())
     else:
+        nbis_key = 'BLURFING_NBIS_WINDOWS_CONFIG' if (platform or sys.platform) == 'win32' else 'BLURFING_NBIS_LINUX_CONFIG'
+        for key in ('BLURFING_NBIS_WINDOWS_CONFIG', 'BLURFING_NBIS_LINUX_CONFIG', 'BLURFING_NBIS_CONFIG'):
+            env.pop(key, None)
+        env[nbis_key] = section['nbis_config']
         env.update(BLURFING_SCANNER_PYTHON=section['ai_python'], BLURFING_SCANNER_AI_ROOT=str(ROOT / 'ai'),
-                   BLURFING_NBIS_LINUX_CONFIG=section['nbis_config'],
                    BLURFING_SOURCEAFIS_CONFIG=section['sourceafis_config'],
                    BLURFING_SOURCEAFIS_HOME=section['sourceafis_home'])
     return env
