@@ -150,14 +150,17 @@ def reconstruct(engine_output,engine,source_rgb,source_sha,report,registry,devel
     return returned,permission,labels,reason,guard
 
 
-def run(source,output,*,photo_engine,consumed_registry,request_id,photo_model=None,development_replay=False):
+def run(source,output,*,photo_engine,consumed_registry,request_id,photo_model=None,development_replay=False,
+        automatic_policy=None):
     _request_id(request_id)
     if type(development_replay) is not bool:raise ValueError('development_replay_flag_must_be_boolean')
     if photo_engine not in ENGINES:raise ValueError('unsupported_experimental_engine')
     if photo_engine == 'synthetic_v23':
         from photo_automatic_v23 import run as automatic_run
         return automatic_run(source,output,photo_model=photo_model,consumed_registry=consumed_registry,
-                             request_id=request_id,development_replay=development_replay)
+                             request_id=request_id,development_replay=development_replay,
+                             automatic_policy=automatic_policy or 'surface_v26')
+    if automatic_policy is not None:raise ValueError('automatic_policy_requires_synthetic_v23')
     validate_photo_options(photo_engine,photo_model,consumed_registry,development_replay)
     source,output,registry_path=Path(source),Path(output),Path(consumed_registry)
     if output.exists():raise FileExistsError('fresh_export_output_required')
@@ -205,11 +208,14 @@ def main(argv=None):
     parser.add_argument('--input',type=Path,required=True);parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--photo-engine',choices=sorted(ENGINES),required=True);parser.add_argument('--photo-model',type=Path)
     parser.add_argument('--consumed-registry',type=Path,required=True);parser.add_argument('--request-id',required=True)
-    parser.add_argument('--development-replay',action='store_true');args=parser.parse_args(argv)
+    parser.add_argument('--development-replay',action='store_true')
+    parser.add_argument('--automatic-policy',choices=('surface_v26','strict_ridge_v23'))
+    args=parser.parse_args(argv)
     try:
         with cli_progress_to_stderr():
             target=run(args.input,args.output,photo_engine=args.photo_engine,photo_model=args.photo_model,
-                consumed_registry=args.consumed_registry,development_replay=args.development_replay,request_id=args.request_id)
+                consumed_registry=args.consumed_registry,development_replay=args.development_replay,
+                request_id=args.request_id,automatic_policy=args.automatic_policy)
     except Exception as error:
         print(type(error).__name__,file=sys.stderr);print(json.dumps(dict(status='error')));return 1
     print(json.dumps(dict(status='ok',transport_path=str(target.resolve()))));return 0

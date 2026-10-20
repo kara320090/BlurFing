@@ -220,6 +220,9 @@ class ValidatedExperimentalPhotoResult:
         if self.engine=='distal_v13':warnings.append('GEOMETRY_BOUNDARIES_REQUIRE_REVIEW_ACCURACY_REGRESSION_OBSERVED')
         if self.engine=='pose_v14':warnings.append('POSE_GEOMETRY_BOUNDARIES_REQUIRE_REVIEW')
         if self.engine=='synthetic_v23':warnings.extend(['AUTOMATIC_VISIBILITY_UNCALIBRATED','SYNTHETIC_REPLACEMENT_V23'])
+        if (self.engine=='synthetic_v23' and any(r['reason_code']=='TRANSFORMED_PRECAUTIONARY_SURFACE'
+                                                for r in self.region_display_bounds)):
+            warnings.append('PRECAUTIONARY_SURFACE_WITHOUT_RIDGE_CONFIRMATION')
         return dict(contract_version='photo-experimental-v2',request_id=request_id,result_kind='experimental',
             method=ENGINES[self.engine],photo_engine=self.engine,status=self.status,
             image_base64=base64.b64encode(self.returned_png).decode('ascii'),mime_type='image/png',

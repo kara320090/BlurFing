@@ -19,7 +19,8 @@ data class ExperimentalPhotoMetadata(
     val privacyValidated: Boolean,
     val productionApproved: Boolean,
     val completePhotoProtectionVerified: Boolean,
-    val independentFinalTest: Boolean
+    val independentFinalTest: Boolean,
+    val precautionaryComponents: Int = 0
 )
 
 data class ExperimentalPhotoPresentation(
@@ -58,6 +59,8 @@ object ExperimentalPhotoOutcome {
         require(originalWidth > 0 && originalHeight > 0 && raster <= 20_000_000L)
         require(metadata.candidateComponents in 0..256 && metadata.transformedComponents in 0..256 && metadata.rejectedComponents in 0..256)
         require(metadata.transformedComponents + metadata.rejectedComponents == metadata.candidateComponents)
+        require(metadata.precautionaryComponents in 0..metadata.transformedComponents)
+        require(metadata.precautionaryComponents==0 || expectedEngine=="synthetic_v23")
         require(decodedAcceptedPixels in 0..raster && decodedRejectedPixels in 0..raster && decodedAcceptedPixels + decodedRejectedPixels <= raster)
         require(actualChangedPixels in 0..decodedAcceptedPixels && actualChangedOutsideAcceptedPixels == 0L)
         require(metadata.changedRgbPixels == actualChangedPixels)
@@ -76,7 +79,9 @@ object ExperimentalPhotoOutcome {
             "보호 미적용 · 손끝 후보 확인 필요",
             "자동 처리할 손끝 후보를 확인하지 못했습니다. 지문이 없다는 뜻은 아닙니다. 손바닥 쪽 손끝이 선명하게 보이는 사진으로 다시 시도해 주세요.",
             false,true)
-        val geometry = if (expectedEngine == "distal_v13") " 경계 검토가 필요하며 기존 정답 자료에서 검출 정확도 회귀가 관측됐습니다." else if (expectedEngine == "pose_v14") " 손 자세 기반 경계는 검토가 필요하며 전체 보호를 보장하지 않습니다." else if (expectedEngine == "synthetic_v23") " 자동 가시성 판정은 검증 중이며, 불확실한 영역은 원본으로 남습니다." else ""
+        val precaution = if(metadata.precautionaryComponents>0)
+            " ${metadata.precautionaryComponents}개 영역은 원본 지문선 확인 없이 손끝 영역을 기준으로 합성했습니다." else ""
+        val geometry = (if (expectedEngine == "distal_v13") " 경계 검토가 필요하며 기존 정답 자료에서 검출 정확도 회귀가 관측됐습니다." else if (expectedEngine == "pose_v14") " 손 자세 기반 경계는 검토가 필요하며 전체 보호를 보장하지 않습니다." else if (expectedEngine == "synthetic_v23") " 경계나 합성 결과가 불확실해 미적용된 영역은 원본으로 남습니다." else "") + precaution
         return when (metadata.status) {
             "success" -> ExperimentalPhotoPresentation("검출 후보 변환 완료", notice + geometry, true, false)
             "partial_success" -> ExperimentalPhotoPresentation("일부 후보만 변환됨", "거절된 ${metadata.rejectedComponents}개 후보는 원본 지문이 남아 있습니다. " + notice + geometry, true, false)

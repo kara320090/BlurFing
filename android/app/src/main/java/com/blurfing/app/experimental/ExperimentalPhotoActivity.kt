@@ -100,7 +100,7 @@ class ExperimentalPhotoActivity: ComponentActivity() {
                         }
                         if(state.engine==ExperimentalPhotoEngine.DISTAL)Text("V13은 경계 검토가 필요하며 기존 정답 자료에서 검출 정확도 회귀가 관측됐습니다.",color=MaterialTheme.colorScheme.error)
                         if(state.engine==ExperimentalPhotoEngine.POSE)Text("V14 손 자세 경계는 사람의 확인이 필요합니다. 실제 적용은 지문 품질 검사 결과에 따라 달라집니다.")
-                        if(state.engine==ExperimentalPhotoEngine.SYNTHETIC)Text("사진을 선택하면 지정한 서버로 자동 전송하여 V23 지문 합성을 실행합니다. 경계·지문선 증거가 불확실한 후보는 처리하지 않고 결과에 표시합니다.")
+                        if(state.engine==ExperimentalPhotoEngine.SYNTHETIC)Text("사진을 선택하면 서버에서 손끝 영역을 찾아 합성합니다. 확인된 손끝은 지문선이 흐려도 처리하며, 경계나 합성 검사를 통과하지 못한 후보는 미적용으로 표시합니다.")
                         Button(onClick={picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))},
                             enabled=!state.importing && !state.saving && !state.awaitingSave && !state.checkingServer && !state.sharing && state.pendingShare==null && cameraPending==null && state.replacement==null && saveTicket==null) { Text(if(state.source==null)"실험할 사진 선택" else "다른 사진 선택") }
                         OutlinedButton(onClick={

@@ -1,8 +1,9 @@
-"""Automatic V23 experiment: strict boundary + joint raw-ridge evidence.
+"""Automatic V23 renderer with explicit ridge or precautionary surface selection.
 
 This is a new, explicitly uncalibrated selection policy. It does not promote
 diagnostic output to a human label, relax legacy gates, or claim full coverage.
-No witness, exhausted budget, or unanchored boundary means review required.
+The surface policy never reclassifies uncertain ridge visibility as observed.
+Unanchored boundaries and unresolved rendering remain non-application outcomes.
 """
 import json
 import time
@@ -22,6 +23,9 @@ from photo_experimental_transport_v1 import (
 
 ENGINE = 'synthetic_v23'
 POLICY = 'anchored_joint_witness_v1_experimental'
+SURFACE_POLICY = 'model_anchored_surface_precaution_v26_experimental'
+PRECAUTIONARY_REASON = 'TRANSFORMED_PRECAUTIONARY_SURFACE'
+AUTOMATIC_POLICIES = ('surface_v26', 'strict_ridge_v23')
 MAX_INSPECTED_WINDOWS = 4096
 MAX_CANDIDATES = 128
 
@@ -81,12 +85,16 @@ def observe(rgb, mask, *, max_windows=MAX_INSPECTED_WINDOWS):
     return record
 
 
-def apply_candidates(rgb, labels, boundary_mask, *, seed=None, observer=observe):
+def apply_candidates(rgb, labels, boundary_mask, *, seed=None, observer=observe, surface_permission=None):
     if (rgb.dtype != np.uint8 or rgb.ndim != 3 or rgb.shape[2] != 3
             or labels.dtype != np.uint16 or labels.shape != rgb.shape[:2]
             or boundary_mask.dtype != np.bool_ or boundary_mask.shape != labels.shape
             or np.any(boundary_mask & (labels == 0))):
         raise ValueError('automatic_candidate_contract')
+    if surface_permission is not None and (
+            not isinstance(surface_permission,np.ndarray) or surface_permission.dtype!=np.bool_
+            or surface_permission.shape!=labels.shape or np.any(surface_permission&~boundary_mask)):
+        raise ValueError('automatic_surface_permission_contract')
     ids = [int(i) for i in np.unique(labels) if i]
     if len(ids) > MAX_CANDIDATES:
         raise ValueError('automatic_candidate_limit')
@@ -99,7 +107,14 @@ def apply_candidates(rgb, labels, boundary_mask, *, seed=None, observer=observe)
             observation=observer(rgb,target)
             observation=dict(observation,reason='TRANSFORMED' if observation['observed'] else
                              ('REJECT_OBSERVATION_BUDGET' if observation['budget_exhausted'] else 'REJECT_VISIBILITY_UNCERTAIN'))
-        if observation['observed']:
+        precautionary=(not observation['observed'] and surface_permission is not None
+                       and bool(surface_permission[target].all()))
+        if precautionary:
+            observation=dict(observation,reason=PRECAUTIONARY_REASON,
+                selection_source='model_supported_surface_precaution',ridge_visibility_confirmed=False)
+        elif observation['observed']:
+            observation['selection_source']='raw_ridge_witness'
+        if observation['observed'] or precautionary:
             selected.append(rid)
         evidence.append(dict(region_id=rid,**observation))
         rows.append(dict(region_id=rid,automatic_decision=observation['visibility'],
@@ -108,13 +123,17 @@ def apply_candidates(rgb, labels, boundary_mask, *, seed=None, observer=observe)
     with fit_session():
         returned,applied,report=render_selected_regions(rgb,labels,selected,rows,seed=seed,appearance='junction_v23')
     # The common renderer has no authority to assign human provenance.
-    report.update(version='automatic_synthetic_v23_v1',selection_basis=POLICY,
+    report.update(version='automatic_synthetic_v23_v26',
+                  selection_basis=SURFACE_POLICY if surface_permission is not None else POLICY,
                   human_reviewed=False,evidence=evidence,automatic_visibility_approved=False)
+    precautionary_ids={r['region_id'] for r in evidence if r['reason']==PRECAUTIONARY_REASON}
     for row in report['regions']:
         if row['status']=='synthetic_applied_unverified':
-            row['reason_code']='TRANSFORMED'
+            row['reason_code']=PRECAUTIONARY_REASON if row['region_id'] in precautionary_ids else 'TRANSFORMED'
         elif row['region_id'] in selected:
             row['reason_code']='REJECT_RENDERER_UNRESOLVED'
+    report['precautionary_applied_region_count']=sum(
+        r['reason_code']==PRECAUTIONARY_REASON for r in report['regions'])
     return returned,applied,report
 
 
@@ -175,8 +194,10 @@ def transport(rgb, returned, labels, applied, report, source_sha, request_id, el
             raise ValueError('automatic_transport_status')
         transformed+=int(accepted)
         h,w=labels.shape
+        if accepted and r['reason_code'] not in ('TRANSFORMED', PRECAUTIONARY_REASON):
+            raise ValueError('automatic_transport_selection_reason')
         rows.append(dict(region_id=r['region_id'],status='transformed' if accepted else 'rejected',
-            reason_code='TRANSFORMED' if accepted else r['reason_code'],mask_pixels=int(target.sum()),
+            reason_code=r['reason_code'],mask_pixels=int(target.sum()),
             changed_RGB_pixels=int(changed[target].sum()),permission_boolean_sha256=pixels(target),
             x=int(xx.min())/w,y=int(yy.min())/h,width=int(xx.max()+1-xx.min())/w,height=int(yy.max()+1-yy.min())/h,
             bounds_are_not_filled_permission=True))
@@ -192,7 +213,8 @@ def transport(rgb, returned, labels, applied, report, source_sha, request_id, el
     return result.response(request_id,elapsed_ms)
 
 
-def run(source, output, *, photo_model, consumed_registry, request_id, development_replay=False):
+def run(source, output, *, photo_model, consumed_registry, request_id, development_replay=False,
+        automatic_policy='surface_v26'):
     from export_photo_permissions_v1 import _request, ArtifactGuard
     from photo_new_input_v23 import propose
     from protection_runtime_sources_v1 import capture_runtime_sources, assert_runtime_sources_unchanged
@@ -200,6 +222,8 @@ def run(source, output, *, photo_model, consumed_registry, request_id, developme
     from photo_experimental_transport_v1 import require_request_id
     import pad_refinement_tiles_v3 as tiles
     require_request_id(request_id)
+    if automatic_policy not in AUTOMATIC_POLICIES:
+        raise ValueError('unsupported_automatic_selection_policy')
     if type(development_replay) is not bool or photo_model is None:
         raise ValueError('automatic_model_and_explicit_replay_required')
     output=Path(output)
@@ -242,6 +266,7 @@ def run(source, output, *, photo_model, consumed_registry, request_id, developme
         raise ValueError('automatic_proposal_binding')
     mask,boundary,boundary_report=recover_proposal(rgb,mask,boundary,proposal)
     Image.fromarray(mask.astype(np.uint8)*255).save(output/'candidate_mask.png')
+    surface_permission=np.zeros(rgb.shape[:2],bool)
     if binding.get('partial_pose') is not None:
         from photo_partial_pose_v25 import partition_candidates
         guard.pin(proposal/'pose_owners.png')
@@ -249,12 +274,19 @@ def run(source, output, *, photo_model, consumed_registry, request_id, developme
         if pixels(owners)!=binding['partial_pose']['pixel_sha256']:
             raise ValueError('automatic_pose_owner_binding')
         labels,count=partition_candidates(mask,owners,binding['partial_pose']['selected_labels'],maximum=MAX_CANDIDATES)
+        # Only already hash-bound, model-supported observed digit ownership
+        # can authorize a surface replacement. Estimator-only and unselected
+        # suggestions never acquire this permission from their rectangle.
+        surface_permission=boundary&np.isin(owners,binding['partial_pose']['selected_labels'])
     else:
         labels,count=ndimage.label(mask,np.ones((3,3),np.uint8))
     if count>MAX_CANDIDATES:
         raise ValueError('automatic_candidate_limit')
     labels=labels.astype(np.uint16)
-    returned,applied,report=apply_candidates(rgb,labels,boundary)
+    returned,applied,report=apply_candidates(rgb,labels,boundary,
+        surface_permission=surface_permission if automatic_policy=='surface_v26' else None)
+    report['automatic_policy']=automatic_policy
+    Image.fromarray(surface_permission.astype(np.uint8)*255).save(output/'surface_permission.png')
     report['boundary_recovery']=boundary_report
     value=transport(rgb,returned,labels,applied,report,source_sha,request_id,int((time.perf_counter()-started)*1000))
     Image.fromarray(returned).save(output/'returned.png')

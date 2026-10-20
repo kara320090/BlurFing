@@ -62,7 +62,7 @@ def array_digest(value):
     return digest(value.tobytes(order="C"))
 
 
-def warnings_for(engine, rejected):
+def warnings_for(engine, rejected, precautionary=False):
     warnings = ["EXPERIMENTAL_UNAPPROVED", "UNDETECTED_FINGERPRINTS_POSSIBLE",
                 "COUNTS_ARE_PERMISSION_COMPONENTS_NOT_FINGERS"]
     if rejected:
@@ -73,6 +73,8 @@ def warnings_for(engine, rejected):
         warnings.append("POSE_GEOMETRY_BOUNDARIES_REQUIRE_REVIEW")
     if engine == "synthetic_v23":
         warnings.extend(["AUTOMATIC_VISIBILITY_UNCALIBRATED", "SYNTHETIC_REPLACEMENT_V23"])
+        if precautionary:
+            warnings.append("PRECAUTIONARY_SURFACE_WITHOUT_RIDGE_CONFIRMATION")
     return warnings
 
 
@@ -186,8 +188,7 @@ def validate_transport(value, upload, *, request_id, engine):
     changed_count = integer(value.get("changed_RGB_pixels"), MAX_PIXELS)
     expected_status = "success" if transformed_count and transformed_count == count else "partial_success" if transformed_count else "rejected"
     if (count != transformed_count + rejected_count or value.get("status") != expected_status or
-            changed_count != int(changed.sum()) or (transformed_count == 0) != (changed_count == 0) or
-            value.get("warnings") != warnings_for(engine, rejected_count)):
+            changed_count != int(changed.sum()) or (transformed_count == 0) != (changed_count == 0)):
         raise TransportValidationError("status_counts_or_warnings")
     rows = value.get("region_display_bounds")
     if not isinstance(rows, list) or len(rows) != count:
@@ -196,6 +197,7 @@ def validate_transport(value, upload, *, request_id, engine):
     pixel_sums = {"transformed": 0, "rejected": 0}
     change_sum = 0
     actual_transformed = 0
+    precautionary = False
     for row in rows:
         if not isinstance(row, dict) or set(row) != REGION_KEYS:
             raise TransportValidationError("display_region_fields")
@@ -207,9 +209,11 @@ def validate_transport(value, upload, *, request_id, engine):
         if state not in pixel_sums or row.get("bounds_are_not_filled_permission") is not True:
             raise TransportValidationError("display_region_state")
         reason = row.get("reason_code")
-        if ((state == "transformed" and reason != "TRANSFORMED") or
+        is_surface=engine=="synthetic_v23" and reason=="TRANSFORMED_PRECAUTIONARY_SURFACE"
+        if ((state == "transformed" and reason != "TRANSFORMED" and not is_surface) or
                 (state == "rejected" and (not isinstance(reason, str) or re.fullmatch(r"REJECT_[A-Z0-9_]{1,80}", reason) is None))):
             raise TransportValidationError("sanitized_reason_required")
+        precautionary |= state=="transformed" and is_surface
         region_pixels = integer(row.get("mask_pixels"), MAX_PIXELS, positive=True)
         changes = integer(row.get("changed_RGB_pixels"), region_pixels)
         if (state == "transformed" and changes == 0) or (state == "rejected" and changes != 0):
@@ -231,4 +235,6 @@ def validate_transport(value, upload, *, request_id, engine):
     if (actual_transformed != transformed_count or pixel_sums["transformed"] != int(accepted.sum()) or
             pixel_sums["rejected"] != int(rejected.sum()) or change_sum != changed_count):
         raise TransportValidationError("display_region_aggregate")
+    if value.get("warnings") != warnings_for(engine, rejected_count, precautionary):
+        raise TransportValidationError("status_counts_or_warnings")
     return value

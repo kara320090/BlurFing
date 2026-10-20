@@ -43,6 +43,7 @@ data class ExperimentalRegionBounds(
 
 fun ExperimentalRegionBounds.userExplanation(): String = when(reasonCode) {
     "TRANSFORMED" -> "지문 합성 적용"
+    "TRANSFORMED_PRECAUTIONARY_SURFACE" -> "손끝 영역 합성 적용 · 원본 지문선은 확인되지 않음"
     "REJECT_BOUNDARY_UNCERTAIN" -> "손끝 경계를 확인하지 못했습니다. 손끝과 첫 관절이 모두 보이게 촬영해 주세요."
     "REJECT_VISIBILITY_UNCERTAIN" -> "지문선을 확인하기 어렵습니다. 반사를 줄이고 초점을 맞춰 촬영해 주세요."
     "REJECT_OBSERVATION_BUDGET" -> "분석 범위 제한에 도달했습니다. 손끝을 중심으로 다시 촬영해 주세요."

@@ -23,7 +23,8 @@ object ExperimentalPhotoDecoder {
     private fun metadata(r: ExperimentalPhotoResponse)=ExperimentalPhotoMetadata(r.contractVersion,r.resultKind,r.requestId,
         r.sourceSha256,r.photoEngine,r.coordinateSystem,r.sourceExifOrientation,r.imageWidth,r.imageHeight,r.status,
         r.candidateComponents,r.transformedComponents,r.rejectedComponents,r.changedRgbPixels,
-        r.privacyValidated,r.productionApproved,r.completePhotoProtectionVerified,r.independentFinalTest)
+        r.privacyValidated,r.productionApproved,r.completePhotoProtectionVerified,r.independentFinalTest,
+        r.regionDisplayBounds.count { it.reasonCode=="TRANSFORMED_PRECAUTIONARY_SURFACE" })
 
     fun decode(r: ExperimentalPhotoResponse,source: ExperimentalPhotoUpload,engine: ExperimentalPhotoEngine,
                requestId: String,checkActive: ()->Unit = {},checkMemory: Boolean=true): ValidatedExperimentalPhoto {
@@ -46,7 +47,9 @@ object ExperimentalPhotoDecoder {
             (if(r.rejectedComponents>0)setOf("REJECTED_REGIONS_RETAIN_ORIGINAL_PIXELS") else emptySet())+
             (when(engine) { ExperimentalPhotoEngine.DISTAL->setOf("GEOMETRY_BOUNDARIES_REQUIRE_REVIEW_ACCURACY_REGRESSION_OBSERVED")
                 ExperimentalPhotoEngine.POSE->setOf("POSE_GEOMETRY_BOUNDARIES_REQUIRE_REVIEW")
-                ExperimentalPhotoEngine.SYNTHETIC->setOf("AUTOMATIC_VISIBILITY_UNCALIBRATED","SYNTHETIC_REPLACEMENT_V23");else->emptySet() })
+                ExperimentalPhotoEngine.SYNTHETIC->setOf("AUTOMATIC_VISIBILITY_UNCALIBRATED","SYNTHETIC_REPLACEMENT_V23");else->emptySet() })+
+            (if(r.regionDisplayBounds.any { it.reasonCode=="TRANSFORMED_PRECAUTIONARY_SURFACE" })
+                setOf("PRECAUTIONARY_SURFACE_WITHOUT_RIDGE_CONFIRMATION") else emptySet())
         require(r.warnings.size<=32 && r.warnings.toSet()==warnings && r.warnings.size==warnings.size)
         val base64Chars=r.imageBase64.length.toLong()+r.acceptedPermissionMask.imageBase64.length+r.rejectedPermissionMask.imageBase64.length
         val returnedSize=(r.imageBase64.length.toLong()/4*3).coerceAtMost(ExperimentalPhotoMemory.MAX_PNG_BYTES.toLong()).toInt()
@@ -111,7 +114,11 @@ object ExperimentalPhotoDecoder {
             listOf(v.x*r.imageWidth,v.y*r.imageHeight,v.width*r.imageWidth,v.height*r.imageHeight).forEach { require(abs(it-round(it))<=1e-6) }
             require(v.maskPixels<=(round(v.width*r.imageWidth)*round(v.height*r.imageHeight)).toLong())
             when(v.status) {
-                "transformed" -> { require(v.reasonCode=="TRANSFORMED" && v.changedRgbPixels in 1..v.maskPixels);acceptedPixels+=v.maskPixels;transformed++ }
+                "transformed" -> {
+                    require((v.reasonCode=="TRANSFORMED" || (r.photoEngine==ExperimentalPhotoEngine.SYNTHETIC.id &&
+                        v.reasonCode=="TRANSFORMED_PRECAUTIONARY_SURFACE")) && v.changedRgbPixels in 1..v.maskPixels)
+                    acceptedPixels+=v.maskPixels;transformed++
+                }
                 "rejected" -> { require(v.reasonCode.matches(Regex("REJECT_[A-Z0-9_]{1,80}")) && v.changedRgbPixels==0L);rejectedPixels+=v.maskPixels }
                 else -> throw IllegalArgumentException("알 수 없는 후보 결과입니다.")
             };changed+=v.changedRgbPixels
