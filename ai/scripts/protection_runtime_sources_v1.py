@@ -5,6 +5,7 @@ after work. Keys are AI-root-relative POSIX paths; values hash exact bytes.
 External runtimes/weights/data retain their existing separate asset contracts.
 """
 from dataclasses import dataclass
+from concurrent.futures import ThreadPoolExecutor
 import hashlib,json,os,stat
 from pathlib import Path
 from types import MappingProxyType
@@ -63,7 +64,7 @@ def capture_runtime_sources(ai_root=None):
     if _reparse(root):raise RuntimeError('runtime_AI_root_link_not_supported')
     root=root.resolve(strict=True)
     if not root.is_dir():raise RuntimeError('runtime_AI_root_directory_required')
-    files={}
+    files={};pending=[]
     def inventory_error(error):raise RuntimeError('runtime_source_inventory_failed') from error
     for name in SOURCE_DIRECTORIES:
         folder=root/name
@@ -80,7 +81,12 @@ def capture_runtime_sources(ai_root=None):
                 path=parent/name
                 if path.suffix.lower() not in SOURCE_SUFFIXES:continue
                 key=path.relative_to(root).as_posix()
-                files[key]=_hash_source(path,root)
+                pending.append((key,path))
+    # Each file retains the same before/after inode, timestamp and SHA checks.
+    # Independent Windows reads may overlap; result ordering remains stable.
+    def checked(item):return item[0],_hash_source(item[1],root)
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        files=dict(pool.map(checked,pending))
     if not files:raise RuntimeError('runtime_source_inventory_empty')
     return RuntimeSourceSnapshot(root,MappingProxyType(dict(sorted(files.items()))))
 

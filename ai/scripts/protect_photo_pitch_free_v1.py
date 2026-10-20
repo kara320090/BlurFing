@@ -19,7 +19,7 @@ from photo_pitch_free_redaction_v1 import redact,pixel_hash
 VERSION='single_photo_pitch_free_v1_experimental'
 
 
-def run(source,model,registry_path,output,*,photo_semantics=None,development_replay=False,include_observed_pose=False,include_coarse_pad=False,complete_holes=False,allow_scanner=False,rounded_pads=False,candidate_only=False,partial_observed_pose=False):
+def run(source,model,registry_path,output,*,photo_semantics=None,development_replay=False,include_observed_pose=False,include_coarse_pad=False,complete_holes=False,allow_scanner=False,rounded_pads=False,candidate_only=False,partial_observed_pose=False,execution_context=None):
     if type(development_replay) is not bool:raise ValueError('development_replay_flag_must_be_boolean')
     if type(include_observed_pose) is not bool:raise ValueError('include_observed_pose_flag_must_be_boolean')
     if type(include_coarse_pad) is not bool:raise ValueError('include_coarse_pad_flag_must_be_boolean')
@@ -67,7 +67,10 @@ def run(source,model,registry_path,output,*,photo_semantics=None,development_rep
         semantic_job=None;hand_job=None
         if photo_semantics is None:
             photo_semantics=private/'semantics'
-            semantic_job=workers.enter_context(pending_worker([runtime[0],str(Path(shared.__file__).with_name('colfispoof_body_semantics.py')),
+            if execution_context is not None:
+                semantic_job=workers.enter_context(execution_context.semantic_job(inference_source.resolve(),photo_semantics.resolve()))
+            else:
+                semantic_job=workers.enter_context(pending_worker([runtime[0],str(Path(shared.__file__).with_name('colfispoof_body_semantics.py')),
                 '--input',str(inference_source.resolve()),'--output',str(photo_semantics.resolve()),
                 '--external-source',runtime[1],'--model',runtime[2]]))
         if include_observed_pose:

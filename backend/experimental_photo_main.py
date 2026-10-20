@@ -4,6 +4,7 @@ No engine is configured by default. One child may execute and one request may
 wait; neither request IDs nor output directories are reused while work is live.
 """
 import asyncio
+from contextlib import asynccontextmanager
 import json
 import math
 import os
@@ -14,6 +15,7 @@ import subprocess
 import tempfile
 import threading
 import time
+import uuid
 from dataclasses import dataclass
 
 from fastapi import FastAPI, Request
@@ -70,9 +72,12 @@ class PhotoRuntimeConfig:
     timeout_seconds: float = 600.0
     development_replay: bool = False
     temp_root: Path | None = None
+    resident: bool = False
 
     def __post_init__(self):
         positive_timeout(self.timeout_seconds)
+        if type(self.resident) is not bool:
+            raise ValueError('Explicit resident boolean required.')
         if type(self.development_replay) is not bool:
             raise ValueError("development_replay must be bool.")
         if (not isinstance(self.engines, tuple) or not self.engines or
@@ -92,6 +97,9 @@ class PhotoRuntimeConfig:
             object.__setattr__(self, "model", self.model.resolve(strict=True))
         if set(self.engines) & {"native_v12", "synthetic_v23"} and self.model is None:
             raise ValueError("Selected engine requires an explicit model.")
+        if self.resident and (self.engines != ('synthetic_v23',) or
+                not self.bridge.with_name('photo_resident_worker_v29.py').is_file()):
+            raise ValueError('Resident runtime requires its explicit synthetic V23 worker.')
         if self.temp_root is not None:
             if not isinstance(self.temp_root, Path) or not self.temp_root.is_dir():
                 raise ValueError("Configured temporary root must already exist.")
@@ -105,14 +113,16 @@ class PhotoRuntimeConfig:
             return None
         try:
             replay = os.environ.get("BLURFING_PHOTO_DEVELOPMENT_REPLAY", "false").strip().lower()
-            if replay not in ("true", "false"):
+            resident = os.environ.get('BLURFING_PHOTO_RESIDENT','false').strip().lower()
+            if replay not in ("true", "false") or resident not in ('true','false'):
                 return None
             model = os.environ.get("BLURFING_PHOTO_MODEL", "").strip()
             temp_root = os.environ.get("BLURFING_PHOTO_TEMP_ROOT", "").strip()
             return cls(*(Path(value) for value in values), model=Path(model) if model else None,
                        engines=tuple(os.environ.get("BLURFING_PHOTO_ENGINES", "native_v12").split(",")),
                        timeout_seconds=float(os.environ.get("BLURFING_PHOTO_TIMEOUT_SECONDS", "600")),
-                       development_replay=replay == "true", temp_root=Path(temp_root) if temp_root else None)
+                       development_replay=replay == "true", temp_root=Path(temp_root) if temp_root else None,
+                       resident=resident=='true')
         except (ValueError, OSError):
             return None
 
@@ -294,15 +304,150 @@ class PhotoSubprocessRuntime:
                         self._slot.release()
 
 
+class PhotoResidentRuntime(PhotoSubprocessRuntime):
+    """One owned warmed worker; keep admission, validation and cancellation rules."""
+    def __init__(self,config):
+        super().__init__(config)
+        self._process=None;self._start_task=None;self._ready=False;self._closing=False
+
+    @property
+    def ready(self):
+        return self._ready and self._process is not None and self._process.returncode is None and not self._unhealthy
+
+    def _check_cancelled(self):
+        # Python 3.11 wait_for can race completion with outer cancellation.
+        # Never let an already requested cancellation proceed to another stage.
+        task=asyncio.current_task()
+        if task is not None and task.cancelling():raise asyncio.CancelledError()
+
+    async def _frame(self):
+        line=await self._process.stdout.readline()
+        if not line or len(line)>16384 or not line.endswith(b'\n'):raise ValueError('resident_frame')
+        return json.loads(line,object_pairs_hook=_unique_json_object,
+            parse_constant=lambda _:(_ for _ in ()).throw(ValueError('nonfinite_frame')))
+
+    async def _discard(self):
+        self._ready=False;process=self._process;self._process=None
+        if process is not None:
+            try:
+                if process.returncode is None:await terminate_child_tree(process)
+                else:await process.wait()
+            except BaseException:
+                self._unhealthy=True;raise
+            finally:
+                if process.stdin is not None:process.stdin.close()
+
+    async def _spawn(self):
+        command=[str(self.config.python),str(self.config.bridge.with_name('photo_resident_worker_v29.py')),
+            '--model',str(self.config.model),'--registry',str(self.config.consumed_registry)]
+        if self.config.development_replay:command.append('--development-replay')
+        options=({'creationflags':getattr(subprocess,'CREATE_NEW_PROCESS_GROUP',0)|getattr(subprocess,'CREATE_NO_WINDOW',0)}
+            if os.name=='nt' else {'start_new_session':True})
+        environment=os.environ.copy();environment.update(PYTHONDONTWRITEBYTECODE='1',PYTHONIOENCODING='utf-8')
+        spawn=asyncio.create_task(asyncio.create_subprocess_exec(*command,stdin=subprocess.PIPE,stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,limit=16384,cwd=self.config.bridge.parent,env=environment,**options))
+        try:
+            try:self._process=await asyncio.shield(spawn)
+            except asyncio.CancelledError:
+                self._process=await spawn;raise
+            if await asyncio.wait_for(self._frame(),180)!={'status':'ready','protocol':'photo-resident-v29'}:
+                raise ValueError('resident_readiness')
+            self._ready=True
+        except BaseException:
+            await self._discard();raise
+
+    def _startup_finished(self,task):
+        try:task.result()
+        except asyncio.CancelledError:return
+        except BaseException:self._unhealthy=True
+
+    async def start(self):
+        if self._closing or self._unhealthy:raise PhotoServiceError(503,'PROCESSOR_UNAVAILABLE',True)
+        if self.ready:return
+        if self._start_task is None:
+            self._start_task=asyncio.create_task(self._spawn())
+            self._start_task.add_done_callback(self._startup_finished)
+        await asyncio.shield(self._start_task)
+        if not self.ready:raise PhotoServiceError(503,'PROCESSOR_UNAVAILABLE',True)
+
+    async def close(self):
+        self._closing=True
+        if self._start_task is not None and not self._start_task.done():
+            self._start_task.cancel();await asyncio.gather(self._start_task,return_exceptions=True)
+        await self._discard()
+
+    async def run(self,upload,request_id,engine,deadline):
+        acquired=False;temporary=None;failed=False
+        try:
+            await asyncio.wait_for(self._slot.acquire(),max(0,deadline-time.monotonic()));acquired=True
+            self._check_cancelled()
+            await asyncio.wait_for(self.start(),max(0,deadline-time.monotonic()))
+            self._check_cancelled()
+            temporary=tempfile.TemporaryDirectory(prefix='blurfing-photo-v29-',dir=self.config.temp_root)
+            root=Path(temporary.name);source=root/'input.png';source.write_bytes(upload.content);output=root/'output'
+            job_id=uuid.uuid4().hex
+            frame=dict(id=job_id,input=str(source),output=str(output),request_id=request_id)
+            self._process.stdin.write((json.dumps(frame,separators=(',',':'))+'\n').encode('utf-8'))
+            await asyncio.wait_for(self._process.stdin.drain(),max(0,deadline-time.monotonic()))
+            self._check_cancelled()
+            reply=await asyncio.wait_for(self._frame(),max(0,deadline-time.monotonic()))
+            self._check_cancelled()
+            if reply!={'status':'ok','id':job_id}:raise ValueError('resident_request_binding')
+            path=output/'result.transport.json'
+            if (output.is_symlink() or output.resolve().parent!=root.resolve() or path.is_symlink() or
+                    not path.is_file() or path.resolve().parent!=output.resolve()):raise ValueError('resident_output_binding')
+            with path.open('rb') as stream:content=stream.read(MAX_TRANSPORT_BYTES+1)
+            if len(content)>MAX_TRANSPORT_BYTES:raise ValueError('resident_output_limit')
+            payload=json.loads(content,object_pairs_hook=_unique_json_object,
+                parse_constant=lambda _:(_ for _ in ()).throw(ValueError('nonfinite_output')))
+            validated=validate_transport(payload,upload,request_id=request_id,engine=engine)
+            if time.monotonic()>deadline:raise asyncio.TimeoutError()
+            return validated
+        except asyncio.TimeoutError as exc:
+            failed=True;raise PhotoServiceError(504,'PROCESSOR_TIMEOUT',True) from exc
+        except PhotoServiceError:
+            failed=acquired;raise
+        except asyncio.CancelledError:
+            failed=acquired;raise
+        except Exception as exc:
+            failed=True;raise PhotoServiceError(500,'INVALID_PROCESSOR_RESULT',True) from exc
+        finally:
+            try:
+                if failed and acquired:
+                    # Stop all writers before removing private job files.
+                    try:
+                        if self._start_task is not None and not self._start_task.done():
+                            self._start_task.cancel();await asyncio.gather(self._start_task,return_exceptions=True)
+                        await self._discard()
+                    except BaseException:
+                        if temporary is not None:self._failed_temporaries.append(temporary);temporary=None
+                        raise
+                    if not self._closing and not self._unhealthy:
+                        self._start_task=asyncio.create_task(self._spawn())
+                        self._start_task.add_done_callback(self._startup_finished)
+                if temporary is not None:temporary.cleanup()
+            finally:
+                if acquired:self._slot.release()
+
+
 async def _disconnected(request):
     while not await request.is_disconnected():
         await asyncio.sleep(0.1)
 
 
 def create_app(config=None):
-    application = FastAPI(title="BlurFing experimental photo V2", docs_url=None, redoc_url=None)
+    runtime = (PhotoResidentRuntime(config) if config.resident else PhotoSubprocessRuntime(config)) if config is not None else None
+    @asynccontextmanager
+    async def lifespan(_app):
+        try:
+            if isinstance(runtime,PhotoResidentRuntime):
+                try:await runtime.start()
+                except Exception:runtime._unhealthy=True
+            yield
+        finally:
+            if isinstance(runtime,PhotoResidentRuntime):await runtime.close()
+    application = FastAPI(title="BlurFing experimental photo V2", docs_url=None, redoc_url=None,lifespan=lifespan)
     application.add_middleware(BodyLimitMiddleware)
-    runtime = PhotoSubprocessRuntime(config) if config is not None else None
     application.state.photo_runtime = runtime
 
     @application.exception_handler(HTTPException)
@@ -320,7 +465,7 @@ def create_app(config=None):
 
     @application.get("/ready")
     async def ready():
-        if runtime is None or runtime._unhealthy:
+        if runtime is None or runtime._unhealthy or (isinstance(runtime,PhotoResidentRuntime) and not runtime.ready):
             return error_response("", 503, "PROCESSOR_UNAVAILABLE", True)
         return {"status": "ready", "contract_version": "photo-experimental-v2",
                 "result_kind": "experimental", "photo_engines": list(runtime.config.engines),

@@ -128,7 +128,7 @@ def read_raw_v6_support(detection, source, model_sha256):
     return read_mask(private / 'predictions/INPUT.png', rows[0]['prediction_sha256'], native_shape(source))
 
 
-def propose(source, model, registry, output, *, allow_development_replay=True, minimal_artifacts=False, partial_observed_pose=False):
+def propose(source, model, registry, output, *, allow_development_replay=True, minimal_artifacts=False, partial_observed_pose=False,execution_context=None):
     """Executed in a separate process: existing detector policies stay unchanged."""
     from protect_photo_pitch_free_v1 import run
     from photo_crease_native_adapter_v1 import prepare
@@ -143,7 +143,8 @@ def propose(source, model, registry, output, *, allow_development_replay=True, m
     _, report = run(source, model, registry, detection, development_replay=allow_development_replay,
                     include_observed_pose=True, include_coarse_pad=True,
                     complete_holes=True, allow_scanner=True, rounded_pads=True,
-                    candidate_only=minimal_artifacts,partial_observed_pose=partial_observed_pose)
+                    candidate_only=minimal_artifacts,partial_observed_pose=partial_observed_pose,
+                    **(dict(execution_context=execution_context) if execution_context is not None else {}))
     with Image.open(detection / 'redacted_mask.png') as image:
         mask = np.asarray(image) > 0
     baseline = mask.copy()

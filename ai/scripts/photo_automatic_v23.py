@@ -85,7 +85,7 @@ def observe(rgb, mask, *, max_windows=MAX_INSPECTED_WINDOWS):
     return record
 
 
-def apply_candidates(rgb, labels, boundary_mask, *, seed=None, observer=observe, surface_permission=None):
+def apply_candidates(rgb, labels, boundary_mask, *, seed=None, observer=observe, surface_permission=None, fit_pool=None):
     if (rgb.dtype != np.uint8 or rgb.ndim != 3 or rgb.shape[2] != 3
             or labels.dtype != np.uint16 or labels.shape != rgb.shape[:2]
             or boundary_mask.dtype != np.bool_ or boundary_mask.shape != labels.shape
@@ -121,7 +121,7 @@ def apply_candidates(rgb, labels, boundary_mask, *, seed=None, observer=observe,
                          reason_code=observation['reason'],status='pending_render' if rid in selected else 'review_required'))
     from photo_junction_fit_runtime_v1 import fit_session
     precautionary_ids={r['region_id'] for r in evidence if r['reason']==PRECAUTIONARY_REASON}
-    with fit_session():
+    with fit_session(**(dict(pool=fit_pool) if fit_pool is not None else {})):
         returned,applied,report=render_selected_regions(rgb,labels,selected,rows,seed=seed,appearance='junction_v23',
             **(dict(generated_detail_regions=sorted(precautionary_ids)) if precautionary_ids else {}))
     # The common renderer has no authority to assign human provenance.
@@ -215,7 +215,7 @@ def transport(rgb, returned, labels, applied, report, source_sha, request_id, el
 
 
 def run(source, output, *, photo_model, consumed_registry, request_id, development_replay=False,
-        automatic_policy='surface_v26'):
+        automatic_policy='surface_v26',execution_context=None):
     from export_photo_permissions_v1 import _request, ArtifactGuard
     from photo_new_input_v23 import propose
     from protection_runtime_sources_v1 import capture_runtime_sources, assert_runtime_sources_unchanged
@@ -256,7 +256,8 @@ def run(source, output, *, photo_model, consumed_registry, request_id, developme
         return target
     proposal=output/'proposal';proposal.mkdir()
     propose(source,photo_model,consumed_registry,proposal,
-            allow_development_replay=development_replay,minimal_artifacts=True,partial_observed_pose=True)
+            allow_development_replay=development_replay,minimal_artifacts=True,partial_observed_pose=True,
+            **(dict(execution_context=execution_context) if execution_context is not None else {}))
     binding,_=guard.json(proposal/'proposal.private.json')
     for name in ('proposal.png','boundary_refined_mask.png'):
         guard.pin(proposal/name)
@@ -285,7 +286,8 @@ def run(source, output, *, photo_model, consumed_registry, request_id, developme
         raise ValueError('automatic_candidate_limit')
     labels=labels.astype(np.uint16)
     returned,applied,report=apply_candidates(rgb,labels,boundary,
-        surface_permission=surface_permission if automatic_policy=='surface_v26' else None)
+        surface_permission=surface_permission if automatic_policy=='surface_v26' else None,
+        **(dict(fit_pool=execution_context.fit_pool) if execution_context is not None else {}))
     report['automatic_policy']=automatic_policy
     Image.fromarray(surface_permission.astype(np.uint8)*255).save(output/'surface_permission.png')
     report['boundary_recovery']=boundary_report

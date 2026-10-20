@@ -17,9 +17,10 @@ def _fit(task):
 
 
 class _Session:
-    def __init__(self, workers):
+    def __init__(self, workers, pool=None):
         self.workers = workers
-        self.executor = None
+        self.executor = pool
+        self.owns_executor = pool is None
 
     def fit(self, tasks):
         if self.executor is None:
@@ -29,12 +30,12 @@ class _Session:
         return list(self.executor.map(_fit, tasks, chunksize=1))
 
     def close(self):
-        if self.executor is not None:
+        if self.executor is not None and self.owns_executor:
             self.executor.shutdown(wait=True, cancel_futures=True)
 
 
 @contextmanager
-def fit_session(workers=None):
+def fit_session(workers=None, *, pool=None):
     """Reuse a lazy pool across fingers; never retain patient pixels across requests."""
     if workers is None:
         workers = min(MAX_WORKERS, os.cpu_count() or 1)
@@ -42,7 +43,7 @@ def fit_session(workers=None):
         raise ValueError("junction_worker_limit")
     if _session.get() is not None:
         raise ValueError("junction_fit_session_already_active")
-    session = _Session(workers)
+    session = _Session(workers, pool)
     token = _session.set(session)
     try:
         yield

@@ -36,7 +36,7 @@ def load_config(path):
         if not isinstance(section, dict):
             raise ValueError('runtime_sections_required')
         for key, item in list(section.items()):
-            if key.endswith('_sha256') or key in ('development_replay','colfispoof_device','colfispoof_dll_dirs'):
+            if key.endswith('_sha256') or key in ('development_replay','colfispoof_device','colfispoof_dll_dirs','resident_worker','hand_roi'):
                 continue
             if not isinstance(item, str) or not item.strip():
                 raise ValueError('runtime_paths_required')
@@ -45,6 +45,9 @@ def load_config(path):
     if type(value['photo'].get('development_replay')) is not bool:
         raise ValueError('explicit_replay_boolean_required')
     photo=value['photo']
+    if type(photo.get('resident_worker',False)) is not bool:raise ValueError('explicit_resident_worker_boolean_required')
+    if type(photo.get('hand_roi',False)) is not bool:raise ValueError('explicit_hand_ROI_boolean_required')
+    if photo.get('hand_roi',False) and not photo.get('resident_worker',False):raise ValueError('hand_ROI_requires_resident_worker')
     if photo.get('colfispoof_device','cpu') not in ('cpu','cuda'):
         raise ValueError('explicit_colfispoof_device_required')
     directories=photo.get('colfispoof_dll_dirs',[])
@@ -115,6 +118,7 @@ def preflight(config, service='all', probe=False):
             file(section, 'hand_model', section.get('hand_model_sha256') or '')
             check('colfispoof_device_selection',section.get('colfispoof_device','cpu') in ('cpu','cuda'))
             check('colfispoof_DLL_directories',all(Path(p).is_dir() for p in section.get('colfispoof_dll_dirs',[])))
+            check('resident_worker_source',not section.get('resident_worker',False) or (ROOT/'ai/scripts/photo_resident_worker_v29.py').is_file())
         else:
             file(section, 'nbis_config')
             file(section, 'sourceafis_config')
@@ -181,6 +185,8 @@ def service_environment(config, name, *, platform=None):
                    BLURFING_PHOTO_DEVELOPMENT_REPLAY=str(section['development_replay']).lower())
         env['BLURFING_COLFISPOOF_DEVICE']=section.get('colfispoof_device','cpu')
         env['BLURFING_COLFISPOOF_DLL_DIRS']=json.dumps(section.get('colfispoof_dll_dirs',[]))
+        env['BLURFING_PHOTO_RESIDENT']=str(section.get('resident_worker',False)).lower()
+        env['BLURFING_PHOTO_HAND_ROI']=str(section.get('hand_roi',False)).lower()
     else:
         nbis_key = 'BLURFING_NBIS_WINDOWS_CONFIG' if (platform or sys.platform) == 'win32' else 'BLURFING_NBIS_LINUX_CONFIG'
         for key in ('BLURFING_NBIS_WINDOWS_CONFIG', 'BLURFING_NBIS_LINUX_CONFIG', 'BLURFING_NBIS_CONFIG'):
@@ -204,7 +210,10 @@ def main():
         config = load_config(args.config)
         if args.command == 'serve' and args.service == 'all':
             raise ValueError('choose_one_service_per_terminal')
-        report = preflight(config, args.service, probe=args.probe or args.command == 'serve')
+        # Resident startup loads and validates the actual model before /ready.
+        # Avoid paying for a throwaway model process immediately beforehand.
+        resident_photo=args.service=='photo' and config['photo'].get('resident_worker',False)
+        report = preflight(config, args.service, probe=args.probe or (args.command == 'serve' and not resident_photo))
         if args.output:
             args.output.parent.mkdir(parents=True, exist_ok=True)
             with args.output.open('x', encoding='utf-8') as stream:

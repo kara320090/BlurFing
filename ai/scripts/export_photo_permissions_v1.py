@@ -151,7 +151,7 @@ def reconstruct(engine_output,engine,source_rgb,source_sha,report,registry,devel
 
 
 def run(source,output,*,photo_engine,consumed_registry,request_id,photo_model=None,development_replay=False,
-        automatic_policy=None):
+        automatic_policy=None,execution_context=None):
     _request_id(request_id)
     if type(development_replay) is not bool:raise ValueError('development_replay_flag_must_be_boolean')
     if photo_engine not in ENGINES:raise ValueError('unsupported_experimental_engine')
@@ -159,7 +159,8 @@ def run(source,output,*,photo_engine,consumed_registry,request_id,photo_model=No
         from photo_automatic_v23 import run as automatic_run
         return automatic_run(source,output,photo_model=photo_model,consumed_registry=consumed_registry,
                              request_id=request_id,development_replay=development_replay,
-                             automatic_policy=automatic_policy or 'surface_v26')
+                             automatic_policy=automatic_policy or 'surface_v26',
+                             **(dict(execution_context=execution_context) if execution_context is not None else {}))
     if automatic_policy is not None:raise ValueError('automatic_policy_requires_synthetic_v23')
     validate_photo_options(photo_engine,photo_model,consumed_registry,development_replay)
     source,output,registry_path=Path(source),Path(output),Path(consumed_registry)
