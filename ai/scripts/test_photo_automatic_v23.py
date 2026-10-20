@@ -79,6 +79,8 @@ class AutomaticV23Tests(unittest.TestCase):
         self.assertEqual(report['evidence'][0]['visibility'],'uncertain')
         self.assertFalse(report['human_reviewed'])
         self.assertEqual(report['precautionary_applied_region_count'],1)
+        self.assertIn('continuous_surface_policy',report['renderer'])
+        self.assertFalse(report['renderer']['continuous_surface_policy']['natural_appearance_validated'])
         self.assertEqual(report['regions'][0]['reason_code'],PRECAUTIONARY_REASON)
         np.testing.assert_array_equal(returned[~applied],rgb[~applied])
         content=png(rgb)
