@@ -60,6 +60,20 @@ model_weights/
 *.onnx
 *.pt
 *.pth
+*.safetensors
+*.task
+*.bin
+*.apk
+*.ckpt
+*.tflite
+*.pb
+*.npz
+*.pkl
+*.pickle
+*.private.*
+*.log
+runtime/
+outputs/
 
 # Windows launcher build environment and generated distribution
 .app-build-venv/

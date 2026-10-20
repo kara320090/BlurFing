@@ -1,154 +1,113 @@
-# AI
+# BlurFing AI — 자동 손끝 검출과 지문 합성
 
-주담당: 유재윤
+**2026-10-20 기준: Android 사진 입력부터 PC 서버의 자동 V23 처리·PNG 저장까지 연결한 개발용 시제품입니다.**
+실제 모델 실행과 에뮬레이터 저장을 확인했지만, 임의 사진의 모든 지문을 보호하는 완성품으로 승인한 상태는 아닙니다.
+AI 계산은 Android 내부가 아니라 **PC/서버**에서 실행합니다.
 
-## 담당 범위
-BlurFing 지문 변환 알고리즘 및 NBIS / SourceAFIS 기반 검증 파트.
+- 다음 담당자는 [한글 인수인계와 남은 작업](HANDOFF_KO.md)부터 읽으세요.
+- [공개·비공개 파일 구분](PUBLIC_PRIVATE_DATA_KO.md)에 따라 개인 자료를 별도로 인계합니다.
+- [이번 공개 준비 검사](docs/PUBLICATION_20261020.md): AI 50개·backend/실행기 108개 회귀 통과. 실제 모델의 독립 성능 검증과 구분합니다.
+- [실행 안내](../backend/README-photo-v23.md), [자동 연동 검증](docs/PHOTO_AUTOMATIC_V23_20261020.md), [최신 속도 검증](docs/PHOTO_V23_PERFORMANCE_20261020.md)을 함께 확인하세요.
+- 이전 소스·실험은 보존했습니다. [이전 README](README_HISTORY_PRE_V23_20261020.md)의 완료 플래그는 당시 범위에만 적용합니다.
 
-## 2026-10-16 PHOTO 추가 검증
-
-통합 CLI/API·Windows GUI에서 `native_v12`(V6 학습 마스크), `distal_v13`(기존 말단 기하), `pose_v14`(관측한 한 손 자세)를 명시적으로 선택할 수 있습니다. [설정 방법](docs/PHOTO_EXPLICIT_ENGINE_INTEGRATION.md), [Windows 실제 처리·저장 검증](docs/PHOTO_DESKTOP_VALIDATION_20261016.md), [자세 실험 및 한계](docs/PHOTO_POSE_NATIVE_V14.md)를 참고하세요. 기본 엔진은 그대로이며 세 실험 모두 보호 성능 승인 전입니다.
-
-2026-10-16 최종 통합 검사는 AI scripts 665개·Windows GUI 22개가 통과했습니다. 별도 [PHOTO V2 전송](docs/PHOTO_EXPERIMENTAL_TRANSPORT_V2.md)과 Android 단위 170개·UI 11개 및 실제 Repository→loopback HTTP→V14→MediaStore 저장/readback 1회도 확인했습니다. PC V12 실제 HTTP와 Android V14는 같은 개발 사진의 부분 처리 관측이며 일반 성공률이 아닙니다. Windows 새 PHOTO 출력의 원본 RGB ICC 보존과 HTTP canonical sRGB 입력을 구분합니다. 원본·모델·frozen 수학/기준을 보존했습니다. 이전 AI 606개·GUI 17개는 통합 전 검증 기록입니다.
-
-새 자세 경로의 실제 fresh 처리 결과도 고정 진단 RGB와 exact 일치했습니다. 기존 촬영의 추가 사진 7장은 독립 평가 자료가 아니며, 미처리 손가락과 지문 간격 관측 실패가 남습니다. 아래 기존 10-case 플랫폼 동등성 기록은 그 당시의 기본 파이프라인 범위이며, 새 V12/V14의 Linux 동등성을 의미하지 않습니다.
-
-## 고정 기준 구성
-렌더러: natural_auto_04. 합성기: boundaryblend_02. 지문 매칭 엔진: NBIS 5.0.0 / SourceAFIS 3.18.1.
-공통 알고리즘은 scripts/ 아래 한 벌입니다. 플랫폼별 차이는 실행 환경 경로, 프로세스, Java·네이티브 입출력 및 설치·빌드뿐입니다. 계산 파라미터와 구조 검사 기준은 유지합니다.
-
-## 플랫폼 상태
-| 구성 요소 | Linux | Windows |
-|---|---|---|
-| 핵심 변환 | 개발용 기준 구성 검증 완료 | 제공된 unified matrix의 성공·거절 경로 검증 완료 |
-| natural_auto_04 | 검증 완료 | 동일한 공통 핵심 구현 사용 |
-| boundaryblend_02 | 검증 완료 | 동일한 공통 핵심 구현 사용 |
-| NBIS 어댑터 | 검증 완료 | 네이티브 빌드 및 공식 브리지 검증용 자료 확인 완료 |
-| SourceAFIS | 검증 완료 | Windows 실제 실행 검증 완료 |
-| 전체 파이프라인 | 개발용 파이프라인 검증 완료 | 제공된 10-case unified matrix exact PASS 및 실제 GUI smoke 완료 |
+## 현재 처리 흐름
 
 ```text
-TECHNICAL_PIPELINE_COMPLETE=true
-LINUX_PIPELINE_VALIDATED=true
-WINDOWS_IMPLEMENTATION_READY=true
-WINDOWS_CROSS_COMPILER_AVAILABLE=false
-WINDOWS_CROSS_BUILD_SUCCESS=false
-WINDOWS_NBIS_NATIVE_BUILD_SUCCESS=true
-WINDOWS_NBIS_FIXTURE_VALIDATED=true
-WINDOWS_SOURCEAFIS_RUNTIME_VALIDATED=true
-WINDOWS_RUNTIME_VALIDATED=true
-windows_full_equivalence_verified=true
-WINDOWS_EQUIVALENCE_SCOPE=provided_10_case_unified_matrix_and_actual_GUI_smoke
-LINUX_REGRESSION_OK=true
-FINAL_INDEPENDENT_VALIDATION_COMPLETE=false
-PROJECT_COMPLETE=false
+Android에서 사진 선택
+  → 방향(EXIF)·색상(sRGB) 정규화, 입력 크기 검사
+  → V2 HTTP 요청: synthetic_v23
+  → COLFISPOOF + 학습된 V6 + 관측된 손 자세로 손끝 후보 검출
+  → 손가락 외곽·관절 주름 경계 확인, 필요한 후보에 V24 국소 축 보완
+  → 원본 영상에서 반복되는 지문선 증거 관측(V11)
+  → 선택된 손끝 영역의 원본 미세무늬를 제거하고 인공 지문·피부 질감 합성
+  → V21 외곽 / V22 이음부 / V23 관절 연결 보정
+  → 실제 반환 RGB·적용/거절 마스크 검사
+  → 서버·Android에서 다시 검증하고 별도 PNG 사본 저장
 ```
-Linux는 개발 사진의 fail-closed 처리·반환 RGB·반복 실행·scanner 회귀를 검증했습니다. Windows는 NBIS/SourceAFIS 실행 환경 검증과 제공된 10-case PHOTO/scanner exact parity 및 실제 unified GUI smoke를 완료했습니다. 검증 범위와 미검증 항목은 [검증 기록](docs/VALIDATION.md) 및 [Windows parity 기록](docs/WINDOWS_PARITY_COMPATIBILITY.md)을 따릅니다. 개발·동등성 검증을 독립 보호 성능 승인으로 간주하지 않습니다.
 
-## 저장소 구성
-- scripts/: 공통 렌더러, 합성기, 관심 영역(ROI)·기하 및 이미지 보조 함수, 운영체제별 호출을 분기하는 매칭 인터페이스, 단일 Java 소스.
-- platform/linux/: Linux 어댑터, 네이티브 소스, 설치 안내.
-- platform/windows/: Windows 어댑터, 네이티브 소스, PowerShell 빌드·설치 스크립트, 검증용 자료 검사 도구.
-- config/: 실행 환경 설정 JSON 예시. 실제 비공개 설정은 저장소 밖 또는 private/에 보관합니다.
-- docs/: 설치, 파이프라인, 검증 및 제한사항.
-- results/: 익명화한 Linux 개발용 검증 결과와 NBIS 새 빌드 요약.
-- requirements.txt: 공통 Python 의존성 목록. NBIS/JDK/JAR은 외부 요구사항입니다.
+지문선의 증거는 **적용할지 판단하는 조건**입니다. 합성 무늬 자체는 원본 지문 간격을 그대로 측정해 복제하는 방식이 아닙니다.
+원본의 넓은 피부색·명암·큰 주름을 참고하고 별도 시드로 미세 능선을 생성합니다.
+경계나 관측이 불확실한 후보는 원본으로 남습니다. 이 영역은 **미보호**이며, 사진 전체가 보호됐다고 표시하면 안 됩니다.
+검출하지 못한 손끝은 후보 통계에도 들어가지 않을 수 있습니다.
 
-## 설치 및 실행
-[Linux 설치 안내](docs/LINUX_SETUP.md) / [Windows 설치 안내](docs/WINDOWS_SETUP.md)를 따르세요. Python >=3.10, Java/Javac >=11이 필요합니다. SourceAFIS JAR 15개는 docs/sourceafis_runtime.json의 공식 URL 및 SHA-256으로 별도 준비합니다. 실행 바이너리와 JAR은 포함하지 않습니다.
+## 기존 방식과 현재 방식
 
-공통 호출:
-```python
-from nbis_matcher import run_nbis_job
-from sourceafis_matcher import run_matcher_job
-```
-scripts를 Python 모듈 검색 경로에 두거나 문서의 명령줄 명령을 사용합니다. 공통 인터페이스는 운영체제를 자동 선택하며 지원하지 않는 운영체제에서는 오류를 냅니다. 평가 점수·임계값과 특징점 가지치기 설정은 바꾸지 않았습니다.
+| 구분 | 기존 native / frozen 경로 | 현재 `synthetic_v23` |
+|---|---|---|
+| 원리 | 원본 지문의 너비·간격·구조 증거를 확인하고 고정 렌더러로 변환 | 손끝 경계와 지문선 증거를 확인한 뒤 영역 내부에 독립적인 인공 지문을 합성 |
+| 원본 pitch 관측 | 변환 계약의 주요 조건 | 합성용 원본 pitch를 요구하지 않음 |
+| 주요 거절 | 너비·간격·특징점 부족, 렌더러 계약 실패 | 경계 불확실, 반복 지문선 증거 부족, 입력/출력 계약 실패 |
+| 보존 범위 | 기존 `natural_auto_04` + `boundaryblend_02` 동작 보존 | 실제 적용 마스크 밖 및 거절 영역 RGB 보존 |
+| 한계 | 일반 사진에서 실제 적용률이 낮았음 | 누락·오탐·인공적인 외관·속도·독립 보호 검증이 남음 |
 
-## 데이터 및 검증
-실제 지문·손 사진, 개인 자료 목록, 체크포인트, 압축 자료, 데이터셋은 공개하지 않습니다. [검증 기록](docs/VALIDATION.md)은 기존 Linux 개발용 결과와 Windows 실행 환경 검증 범위를 구분합니다. Linux의 개발용 관심 영역 3개에서 두 매칭 엔진 모두 원본→변환본 점수가 동일 지문 매칭 점수보다 크게 낮았습니다. 이 수치를 Windows 결과로 승격하지 않습니다. 기존 holdout 운영 검증과 protocol-amended 재실행 결과는 각 역사적 보고서를 따릅니다. Windows parity는 해당 입력의 플랫폼 재현성 검증이며 새 독립 보호 성능 평가가 아닙니다. B/D 자료를 독립 검증 자료로 승격하지 않습니다.
+검은 가림 실험은 후보 영역을 확인하는 별도 경로였습니다. 현재 V23 반환 결과는 그 검은색을 지문으로 바꾸는 이미지 편집이 아니라, **원본 RGB와 확인된 마스크를 입력받아 다시 합성**한 결과입니다.
+합성 지문이라는 이유만으로 잔존 원본 무늬나 마스크 밖 노출이 없다고 보장하지 않습니다.
 
-## 제한사항
-일반적 보호 효과나 완전한 자연스러움을 입증하지 않습니다. 합성 지문 능선의 규칙성과 일부 질감 경계가 남습니다. Windows parity는 제공된 matrix와 설정된 runtime에 한정하며 임의 입력, raw TensorFlow tensor별 동등성, matcher score 동등성은 입증하지 않습니다. 특징점 추출 실패를 보호 성공으로 계산하지 않습니다. NBIS와 SourceAFIS의 점수 척도는 다르므로 직접 비교하지 않습니다.
+## 버전 이름을 구분하세요
 
-## Experimental automatic detection artifact
-The new automatic boundary prototype is **not ready for unattended protection**. The 20-image baseline reproduced 17 candidates and one accepted boundary; new graph-cut masks are review-gated. [Detection contract, CLI, tests and limitations](docs/DETECTION_PIPELINE.md) and [results](results/linux_detection_validation_summary.md) distinguish the 20-image diagnostics from the successful existing-baseline artifact control.
+| 이름 | 역할과 상태 |
+|---|---|
+| frozen PHOTO V4 | 기존 변환 기준. 새 실험으로 덮어쓰지 않음 |
+| 학습 V4 / V5 / **V6** | 손끝 전체 영역 분할 모델의 실험 버전. 현재 후보 검출에 V6 사용 |
+| `native_v12` / `distal_v13` / `pose_v14` | 보존된 별도 PHOTO 입력·보호 엔진 |
+| 합성 V1–V6 | 불투명 대체부터 지문 흐름·간격 변화·피부색·큰 주름 표현까지 개선 |
+| 합성 V7–V17 | 카메라 해상도 질감, 피부 재질·기공·주름·조명 결합 실험 |
+| 합성 V18 / V19 | 질감 해상도 손실 원인 보완 / 불규칙한 피부 표면 표현 |
+| V20 | 외곽 색 복원 비교 실험. 최신 기본 결과로 승격하지 않음 |
+| **V21 / V22 / V23** | 외곽 실루엣 / 이음부 / 2차원 관절 연결 보정. 현재 V23 외관 경로 |
+| **V24** | 미확정 후보의 국소 축·경계 보완. V6을 대체하는 새 학습 모델이 아님 |
+| 가시성 V1–V13 | 별도 관측 실험 계열. 자동 V23은 V11 공동 반복 증거를 사용 |
 
-Public-source smoke test: `python ai/scripts/test_detection_artifact.py`. Actual private-data detector/consumer and benchmark commands are in the detection guide. Windows consumers must use the identical source bytes, EXIF-transposed dimensions, decoded RGB and mask hashes. This artifact work does not change existing Windows runtime verification claims or establish Windows full equivalence.
+`V23`이라는 번호는 23회 학습된 모델을 뜻하지 않습니다. 학습 모델, 가시성 검사, 합성기의 번호는 서로 독립적입니다.
+세부 변경과 채택 여부는 [인수인계의 버전 이력](HANDOFF_KO.md#4-버전별-개선과-보존-대상)을 따릅니다.
 
-## Linux SAM-to-pad development path
+## 확인한 수준과 한계
 
-See [SAM_PAD_PIPELINE.md](docs/SAM_PAD_PIPELINE.md) for native-coordinate private-mask input, extraction, evaluation and detector-only benchmark commands. This experimental path is not approved for protection use.
+| 항목 | 근거 | 현재 판단 |
+|---|---|---|
+| 학습 | 손끝 GT 23장, 657개 타일, 보수적인 개발 그룹 3개 | 대규모·독립 데이터가 아님 |
+| V6 검출 | 개발 OOF IoU 0.4836, 학습 자료 적합 IoU 0.8243 | 일반화 개선이 입증되지 않음. V4 OOF 0.5527보다 낮았음 |
+| 가시성 정답 | 30장·67영역: 보임 53 / 미관찰 6 / 불확실 8 | 기존 사용 자료. 새로운 독립 검증 자료가 아님 |
+| 자동 연동 | 실제 모델을 통한 PC HTTP 및 Android 에뮬레이터 저장·재읽기 확인 | 실물 휴대폰·외부 서버 배포는 별도 |
+| 최신 속도 | 같은 개발 사진 1장, 동일 시드 각 2회: 평균 90.47 → 78.85초 | 약 12.8% 감소. 전체 사진의 평균이나 실시간 성능을 뜻하지 않음 |
+| 최적화 회귀 | 고정 시드 실제 반환 RGB·마스크 일치, AI 41 + 서버 108 + 실제 Android 1개 검사 | 실행 계약 검증이며 보호 성공률이 아님 |
+| 매칭 | 사람 검토 V23의 44영역·두 시야 검사 | 일부 높은 점수·특징점 부족·잔존 경고가 남음 |
+| Linux | 기존 10-case unified 동등성 기록 있음 | 최신 자동 V23 전체 경로 동등성은 미검증 |
 
-## Unified photo/scanner front-end (experimental)
+현재 `automatic_visibility_approved=false`, `production_approved=false`, `privacy_validated=false`입니다.
+`success`는 **검출한 후보의 처리 상태**입니다. 완전한 검출, 전체 사진의 지문 제거, 재식별 방지를 의미하지 않습니다.
+NBIS/SourceAFIS의 점수 0이나 특징점 추출 실패도 보호 성공으로 집계하지 않습니다.
 
-[원본·다중 해상도 능선 진단](docs/PHOTO_RIDGE_DIAGNOSTIC_V1.md)은 후보별 window/pitch와 선택적 인간 GT 평가를 분리한다. 관측 전용이며 보호 mask/gate를 변경하지 않는다. core238 PASS/3 SKIP, GUI9 PASS, 기존 기본10-case exact를 확인했다.
+## 실행과 파일 위치
 
-[손가락 가지 분리 실험](docs/PHOTO_TERMINAL_BRANCH_EXPERIMENT.md)은 body의 자유 끝점과 고유 픽셀 소유권을 관측한다. training10장에서 평균 IoU는0.3511→0.5481로 개선됐지만 recall은0.8151→0.7449로 감소하고 오검출이 늘어 기본 적용을 거절했다. 실험 모듈과 기본 보호 pipeline은 분리되어 있다.
+공개 GitHub에는 코드·테스트·익명화 요약이 들어 있습니다. **실제 추론에는 별도 V6 가중치·설정·사용 자료 레지스트리·외부 모델이 필요합니다.** Git clone만으로 실제 모델이 준비되지는 않습니다.
 
-[후보 맥락·경계 관측 점검](docs/PHOTO_TERMINAL_CONTEXT_DIAGNOSTIC.md)은 빈 마스크 구간/배경 혼입을 appearance 변화로 오인하는 오류를 수정했다. training55개 후보 중12개에서 기존 경계 단서를 관측했지만 해부학적 정확도·보호 성공률을 확정하지 않는다. 기존 pad와 기본 보호10건 RGB는 그대로이며 core271 PASS/3 SKIP를 확인했다. frame 접촉만으로 손목을 판정하지 않는다.
+1. [인수인계의 환경 준비](HANDOFF_KO.md#5-다음-담당자의-실행-환경-준비)를 따릅니다.
+2. 자동 경로는 [서버 실행기](../backend/Start-Photo-V23.ps1)와 Android의 `synthetic_v23`을 사용합니다.
+3. PC 수동 검토 경로는 [새 사진 검토 실행기](platform/windows/start_new_photo_v23.ps1)를 사용합니다.
+4. `/ready`는 JSON 상태 주소입니다. 사진 업로드 웹페이지가 아닙니다. 에뮬레이터 없이 같은 자동 API를 쓰는 전용 PC 업로드 화면은 후속 과제입니다.
 
-[관측 경계 pad 실험](docs/PHOTO_OBSERVED_BOUNDARY_PROPOSALS.md)은 관측12개의 native halfplane proposal을 전체GT와 비교했다. 같은 후보 집합의 IoU는0.1746→0.1882지만 precision 감소·관측 부족 때문에 기본 적용을 거절했다. class2 존재만 요구하는 조건도 매칭25/38→19/38로 줄어 채택하지 않았다. core277 PASS/3 SKIP이며 보호 동작·임계값은 유지한다.
+| 위치 | 내용 |
+|---|---|
+| `scripts/` | 검출·학습·가시성·합성·전송 검증·회귀 검사. 과거 버전 포함 |
+| `app/` | Windows GUI, 손끝/가시성 라벨링, 새 사진 수동 검토 화면 |
+| `platform/` | Windows/Linux 어댑터·실행기·NBIS/SourceAFIS 연결 |
+| `config/` | 공개 예시 설정·합성 기하 기준 |
+| `docs/`, `results/` | 개발·검증 이력 및 익명화 수치. 날짜·버전별 범위 주의 |
+| `../backend/` | V2 전송·큐·오류·취소·서버 실행기 |
+| `../android/` | 이미지 정규화·HTTP 요청·결과 검증·PNG 저장 |
+| `../contracts/` | 앱/서버 응답 계약 |
 
-[국소 융선 주기·방향 감사](docs/PHOTO_LOCAL_PERIODICITY_V1.md)는 ±89° 축의 선형 median 오류를 수정했다. 기본 보호10건 RGB와55후보의 mask/pitch/판정은 유지됐고 orientation metadata만 보정됐다. 작은창 관측의 stable spacing은1/55에 그쳐 기본 적용을 거절했다. frozen pitch 함수의 ROI 밖 배경 주기 혼입도 isolated API로 재현·기록했다. core286 PASS/3 SKIP다.
+PHOTO 자동 V23과 기존 scanner 통합 경로는 별개입니다. V23에 지문 스캐너 이미지를 넣어 손 사진처럼 처리하지 않습니다.
+스캐너는 [기존 통합 frontend](docs/UNIFIED_FINGERPRINT_FRONTEND.md)와 [플랫폼 안내](platform/windows/README.md)를 참고하세요.
 
-[실제 PHOTO pitch 지원 범위 추적](docs/PHOTO_SEED_PITCH_SUPPORT_TRACE_V1.md)은 원래 API·renderer를 바꾸지 않고 실제 remap 지도를 기록했다. 사진20장과 scanner 대조를 포함한24회에서 계측 전후 결과가 exact였으며, 관측된 periodic/선택 profile의 내부ROI 밖 직접 혼입은0이었다. 간접 방향장 영향과 합성 isolated 누락은 별도이며, 실제 보호 성능 개선으로 보고하지 않는다. frozen·임계값을 보존했고 core291 PASS/3 SKIP다.
+## 우선 남은 작업
 
-[후보 ID와 전체 body 보존 실험](docs/PHOTO_CANDIDATE_CONTEXT_V1.md)은 opt-in region v3다. union 후 부모 정보 손실을 피하고 후보별 pad/body/scale/합성을 검증했다. core227 PASS/3 SKIP, GUI9 PASS, 기본10-case exact이며 보호 범위와 독립 성능은 아직 승인하지 않았다.
+1. 새 담당자 환경에서 비공개 자산을 연결하고 현재 결과·오류 계약을 재현합니다.
+2. 전용 PC 자동 업로드 화면을 구현해 같은 V23 서버로 테스트·비교·다운로드하게 합니다.
+3. 별도 촬영 그룹과 사람 정답으로 **손끝 누락 / 과대 영역 / 가시성 오판 / 미적용 이유**를 분리 평가합니다.
+4. 분할·가시성 개선을 개발 자료에서 수행하고, 미사용 최종 평가 자료를 유지합니다.
+5. 전체 반환 이미지의 잔존 지문·독립 참조 매칭·압축 후 결과·자연스러움을 평가합니다.
+6. 실제 휴대폰·최신 Linux·처리 지연·배포 운영을 검증합니다.
 
-[Body-associated width 실험](docs/PHOTO_BODY_WIDTH_V1.md)은 별도 `photo_region_pipeline_v2.py`로 구현했다. 기존 region v1의 a 폭 관측 실패는 해소됐지만 default a와 반환 RGB가 같고 b는 거절이 유지됐다. core209 PASS/3 SKIP와 기본10-case cached 회귀를 확인했으며 기본 경로에는 채택하지 않았다.
-
-[영역별 PHOTO geometry adapter](docs/PHOTO_REGION_PIPELINE_V1.md)는 별도 opt-in CLI로 구현했다. 기본 GUI/quality gate는 기존 v2를 유지하며, 새 adapter의 실제 a/b 진단은 모두 거절됐다. 기본 채택이나 보호 성능 개선으로 보고하지 않는다.
-
-[순서별 후속 감사](docs/ORDERED_AI_AUDIT_20261014.md)는 scale/component·coverage·feature gate·pitch의 구현과 한계를 구분한다. 마지막 widening window 누락을 수정했으며 core192 PASS/3 SKIP, GUI9 PASS와 cached-semantics 10-case exact 회귀를 확인했다. 보호 성능 승인과 후속 알고리즘 개발은 별도다.
-
-Use `scripts/protect_fingerprint.py --input /path/to/image --output /path/to/new-result`. Content routes to PHOTO, FINGERPRINT_IMAGE or UNKNOWN; failures return unchanged pixels. Scanner detection is development-validated on 21 fixtures with structure-guarded scanner transformation. The configured COLFISPOOF body/distal PHOTO branch now has a fail-closed quality gate and partial-success response; it remains detector/production-unapproved. MediaPipe/SAM and legacy are optional, not primary. [Architecture and setup](docs/UNIFIED_FINGERPRINT_FRONTEND.md), [measured validation](results/unified_frontend_validation.md). No general protection or final-independent-validation claim.
-
-## Raw COLFISPOOF pretrained PHOTO evaluation
-
-[실행 방법](docs/COLFISPOOF_RAW_EVALUATION.md)과 [GT7 결과](results/colfispoof_raw_gt7_summary.md)를 공개합니다. 공식 DeepLab fingertip class 2를 네 회전으로 추론하고 고정 2/4 consensus를 평가했습니다. 공식 contour/crop 후처리는 호출하지 않습니다. 실제 손끝 선택은 일부 개선됐지만 macro IoU 0.4973, coverage 7/10으로 자동 보호 승인 기준을 충족하지 못했습니다. PHOTO 기본 경로에 연결하지 않았으며 GT7은 개발 평가용입니다. 모델·사진·GT·overlay는 포함하지 않습니다.
-
-[Class 1+2 finger-body distal 실험](docs/FINGER_BODY_DISTAL.md)은 class 2가 없는 초근접 입력에서도 후보를 생성합니다. GT7에서 macro IoU 0.7529, coverage 10/10을 기록했지만, 목표 IoU 0.85와 경계 정밀도를 충족하지 못해 자동 보호 frontend로 승인하지 않았습니다. Ridge 검사는 별도 진단이며 기존 renderer·scanner·legacy 경로는 유지합니다.
-
-2026-10-15의 [실험용 PHOTO 연결](docs/PHOTO_BODY_OWNER_PROTECTION.md)은 작은 예측 조각에 따른 배율 오류, 손가락 소속별 처리와 원본 경계 연결을 보강하고 실제 반환 RGB의 구조를 재검사합니다. `scripts/protect_photo_learned_v1.py`로 새 사진 한 장을 검출 → 학습 모델 → 보호 변환까지 실행할 수 있습니다. 기존 기본 GUI는 유지하며, 모델과 보호 성능은 아직 제품용으로 승인하지 않았습니다.
-
-별도 `--experimental-whole-region-gate` [실험](docs/PHOTO_WHOLE_REGION_GATE_V1.md)은 작은 피치 관측 사각형 대신 실제 처리 마스크 전체의 구조를 검사합니다. 같은 개발 사진 38장에서 적용 사진이 2장에서 5장으로 늘었지만, 전체 지문 검출·보호 성능과 Linux 실행은 아직 검증되지 않았습니다.
-
-이후 새 사진에서 V7의 서로 떨어진 오검출 조각이 다른 지문의 검사 증거를 공유하는 문제가 발견됐습니다. 별도 `--experimental-component-local-gate` [V8 실험](docs/PHOTO_COMPONENT_LOCAL_EVIDENCE_V1.md)은 각 연결 조각 안의 주기 관측과 실제 반환 특징점을 각각 검사합니다. 모델의 손톱 오검출이나 연결된 오검출을 해결한 것은 아니며, 전체 지문 보호와 기본 경로 채택은 계속 미승인 상태입니다.
-
-사람이 검토한 손끝 첫 마디 전체 마스크의 [검증·V4 학습 실험](docs/PHOTO_WHOLE_PAD_TARGET_V4.md)은 기존 GT10과 새 정답 13장을 구분해 그룹별로 검증합니다. 별도 단일 사진 진입점 `scripts/protect_photo_whole_pad_v2.py`와 V9 위치·V10 크기 관측 실험을 제공하며, 기존 기본 경로·임계값·frozen 보호 수학은 유지합니다. 모델과 전체 사진 보호 성능은 계속 미승인 상태입니다.
-
-[V5 클래스 가중치 실험](docs/PHOTO_WHOLE_PAD_BALANCED_V5.md)은 과도한 영역 확장과 개발 교차검증 회귀로 기본 경로에 채택하지 않았습니다. [V6 전체 문맥 실험](docs/PHOTO_WHOLE_PAD_CONTEXT_V6.md)은 정답 없이 얻은 전체 body 영상의 고정 인코더 특징과 국소 타일을 결합해 학습 자료 13장에서 IoU 0.8976과 8장의 실제 변환을 확인했습니다. 다만 그룹 검증 IoU는 0.4836으로 회귀했고 5장은 미적용이므로 기본 경로에 채택하지 않았습니다. 별도 `scripts/protect_photo_whole_pad_context_v4.py`를 제공하며, 기존 보호 수학·품질 임계값을 유지합니다. 새 독립 촬영 그룹의 검증과 전체 지문 보호 성능 확인이 필요합니다.
-
-[방향 잡음 분리 간격 관측 실험](docs/PHOTO_ORIENTATION_SEPARATED_PITCH_V1.md)은 V10의 간격 관측 실패 때만 방향 계산용 필터와 원본 주기 측정을 분리합니다. 문제 사진의 간격 관측은 회복했지만 후속 특징점 검사에서 거절되므로 실제 보호 완료로 보고하지 않습니다. 별도 `scripts/protect_photo_whole_pad_context_noise_v1.py`로 실행하며 V6 모델·기존 수치 기준·frozen 수학·기본 경로는 보존합니다.
-
-[최종 반환 RGB 판정 실험](docs/PHOTO_NATIVE_RETURN_DECISION_V1.md)은 중간 영상의 특징점 9개 때문에 006의 최종 이미지 검사가 생략되던 문제를 별도 V12 경로에서 해결합니다. 같은 후보를 원본 해상도로 복원한 뒤 기존 검사에서 13→12개로 통과하고 실제 변환본이 반환됐습니다. `scripts/protect_photo_whole_pad_context_native_v1.py`로 실행하며 V6 모델·수치 기준·렌더러 수학·기본 경로는 보존합니다. 기존 working/native 이중 판정과 동등한 정책은 아니며 독립 보호 성능은 미검증입니다.
-
-V12에서 기존 평가 사진을 다시 처리하려면 `--development-replay`를 명시합니다. 로컬 Native Test 실행기는 개발 재테스트 모드로 실행하며 결과에 독립 평가가 아님을 기록합니다. CLI 기본값과 실행기의 `-StrictEvaluation`은 기존 사진 중복 차단을 유지합니다.
-
-[PHOTO pad refinement 학습 준비](docs/PAD_REFINEMENT_TRAINING.md): 지정된 10개 annotation을 검증하고 coarse-guided crop 27개와 source 단위 5-fold 학습 코드를 준비했습니다. 학습과 최종 평가는 완료됐으나 GT7 IoU 0.4149, coverage 3/10으로 회귀하여 모델을 거절했습니다. 기본 inference에는 사용하지 않습니다.
-
-[Refinement 최종 학습·GT7 결과](results/pad_refinement_final_summary.md): pretrained encoder 확보 후 고정 5-fold와 최종 13 epoch 학습을 완료했습니다. GT7 macro IoU 0.4149, coverage 3/10으로 coarse baseline보다 나빠져 모델을 채택하지 않았습니다. 보호 변환에는 연결하지 않았으며 GT7을 보고 설정을 바꾸거나 재학습하지 않았습니다.
-
-## Experimental coarse PHOTO integration
-
-The unapproved COLFISPOOF body/distal path can be exercised explicitly with
-`protect_photo_coarse_experimental.py`; it does not replace the default API.
-See [PHOTO_COARSE_EXPERIMENTAL.md](docs/PHOTO_COARSE_EXPERIMENTAL.md) for
-source-bound private semantic caches, native-coordinate compositing, runtime
-preparation and the complete 10-run benchmark. Detector and production approval
-remain false; the rejected refinement model is not used.
-
-An additional opt-in [external observed pitch v1 experiment](docs/PHOTO_EXTERNAL_PITCH_V1.md)
-provides a versioned ACF/FFT evidence contract. It preserves frozen v4 and uses
-an unchanged lower-level renderer; its output is not equivalent to the frozen
-natural_auto_04/boundaryblend_02 baseline. Production approval remains false.
-
-## Unified fail-closed development system
-
-[현재 구조·quality gate·독립 평가 준비·GUI·완료 제한](docs/FAIL_CLOSED_SYSTEM.md)을 참고하세요.
-`protect_image()`와 공통 CLI는 자동 routing 후 success/partial_success/rejected를 반환합니다.
-제공된 Windows matrix와 GUI smoke는 검증됐으며 [Windows parity 기록](docs/WINDOWS_PARITY_COMPATIBILITY.md)을 따릅니다. PHOTO detector/production 승인과 최종 독립 보호 성능 완료는 별도이며 PROJECT_COMPLETE=false입니다.
-
-### PHOTO adapter memory safety
-
-The unified PHOTO path now uses `photo_coarse_adapter_v2` with deterministic pre-allocation bounds. Pathological working-image requests return unchanged RGB and `adapter_memory_limit_exceeded`; no detector/pitch/feature threshold or frozen renderer formula is changed. Historical independent reports stay frozen. See [memory safety contract](docs/PHOTO_ADAPTER_MEMORY_SAFETY.md) and [post-holdout operational validation](results/post_holdout_adapter_safety_summary.md). This safety fix does not approve PHOTO detection or production protection.
+구체적인 순서, 완료 조건, 재현 명령과 오류 대응은 [HANDOFF_KO.md](HANDOFF_KO.md)에 정리했습니다.
