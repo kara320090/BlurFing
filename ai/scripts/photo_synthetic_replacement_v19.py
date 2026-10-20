@@ -16,6 +16,7 @@ from photo_synthetic_replacement_v2 import geometry
 from photo_synthetic_replacement_v6 import smoothstep
 from photo_rejection_resolution_v1 import pixel_hash
 
+MAX_REUSED_BASE_BYTES = 64 * 1024 * 1024
 
 def organic_ridges(gu,gv,width,length,seed):
     rng=np.random.default_rng(seed ^ 0xAB100)
@@ -40,7 +41,7 @@ def organic_ridges(gu,gv,width,length,seed):
 
 
 def render(rgb,mask,labels,*,seed=None):
-    prepared={}
+    prepared={};bases=[];cached_bytes=0
     def prepare(pixels,u,v,width,length):
         base,meta=photographic_skin(pixels,u,v,width,length)
         prepared['curves']=meta['macro_creases']['curves']
@@ -48,17 +49,29 @@ def render(rgb,mask,labels,*,seed=None):
     def shade(local,u,v,width,length,child,stats,base):
         return coupled_material(local,u,v,width,length,child,stats,base,prepared['curves'],
             ridge_fn=organic_ridges,micro_fn=quiet_micro,light_fn=photographic_light)
+    def boundary(base,pixels,u,v,width,length,local):
+        nonlocal cached_bytes
+        base,detail=boundary_ribbon(base,pixels,u,v,width,length,local)
+        # Keep only this invocation's already computed field. A bounded cache
+        # avoids recomputing the same fit during band completion.
+        if cached_bytes+base.nbytes<=MAX_REUSED_BASE_BYTES:
+            bases.append(base.copy());cached_bytes+=base.nbytes
+        else:
+            bases.append(None)
+        return base,detail
     result,meta=render_core(rgb,mask,labels,seed=seed,version='v19',base_fn=prepare,
-        boundary_fn=boundary_ribbon,material_fn=shade)
+        boundary_fn=boundary,material_fn=shade)
     meta['macro_crease_count']=sum(len(r['color_field']['macro_creases']['curves']) for r in meta['regions'])
-    for region in meta['regions']:
+    for index,region in enumerate(meta['regions']):
         target=labels==region['region_id'];y,x,u,v,width,length=geometry(target)
         local=target[y.min():y.max()+1,x.min():x.max()+1]
         wanted,style=observe(rgb[target],local,u,v,width,length)
         existing,_=observe(result[target],local,u,v,width,length)
         gains=missing_gains(wanted,existing)
-        base,_=photographic_skin(rgb[target],u,v,width,length)
-        base,_=boundary_ribbon(base,rgb[target],u,v,width,length,local)
+        base=bases[index];bases[index]=None
+        if base is None:
+            base,_=photographic_skin(rgb[target],u,v,width,length)
+            base,_=boundary_ribbon(base,rgb[target],u,v,width,length,local)
         generated=(result[target].astype(float)-base) @ np.array([.299,.587,.114])
         detail=equalize_generated(generated,local,u,v,gains)
         limit=4*np.linalg.norm(sample_style(wanted,u,v),axis=1)

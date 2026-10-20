@@ -104,7 +104,9 @@ def apply_candidates(rgb, labels, boundary_mask, *, seed=None, observer=observe)
         evidence.append(dict(region_id=rid,**observation))
         rows.append(dict(region_id=rid,automatic_decision=observation['visibility'],
                          reason_code=observation['reason'],status='pending_render' if rid in selected else 'review_required'))
-    returned,applied,report=render_selected_regions(rgb,labels,selected,rows,seed=seed,appearance='junction_v23')
+    from photo_junction_fit_runtime_v1 import fit_session
+    with fit_session():
+        returned,applied,report=render_selected_regions(rgb,labels,selected,rows,seed=seed,appearance='junction_v23')
     # The common renderer has no authority to assign human provenance.
     report.update(version='automatic_synthetic_v23_v1',selection_basis=POLICY,
                   human_reviewed=False,evidence=evidence,automatic_visibility_approved=False)
@@ -221,7 +223,8 @@ def run(source, output, *, photo_model, consumed_registry, request_id, developme
         (output/'INCOMPLETE.txt').unlink()
         return target
     proposal=output/'proposal';proposal.mkdir()
-    propose(source,photo_model,consumed_registry,proposal,allow_development_replay=development_replay)
+    propose(source,photo_model,consumed_registry,proposal,
+            allow_development_replay=development_replay,minimal_artifacts=True)
     binding,_=guard.json(proposal/'proposal.private.json')
     for name in ('proposal.png','boundary_refined_mask.png'):
         guard.pin(proposal/name)

@@ -108,7 +108,7 @@ def review_candidates(baseline, refined, unanchored_owners):
         whole_finger_coverage_verified=False)
 
 
-def propose(source, model, registry, output, *, allow_development_replay=True):
+def propose(source, model, registry, output, *, allow_development_replay=True, minimal_artifacts=False):
     """Executed in a separate process: existing detector policies stay unchanged."""
     from protect_photo_pitch_free_v1 import run
     from photo_crease_native_adapter_v1 import prepare
@@ -116,11 +116,14 @@ def propose(source, model, registry, output, *, allow_development_replay=True):
     from pad_refinement_data_contract_v2 import read_body, read_mask, native_shape
     from photo_consumed_replay_v1 import development_replay
     import pad_refinement_tiles_v3 as tiles
+    if type(minimal_artifacts) is not bool:
+        raise ValueError('minimal_artifacts_flag_must_be_boolean')
     rgb, _ = canonical_rgb(source)
     detection = output / 'detection'
     _, report = run(source, model, registry, detection, development_replay=allow_development_replay,
                     include_observed_pose=True, include_coarse_pad=True,
-                    complete_holes=True, allow_scanner=True, rounded_pads=True)
+                    complete_holes=True, allow_scanner=True, rounded_pads=True,
+                    candidate_only=minimal_artifacts)
     with Image.open(detection / 'redacted_mask.png') as image:
         mask = np.asarray(image) > 0
     baseline = mask.copy()

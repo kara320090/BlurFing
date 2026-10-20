@@ -11,6 +11,7 @@ from scipy.special import ndtr
 from scipy.spatial import cKDTree
 from photo_silhouette_appearance_v21 import _curve, _sample
 from photo_synthetic_replacement_v6 import smoothstep
+from photo_junction_fit_runtime_v1 import fit_patches
 
 VERSION = 'coarse_2D_junction_v23_experimental'
 MAX_CROP_PIXELS = 8*1024*1024
@@ -152,13 +153,17 @@ def refine(source, generated, permission, width):
     if len(nodes)>MAX_NODES:
         take=np.linspace(0,len(nodes),MAX_NODES,endpoint=False,dtype=int)
         nodes,normals,tangents=nodes[take],normals[take],tangents[take]
-    cells=cell_grid(radius);src=source.astype(np.float32);models=[];positions=[]
+    cells=cell_grid(radius);src=source.astype(np.float32);positions=[];tasks=[];task_nodes=[]
     h,w=permission.shape
     for node,n,t in zip(nodes,normals,tangents):
         pos=node+cells[...,0,None]*n+cells[...,1,None]*t
         if (pos[...,0].min()<0 or pos[...,1].min()<0 or pos[...,0].max()>w-1 or pos[...,1].max()>h-1):
-            positions.append(None);models.append(None);continue
-        positions.append(pos);models.append(fit_patch(_sample(src,pos).mean(axis=1),cells,radius))
+            positions.append(None);continue
+        task_nodes.append(len(positions));positions.append(pos)
+        tasks.append((_sample(src,pos).mean(axis=1),cells,radius))
+    models=[None]*len(positions)
+    for i,model in zip(task_nodes,fit_patches(tasks,fit_patch)):
+        models[i]=model
     valid=np.array([m is not None for m in models])
     meta.update(nodes=len(nodes),supported_nodes=int(valid.sum()),
         crossing_fold_nodes=sum(m is not None and m['kind']=='edge_and_crossing_fold' for m in models))
