@@ -64,4 +64,27 @@ class ExperimentalAutomaticV23Test {
             fail("Missing policy warning accepted")
         } catch(_: IllegalArgumentException) { }
     }
+
+    @Test fun surfaceReplacementIsExplicitlyDisplayedWithoutClaimingRidgeObservation() {
+        val base=response("surface")
+        val value=base.copy(warnings=base.warnings+"PRECAUTIONARY_SURFACE_WITHOUT_RIDGE_CONFIRMATION",
+            regionDisplayBounds=base.regionDisplayBounds.map {
+                if(it.status=="transformed")it.copy(reasonCode="TRANSFORMED_PRECAUTIONARY_SURFACE") else it
+            })
+        val result=ExperimentalPhotoDecoder.decode(value,source,ExperimentalPhotoEngine.SYNTHETIC,"surface",checkMemory=false)
+        assertTrue(result.presentation.detail.contains("지문선 확인 없이"))
+        assertFalse(result.presentation.mayClaimCompleteProtection)
+        assertTrue(result.regions.first { it.status=="transformed" }.userExplanation().contains("확인되지 않음"))
+        assertEquals(1L,result.changedPixels)
+        assertTrue(result.accepted[2*9+1])
+        assertTrue(result.rejected[3*9+5])
+        for(invalid in listOf(value.copy(warnings=base.warnings),
+            value.copy(photoEngine="native_v12",method="photo_native_v12_experimental"))) {
+            try {
+                val engine=ExperimentalPhotoEngine.fromId(invalid.photoEngine)
+                ExperimentalPhotoDecoder.decode(invalid,source,engine,"surface",checkMemory=false)
+                fail("Hidden or foreign-engine surface replacement accepted")
+            } catch(_: IllegalArgumentException) { }
+        }
+    }
 }

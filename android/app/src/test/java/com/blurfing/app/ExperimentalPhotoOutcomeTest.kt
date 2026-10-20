@@ -73,4 +73,13 @@ class ExperimentalPhotoOutcomeTest {
         rejects { show(original.copy(privacyValidated = true)) }; rejects { show(original.copy(productionApproved = true)) }
         rejects { show(original.copy(independentFinalTest = true)) }
     }
+
+    @Test fun surfaceNoticeRequiresConsistentCountsAndSyntheticEngine() {
+        val valid=original.copy(photoEngine="synthetic_v23",precautionaryComponents=1)
+        val result=show(valid,expectedEngine="synthetic_v23")
+        assertTrue(result.detail.contains("1개 영역은 원본 지문선 확인 없이"))
+        assertFalse(result.mayClaimCompleteProtection)
+        rejects { show(valid.copy(precautionaryComponents=2),expectedEngine="synthetic_v23") }
+        rejects { show(original.copy(precautionaryComponents=1)) }
+    }
 }

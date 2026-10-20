@@ -4,6 +4,8 @@ Android에서 **자동 지문 보호 · V23 실험**을 열고 서버를 설정�
 `자동 지문 합성 (V23 · 검증 중)` 모드는 사진을 선택하면 자동으로 전송한다.
 확인하지 못한 영역은 미적용으로 표시한다. 원본을 덮어쓰지 않는다.
 
+2026-10-20 선택 정책 변경: 기본 `surface_v26`은 모델·손 자세·경계가 확인된 손끝을 지문선이 흐려도 합성한다. 원본 지문선 관측은 별도 기록하며 `TRANSFORMED_PRECAUTIONARY_SURFACE` 사유와 `PRECAUTIONARY_SURFACE_WITHOUT_RIDGE_CONFIRMATION` 경고로 구분한다. 서버와 APK를 함께 업데이트하고 서버를 재시작한다. `-ReuseRunning`은 이미 로드된 구버전 서버를 업그레이드하지 않는다. [정책·실행 범위](../ai/docs/PHOTO_SURFACE_POLICY_V26_20261020.md)를 따른다.
+
 PowerShell:
 
 ```powershell

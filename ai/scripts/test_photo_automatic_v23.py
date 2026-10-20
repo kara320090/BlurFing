@@ -9,6 +9,7 @@ import numpy as np
 from photo_automatic_v23 import observe, apply_candidates, transport, ENGINE
 from photo_visibility_reviewed_apply_v1 import pixels
 from photo_experimental_transport_v1 import png
+from photo_automatic_v23 import PRECAUTIONARY_REASON
 
 
 class AutomaticV23Tests(unittest.TestCase):
@@ -66,6 +67,54 @@ class AutomaticV23Tests(unittest.TestCase):
         with patch('photo_automatic_v23.render_selected_regions',side_effect=RuntimeError('render failed')):
             with self.assertRaisesRegex(RuntimeError,'render failed'):
                 apply_candidates(self.rgb,self.labels,self.labels>0,seed=19)
+
+    def test_precautionary_surface_renders_without_fabricating_a_raw_witness(self):
+        rgb=np.full_like(self.rgb,150)
+        surface=self.labels==1
+        returned,applied,report=apply_candidates(rgb,self.labels,self.labels>0,seed=19,
+                                               surface_permission=surface)
+        self.assertTrue(applied[surface].all())
+        self.assertFalse(applied[self.labels==2].any())
+        self.assertFalse(report['evidence'][0]['observed'])
+        self.assertEqual(report['evidence'][0]['visibility'],'uncertain')
+        self.assertFalse(report['human_reviewed'])
+        self.assertEqual(report['precautionary_applied_region_count'],1)
+        self.assertEqual(report['regions'][0]['reason_code'],PRECAUTIONARY_REASON)
+        np.testing.assert_array_equal(returned[~applied],rgb[~applied])
+        content=png(rgb)
+        wire=transport(rgb,returned,self.labels,applied,report,hashlib.sha256(content).hexdigest(),'surface',12)
+        sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'backend'))
+        from experimental_photo_transport_v2 import UploadedPhoto,validate_transport,TransportValidationError
+        upload=UploadedPhoto.decode(content)
+        validate_transport(wire,upload,request_id='surface',engine=ENGINE)
+        warning='PRECAUTIONARY_SURFACE_WITHOUT_RIDGE_CONFIRMATION'
+        self.assertIn(warning,wire['warnings'])
+        hidden=copy.deepcopy(wire);hidden['warnings'].remove(warning)
+        with self.assertRaises(TransportValidationError):
+            validate_transport(hidden,upload,request_id='surface',engine=ENGINE)
+        foreign=copy.deepcopy(wire);foreign.update(photo_engine='native_v12',method='photo_native_v12_experimental')
+        with self.assertRaises(TransportValidationError):
+            validate_transport(foreign,upload,request_id='surface',engine='native_v12')
+
+    def test_surface_permission_must_cover_whole_component_and_cannot_escape_boundary(self):
+        rgb=np.full_like(self.rgb,150)
+        surface=self.labels==1;surface[20,20]=False
+        returned,applied,report=apply_candidates(rgb,self.labels,self.labels>0,seed=19,
+                                               surface_permission=surface)
+        self.assertFalse(applied.any())
+        np.testing.assert_array_equal(returned,rgb)
+        invalid=(self.labels>0).copy();invalid[0,0]=True
+        for permission in (invalid,surface.astype(np.uint8),surface[:-1]):
+            with self.assertRaisesRegex(ValueError,'surface_permission_contract'):
+                apply_candidates(rgb,self.labels,self.labels>0,surface_permission=permission)
+
+    def test_strict_ridge_decision_is_unchanged_when_surface_permission_is_empty(self):
+        old,old_mask,old_report=apply_candidates(self.rgb,self.labels,self.labels>0,seed=19)
+        new,new_mask,new_report=apply_candidates(self.rgb,self.labels,self.labels>0,seed=19,
+                                                surface_permission=np.zeros_like(self.labels,bool))
+        np.testing.assert_array_equal(new,old)
+        np.testing.assert_array_equal(new_mask,old_mask)
+        self.assertEqual(new_report['regions'],old_report['regions'])
 
     def test_ambiguous_input_returns_original_without_running_detector(self):
         from photo_automatic_v23 import run
