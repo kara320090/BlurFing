@@ -108,7 +108,7 @@ def review_candidates(baseline, refined, unanchored_owners):
         whole_finger_coverage_verified=False)
 
 
-def propose(source, model, registry, output, *, allow_development_replay=True, minimal_artifacts=False):
+def propose(source, model, registry, output, *, allow_development_replay=True, minimal_artifacts=False, partial_observed_pose=False):
     """Executed in a separate process: existing detector policies stay unchanged."""
     from protect_photo_pitch_free_v1 import run
     from photo_crease_native_adapter_v1 import prepare
@@ -123,11 +123,12 @@ def propose(source, model, registry, output, *, allow_development_replay=True, m
     _, report = run(source, model, registry, detection, development_replay=allow_development_replay,
                     include_observed_pose=True, include_coarse_pad=True,
                     complete_holes=True, allow_scanner=True, rounded_pads=True,
-                    candidate_only=minimal_artifacts)
+                    candidate_only=minimal_artifacts,partial_observed_pose=partial_observed_pose)
     with Image.open(detection / 'redacted_mask.png') as image:
         mask = np.asarray(image) > 0
     baseline = mask.copy()
     unanchored = np.zeros_like(mask)
+    owner_binding = None
     if report.get('input_type') == 'PHOTO' and report.get('rounded_pad_metadata'):
         manifest = json.loads((detection / 'private/dataset/manifest.input.private.json').read_text('utf-8'))
         record = manifest['sources'][0]
@@ -139,8 +140,16 @@ def propose(source, model, registry, output, *, allow_development_replay=True, m
         with development_replay(reg, [tiles.image_identity(source),
                                      tiles.image_identity(Path(record['source_path']))], enabled=allow_development_replay):
             derived, mask, boundary, pose = prepare(record, rgb, before, report['rounded_pad_metadata'], hand,
-                                                    output / 'crease')
+                                                    output / 'crease',partial_observed_pose=partial_observed_pose)
             rows = boundary['candidates']
+            if partial_observed_pose and pose is not None:
+                owners = pose['owner_labels']
+                selected_labels = [a['label'] for a in pose['axes']]
+                # Keep V6 suggestions for unselected fingers visible for
+                # review, without granting them automatic permissions.
+                unanchored |= read_body(derived) & ~np.isin(owners, selected_labels)
+                Image.fromarray(owners).save(output / 'pose_owners.png')
+                owner_binding = dict(pixel_sha256=pixels(owners), selected_labels=selected_labels)
             if any(row.get('unanchored_candidate_excluded') for row in rows):
                 body = read_body(derived)
                 tip = read_mask(derived['tip_path'], derived['tip_sha256'], native_shape(derived))
@@ -158,6 +167,7 @@ def propose(source, model, registry, output, *, allow_development_replay=True, m
     json_write(output / 'proposal.private.json', dict(
         source_sha256=file_hash(source), input_type=report.get('input_type'),
         candidate_selection=selection,
+        partial_pose=owner_binding,
         candidate_only=True, human_reviewed=False, independent_validation=False))
 
 

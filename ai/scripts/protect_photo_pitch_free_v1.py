@@ -18,7 +18,7 @@ from photo_pitch_free_redaction_v1 import redact,pixel_hash
 VERSION='single_photo_pitch_free_v1_experimental'
 
 
-def run(source,model,registry_path,output,*,photo_semantics=None,development_replay=False,include_observed_pose=False,include_coarse_pad=False,complete_holes=False,allow_scanner=False,rounded_pads=False,candidate_only=False):
+def run(source,model,registry_path,output,*,photo_semantics=None,development_replay=False,include_observed_pose=False,include_coarse_pad=False,complete_holes=False,allow_scanner=False,rounded_pads=False,candidate_only=False,partial_observed_pose=False):
     if type(development_replay) is not bool:raise ValueError('development_replay_flag_must_be_boolean')
     if type(include_observed_pose) is not bool:raise ValueError('include_observed_pose_flag_must_be_boolean')
     if type(include_coarse_pad) is not bool:raise ValueError('include_coarse_pad_flag_must_be_boolean')
@@ -26,6 +26,8 @@ def run(source,model,registry_path,output,*,photo_semantics=None,development_rep
     if type(allow_scanner) is not bool:raise ValueError('allow_scanner_flag_must_be_boolean')
     if type(rounded_pads) is not bool:raise ValueError('rounded_pads_flag_must_be_boolean')
     if type(candidate_only) is not bool:raise ValueError('candidate_only_flag_must_be_boolean')
+    if type(partial_observed_pose) is not bool:raise ValueError('partial_observed_pose_flag_must_be_boolean')
+    if partial_observed_pose and not include_observed_pose:raise ValueError('partial_pose_requires_observed_pose')
     source,model,registry_path,output=map(Path,(source,model,registry_path,output))
     if output.exists() or output.is_symlink():raise FileExistsError('fresh_output_required')
     # Early contract checks and pure redaction tools do not require Torch.
@@ -91,15 +93,25 @@ def run(source,model,registry_path,output,*,photo_semantics=None,development_rep
             '--model',hand_runtime[1],'--output',str(worker.resolve())],shell=False,check=True,timeout=300,
             stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
         hand_record,worker_sha=tiles.json_snapshot(worker)
-        try:geometry=geometry_from_worker(record,rgb,hand_record)
+        detail=None
+        try:
+            if partial_observed_pose:
+                from photo_partial_pose_v25 import geometry_from_worker as partial_geometry
+                geometry,detail=partial_geometry(record,rgb,hand_record)
+            else:
+                geometry=geometry_from_worker(record,rgb,hand_record)
         except ValueError as error:
             if str(error)!='pose_exactly_one_observed_hand_required':raise
             pose_metadata=dict(status=('no_single_observed_hand_base_mask_retained' if include_coarse_pad
                                        else 'no_single_observed_hand_V6_only'),reason=str(error))
         else:
-            pose_geometry=geometry
-            pose=geometry['permission_labels']>0;added=int((pose&~mask).sum());mask=mask|pose
-            pose_metadata=dict(status='unreviewed_pose_union',added_pixels=added,anatomical_boundary_verified=False)
+            if geometry is None:
+                pose_metadata=dict(status='no_semantically_anchored_pose_digits_base_retained',partial_pose=detail)
+            else:
+                pose_geometry=geometry
+                pose=geometry['permission_labels']>0;added=int((pose&~mask).sum());mask=mask|pose
+                pose_metadata=dict(status='unreviewed_pose_union',added_pixels=added,anatomical_boundary_verified=False,
+                                   **(dict(partial_pose=detail) if partial_observed_pose else {}))
         tiles.unchanged(worker,worker_sha)
         if hand.digest(hand_runtime[1])!=hand.MODEL_SHA256:raise ValueError('official_hand_model_SHA256_mismatch')
         detector_policy=('V6_with_isolated_coarse_completion_union_observed_pose_if_available' if include_coarse_pad

@@ -163,7 +163,14 @@ def rounded_pads(base, coarse, body, tip, *, pose_geometry=None):
         if owners.shape != body.shape or owners.dtype.kind not in 'iu' or not np.array_equal(owners > 0, body):
             raise ValueError('rounded_pose_partition_contract')
         axes = pose_geometry['axes']
-        if [a['label'] for a in axes] != [1, 2, 3, 4, 5] or np.any(owners > 5):
+        from photo_partial_pose_v25 import VERSION as PARTIAL_POSE_VERSION
+        partial = pose_geometry.get('metadata', {}).get('version') == PARTIAL_POSE_VERSION
+        axis_labels = [a['label'] for a in axes]
+        valid_labels = (axis_labels == sorted(set(axis_labels)) and bool(axis_labels)
+                        and all(type(i) is int and 1 <= i <= 5 for i in axis_labels)
+                        and (set(axis_labels) <= set(np.unique(owners)) - {0} if partial else
+                             set(np.unique(owners)) - {0} == set(axis_labels)))
+        if ((not partial and axis_labels != [1, 2, 3, 4, 5]) or not valid_labels or np.any(owners > 5)):
             raise ValueError('rounded_pose_digit_contract')
         contexts = [dict(candidate_id='pose-'+a['digit'], body=owners == a['label'],
             joint=a['DIP_or_IP_native_xy'], tip=a['tip_native_xy']) for a in axes]

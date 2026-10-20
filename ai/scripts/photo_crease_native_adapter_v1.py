@@ -38,7 +38,7 @@ def verify_derived_semantics(source,semantic,purpose):
     if not np.array_equal(tip,parent_tip&body):raise ValueError('RGB_body_tip_lineage_mismatch')
 
 
-def prepare(source,rgb,before,rounding,worker,output):
+def prepare(source,rgb,before,rounding,worker,output,*,partial_observed_pose=False):
     """Preserve original assets and write separately hash-bound derived masks."""
     verify_source(source,'inference')
     if not np.array_equal(rgb,read_source_rgb(source['source_path'],source['source_sha256'])):
@@ -60,9 +60,16 @@ def prepare(source,rgb,before,rounding,worker,output):
         GT_used=False,anatomical_boundary_verified=False)
     (output/'semantics.json').write_text(json.dumps(semantic,indent=2),encoding='utf-8')
     derived['semantics_sha256']=digest(output/'semantics.json');verify_source(derived,'inference')
-    pose=geometry_from_worker(derived,rgb,worker) if worker is not None and worker['hand_count']==1 else None
+    if type(partial_observed_pose) is not bool:raise ValueError('partial_observed_pose_flag_must_be_boolean')
+    pose_detail=None
+    if partial_observed_pose and worker is not None:
+        from photo_partial_pose_v25 import geometry_from_worker as partial_geometry
+        pose,pose_detail=partial_geometry(derived,rgb,worker)
+    else:
+        pose=geometry_from_worker(derived,rgb,worker) if worker is not None and worker['hand_count']==1 else None
     coarse=estimate(refined,tip,preserve_candidates=True)['mask']
     mask,metadata=crease_pads(rgb,before&refined,coarse,refined,tip,pose_geometry=pose)
     (output/'source.private.json').write_text(json.dumps(derived,indent=2),encoding='utf-8')
     metadata['RGB_edge_refinement']=edge
+    if partial_observed_pose:metadata['partial_pose']=pose_detail
     return derived,mask,metadata,pose

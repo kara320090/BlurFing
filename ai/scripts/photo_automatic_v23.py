@@ -133,6 +133,13 @@ def recover_proposal(rgb, mask, boundary, proposal):
     failed={r['candidate_id'] for r in metadata['candidates'] if r.get('unanchored_candidate_excluded')}
     if not failed:
         return mask,boundary,dict(version='local_axis_observed_crease_v24',regions=[])
+    if metadata.get('axis_source') == 'observed_pose_IP_DIP_to_TIP':
+        # Pose digit owners and estimator owners have different identities.
+        # An unresolved pose cap stays unapproved; never look it up as an
+        # estimator candidate or discard already valid neighbouring digits.
+        return mask,boundary,dict(version='local_axis_observed_crease_v24',regions=[
+            dict(candidate_id=identity,recovered=False,reason='observed_pose_boundary_unresolved')
+            for identity in sorted(failed)])
     source=json.loads((Path(proposal)/'crease/source.private.json').read_text('utf-8'))
     verify_source(source,'inference')
     if source['source_RGB_sha256']!=pixels(rgb):
@@ -224,7 +231,7 @@ def run(source, output, *, photo_model, consumed_registry, request_id, developme
         return target
     proposal=output/'proposal';proposal.mkdir()
     propose(source,photo_model,consumed_registry,proposal,
-            allow_development_replay=development_replay,minimal_artifacts=True)
+            allow_development_replay=development_replay,minimal_artifacts=True,partial_observed_pose=True)
     binding,_=guard.json(proposal/'proposal.private.json')
     for name in ('proposal.png','boundary_refined_mask.png'):
         guard.pin(proposal/name)
@@ -235,7 +242,15 @@ def run(source, output, *, photo_model, consumed_registry, request_id, developme
         raise ValueError('automatic_proposal_binding')
     mask,boundary,boundary_report=recover_proposal(rgb,mask,boundary,proposal)
     Image.fromarray(mask.astype(np.uint8)*255).save(output/'candidate_mask.png')
-    labels,count=ndimage.label(mask,np.ones((3,3),np.uint8))
+    if binding.get('partial_pose') is not None:
+        from photo_partial_pose_v25 import partition_candidates
+        guard.pin(proposal/'pose_owners.png')
+        with Image.open(proposal/'pose_owners.png') as im: owners=np.array(im)
+        if pixels(owners)!=binding['partial_pose']['pixel_sha256']:
+            raise ValueError('automatic_pose_owner_binding')
+        labels,count=partition_candidates(mask,owners,binding['partial_pose']['selected_labels'],maximum=MAX_CANDIDATES)
+    else:
+        labels,count=ndimage.label(mask,np.ones((3,3),np.uint8))
     if count>MAX_CANDIDATES:
         raise ValueError('automatic_candidate_limit')
     labels=labels.astype(np.uint16)
