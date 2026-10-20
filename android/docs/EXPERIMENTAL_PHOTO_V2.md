@@ -1,5 +1,7 @@
 # 사진 AI 실험 연결
 
+2026-10-20: V2 설정 저장·사진 없는 서버 연결 확인·오류 안내, 카메라 입력, 같은 원본 영역 확대·나란히 비교, 검증 PNG 공유, private cache 복원을 연결했다. [구현 범위와 외부 확인 항목](../../docs/android-completion-20261020.md)을 따른다. 학교 서버 실제 연결은 다음 날 확인하며, 준비 응답을 실제 AI 처리·성능 검증으로 표시하지 않는다.
+
 사진 선택 화면의 **사진 AI 보호 실험 (미승인)**에서 별도 화면을 연다. 기존 V1 Gaussian/mock 요청·결과·타임아웃은 변경하지 않는다. V12 학습 후보, V13 기하 후보, V14 손 자세 후보를 명시적으로 선택하며 다른 엔진이나 mock으로 자동 전환하지 않는다.
 
 `POST /v2/photo/protect` multipart는 `image`, `request_id`, `method`, `scope=automatic_photo`, `strength=0.5`만 전송한다. `method`는 `photo_native_v12_experimental`, `photo_distal_v13_geometry_experimental`, `photo_pose_v14_geometry_experimental` 중 하나다. V2 서버를 별도로 구성해야 한다.
