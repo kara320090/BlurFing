@@ -24,8 +24,9 @@ import java.util.concurrent.TimeUnit
 @Config(sdk=[28])
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class ExperimentalPhotoHttpLifecycleTest {
-    @Test fun experimentUsesItsSeparateV2DefaultPortAndKeepsV1Default() {
-        assertEquals("http://10.0.2.2:8001",ExperimentalPhotoState().serverAddress)
+    @Test fun experimentDefaultsToPublicOriginAndKeepsLocalDevelopmentAddresses() {
+        assertEquals(com.blurfing.app.repository.BackendAddress.DEFAULT_SERVER,ExperimentalPhotoState().serverAddress)
+        assertEquals("http://10.0.2.2:8001",EXPERIMENTAL_PHOTO_EMULATOR_DEFAULT)
         assertEquals("http://10.0.2.2:8000",com.blurfing.app.repository.BackendAddress.EMULATOR_DEFAULT)
     }
     private val fixtures=ExperimentalPhotoDecoderTest()

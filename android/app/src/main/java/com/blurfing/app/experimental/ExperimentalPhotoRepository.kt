@@ -46,8 +46,20 @@ class ExperimentalPhotoRepository(
     override fun cancel(requestId: String) { calls.remove(requestId)?.cancel() }
     override suspend fun readiness(): ExperimentalServerReadiness = withContext(Dispatchers.IO) {
         val probeClient = client.newBuilder().callTimeout(30,TimeUnit.SECONDS).readTimeout(30,TimeUnit.SECONDS).build()
-        val call = probeClient.newCall(Request.Builder().url("$baseUrl/ready").get().build())
-        val text = suspendCancellableCoroutine<String> { continuation ->
+        // Nginx routes V2 separately from V1's /ready. A standalone V2 server
+        // has only /ready; use it only when the namespaced route does not exist.
+        val text = readReadiness(probeClient,"/v2/ready",allowMissing=true)
+            ?: requireNotNull(readReadiness(probeClient,"/ready",allowMissing=false))
+        coroutineContext.ensureActive()
+        try {
+            ExperimentalJsonGuard.verify(text)
+            json.decodeFromString<ExperimentalServerReadiness>(text).verify()
+        } catch(e: Exception) { throw ExperimentalPhotoException("사진 AI V2 준비 응답을 확인하지 못했습니다. 서버 주소와 버전을 확인해 주세요.",e) }
+    }
+    private suspend fun readReadiness(probeClient: OkHttpClient,path: String,allowMissing: Boolean): String? {
+        coroutineContext.ensureActive()
+        val call = probeClient.newCall(Request.Builder().url("$baseUrl$path").get().build())
+        return suspendCancellableCoroutine<String?> { continuation ->
             continuation.invokeOnCancellation { call.cancel() }
             call.enqueue(object: Callback {
                 override fun onFailure(call: Call,e: IOException) {
@@ -56,6 +68,7 @@ class ExperimentalPhotoRepository(
                 override fun onResponse(call: Call,response: Response) {
                     try {
                         val value=response.use { r ->
+                            if(allowMissing && r.code==404)return@use null
                             if(!r.isSuccessful)throw experimentalHttpFailure(r.code)
                             require(r.header("Content-Type")?.substringBefore(';')?.trim()?.lowercase()=="application/json")
                             val body=requireNotNull(r.body)
@@ -77,11 +90,6 @@ class ExperimentalPhotoRepository(
                 }
             })
         }
-        coroutineContext.ensureActive()
-        try {
-            ExperimentalJsonGuard.verify(text)
-            json.decodeFromString<ExperimentalServerReadiness>(text).verify()
-        } catch(e: Exception) { throw ExperimentalPhotoException("사진 AI V2 준비 응답을 확인하지 못했습니다. 서버 주소와 버전을 확인해 주세요.",e) }
     }
     override suspend fun protect(source: ExperimentalPhotoUpload,engine: ExperimentalPhotoEngine,requestId: String): ValidatedExperimentalPhoto = withContext(Dispatchers.IO) {
         require(requestId.isNotBlank() && requestId.length<=200 && requestId.all { it.code in 33..126 })

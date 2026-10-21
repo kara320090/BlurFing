@@ -24,7 +24,7 @@ import kotlin.coroutines.coroutineContext
 data class ExperimentalPhotoState(
     val source: ExperimentalPhotoUpload?=null,val result: ValidatedExperimentalPhoto?=null,
     val engine: ExperimentalPhotoEngine=ExperimentalPhotoEngine.NATIVE,
-    val serverAddress: String=EXPERIMENTAL_PHOTO_EMULATOR_DEFAULT,
+    val serverAddress: String=ExperimentalPhotoSettings.defaultAddress,
     val busy: Boolean=false,val importing: Boolean=false,val saving: Boolean=false,
     val awaitingSave: Boolean=false,val message: String?=null,
     val savedResultRequestId: String?=null,

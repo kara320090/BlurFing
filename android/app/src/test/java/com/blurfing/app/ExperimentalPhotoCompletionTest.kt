@@ -6,6 +6,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModelStore
 import com.blurfing.app.utils.CameraCaptureFiles
 import com.blurfing.app.utils.ComparisonCrop
+import com.blurfing.app.repository.BackendAddress
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.resetMain
@@ -65,7 +66,7 @@ class ExperimentalPhotoCompletionTest {
         context.getSharedPreferences("experimental-photo-settings",0).edit().putInt("address",123).commit()
         val loaded=ExperimentalPhotoSettings(context).load()
         assertEquals(ExperimentalPhotoEngine.NATIVE,loaded.engine)
-        assertEquals(EXPERIMENTAL_PHOTO_EMULATOR_DEFAULT,loaded.address)
+        assertEquals(BackendAddress.DEFAULT_SERVER,loaded.address)
     }
     @Test fun unavailableEngineBlocksUploadAndAddressEditClearsReadiness() {
         val model=vm();model.select(context,Uri.parse("content://synthetic/photo"));model.setEngine(ExperimentalPhotoEngine.POSE)

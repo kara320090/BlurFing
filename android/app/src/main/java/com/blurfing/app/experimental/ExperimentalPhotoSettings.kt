@@ -1,9 +1,9 @@
 package com.blurfing.app.experimental
 
 import android.content.Context
-import com.blurfing.app.BuildConfig
+import com.blurfing.app.repository.BackendAddress
 
-/** V2 has its own endpoint and engine; never inherit V1's tunnel or mock settings. */
+/** V2 shares the public origin, but keeps its own settings, endpoints and engine contract. */
 internal class ExperimentalPhotoSettings(context: Context) {
     private val preferences = context.applicationContext.getSharedPreferences("experimental-photo-settings", Context.MODE_PRIVATE)
     data class Value(val address: String, val engine: ExperimentalPhotoEngine)
@@ -16,7 +16,7 @@ internal class ExperimentalPhotoSettings(context: Context) {
         preferences.edit().putString("address", address.take(2048)).putString("engine", engine.id).apply()
     }
     companion object {
-        val defaultAddress: String get() = if (BuildConfig.DEBUG) EXPERIMENTAL_PHOTO_EMULATOR_DEFAULT else ""
+        val defaultAddress: String get() = BackendAddress.DEFAULT_SERVER
     }
 }
 

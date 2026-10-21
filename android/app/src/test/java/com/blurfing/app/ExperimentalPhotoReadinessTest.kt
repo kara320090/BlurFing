@@ -10,7 +10,10 @@ import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import android.content.Context
+import com.blurfing.app.repository.BackendAddress
 import java.util.concurrent.TimeUnit
 
 @RunWith(RobolectricTestRunner::class)
@@ -28,9 +31,55 @@ class ExperimentalPhotoReadinessTest {
             val repo=ExperimentalPhotoRepository(server.url("/photo/").toString(),allowLocalHttp=true)
             assertEquals(ready,repo.readiness())
             val request=server.takeRequest(2,TimeUnit.SECONDS)!!
-            assertEquals("GET",request.method);assertEquals("/photo/ready",request.path)
+            assertEquals("GET",request.method);assertEquals("/photo/v2/ready",request.path)
             assertEquals(0L,request.bodySize);assertEquals(1,server.requestCount)
         }
+    }
+    @Test fun standaloneV2UsesLegacyReadyOnlyAfterNamespaced404()=runBlocking {
+        MockWebServer().use { server ->
+            server.start()
+            server.enqueue(MockResponse().setResponseCode(404))
+            server.enqueue(response(Json.encodeToString(ready)))
+            val repo=ExperimentalPhotoRepository(server.url("/photo/").toString(),allowLocalHttp=true)
+            assertEquals(ready,repo.readiness())
+            assertEquals("/photo/v2/ready",server.takeRequest(2,TimeUnit.SECONDS)!!.path)
+            assertEquals("/photo/ready",server.takeRequest(2,TimeUnit.SECONDS)!!.path)
+            assertEquals(2,server.requestCount)
+        }
+    }
+    @Test fun unavailableAiNeverFallsBackToMockReadiness()=runBlocking {
+        MockWebServer().use { server ->
+            server.start()
+            server.enqueue(MockResponse().setResponseCode(503))
+            server.enqueue(response("{\"status\":\"ready\"}"))
+            val repo=ExperimentalPhotoRepository(server.url("/").toString(),allowLocalHttp=true)
+            assertTrue(rejects { repo.readiness() }.contains("준비되지"))
+            assertEquals("/v2/ready",server.takeRequest(2,TimeUnit.SECONDS)!!.path)
+            assertEquals(1,server.requestCount)
+        }
+    }
+    @Test fun v1ReadyIsNotAcceptedAsAnAiServer()=runBlocking {
+        MockWebServer().use { server ->
+            server.start()
+            server.enqueue(MockResponse().setResponseCode(404))
+            server.enqueue(response("{\"status\":\"ready\"}"))
+            val repo=ExperimentalPhotoRepository(server.url("/").toString(),allowLocalHttp=true)
+            assertTrue(rejects { repo.readiness() }.contains("V2"))
+            assertEquals(2,server.requestCount)
+        }
+    }
+    @Test fun defaultUsesTunnelAndKeepsAnExplicitlySavedServer() {
+        val context=RuntimeEnvironment.getApplication()
+        val preferences=context.getSharedPreferences("experimental-photo-settings",Context.MODE_PRIVATE)
+        preferences.edit().clear().commit()
+        try {
+            val settings=ExperimentalPhotoSettings(context)
+            assertEquals(BackendAddress.DEFAULT_SERVER,settings.load().address)
+            assertEquals(BackendAddress.DEFAULT_SERVER,ExperimentalPhotoState().serverAddress)
+            settings.save(EXPERIMENTAL_PHOTO_EMULATOR_DEFAULT,ExperimentalPhotoEngine.SYNTHETIC)
+            assertEquals(EXPERIMENTAL_PHOTO_EMULATOR_DEFAULT,settings.load().address)
+            assertEquals(ExperimentalPhotoEngine.SYNTHETIC,settings.load().engine)
+        } finally { preferences.edit().clear().commit() }
     }
     @Test fun invalidContractApprovalEngineListsAndDuplicateJsonAreRejected()=runBlocking {
         MockWebServer().use { server ->
@@ -66,6 +115,7 @@ class ExperimentalPhotoReadinessTest {
             server.start();val repo=ExperimentalPhotoRepository(server.url("/").toString(),allowLocalHttp=true)
             val expected=mapOf(404 to "V2",429 to "다른 사진",503 to "준비되지",504 to "시간",413 to "용량",403 to "접근 권한")
             expected.forEach { (code,hint) ->
+                if(code==404)server.enqueue(MockResponse().setResponseCode(404))
                 server.enqueue(MockResponse().setResponseCode(code).setBody("PRIVATE_SERVER_PATH /home/private/token"))
                 val message=rejects { repo.readiness() };assertTrue(message.contains(hint));assertFalse(message.contains("PRIVATE_SERVER_PATH"))
             }
