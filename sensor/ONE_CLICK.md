@@ -8,7 +8,7 @@ Android 앱이 사용하는 학교 Ubuntu·HTTPS 주소를 Windows 프로그램�
 | 센서 준비 확인 | `/scanner/ready` |
 | 센서 처리·SourceAFIS 매칭 | `/scanner/v1/scanner/compare` |
 
-Windows 기본 주소는 `https://현재-Android-호스트/scanner/`다. SSH 포트 전달 시 `http://127.0.0.1:8002/`도 지원한다. 2026-10-21 현재 공개 호스트는 사진 준비 응답 200, 센서 준비 응답 404였다. 센서 API를 학교 서버에 실제 설치했다고 기록하지 않는다.
+Windows 기본 주소는 `https://현재-Android-호스트/scanner/`다. SSH 포트 전달 시 `http://127.0.0.1:8002/`도 지원한다. 2026-10-21 서버 담당자의 설치 후 센서 준비 경로는 HTTP 200(`configured=true`, `inference_checked=false`), 지문 없는 처리 요청은 HTTP 422를 확인했다. 준비 응답만으로 실제 센서 추론·매칭 성공을 뜻하지 않는다.
 
 ## Windows 사용
 
@@ -18,7 +18,13 @@ Windows 기본 주소는 `https://현재-Android-호스트/scanner/`다. SSH 포
 4. 최초 1회 위치가 없으면 `FFV 위치 설정`에서 공식 SDK의 `Bin/Win64_x64/BlurFingFfvOneClick20261021.exe`를 선택한다. 스캐너 모듈 선택도 기억한다. 모듈을 바꿀 때는 `%LOCALAPPDATA%/BlurFing/FFVOneShot/scanner-modules.txt`만 삭제해 재선택한다.
 5. `3열 비교 자료 저장`으로 원본·처리본·점수 JSON·`hstack.png`를 새 개인 폴더에 저장한다. 지문 자동 저장·공개 Git 업로드는 하지 않는다.
 
-전달본 `scanner-connection.json`은 서버 주소와 기존 SDK 취득기 위치만 제공한다. 사용자 설정이 우선한다. 다른 PC에서는 해당 PC의 전체 SDK 위치를 다시 선택한다. SDK·드라이버·종속 DLL은 전달 ZIP에 포함하지 않는다.
+전달본 `scanner-connection.json`은 서버 주소와 기존 SDK 취득기 위치만 제공한다. 정상적인 사용자 설정이 우선하며 0.2.1부터 잘못된 취득기 경로는 전달 설정의 정상 경로로 복구한다. 다른 PC에서는 해당 PC의 전체 SDK 위치를 다시 선택한다. SDK·드라이버·종속 DLL은 전달 ZIP에 포함하지 않는다.
+
+### 취득 창이 안 뜨고 기다리기만 하는 경우
+
+`FFV 위치 설정`에서 **비교 프로그램 자체(`BlurFing.ScannerComparison.exe`)를 선택하면 안 된다.** 취득기는 전체 공식 SDK의 `Bin/Win64_x64/BlurFingFfvOneClick20261021.exe`다. 0.2.1은 실행 파일을 실행하지 않고 원클릭 취득 코드의 메타데이터와 같은 위치의 공식 SDK 종속 파일·`FScanners` 폴더를 확인한다. 전달 폴더에 EXE만 복사한 파일이나 구형 FFV 확장은 선택을 거절한다.
+
+기존 잘못된 설정을 수정한 뒤에는 이전 창을 닫고 0.2.1을 다시 연다. 전송 체크는 다시 해야 한다. 처음 뜨는 스캐너 모듈 선택에서 설치된 `NdmSupremaBioMini`를 선택한다. 장치 관리자에서는 센서가 `Authentication Scanner (0x0408)`로 표시될 수도 있으므로 이름에 BioMini가 없다는 이유만으로 USB 연결 실패로 판단하지 않는다.
 
 점수는 **SourceAFIS 원시 유사도**이며 0~100%·본인 확률로 바꾸지 않는다. 특징점 부족은 측정 불가, 매칭 환경 실패는 미측정이다. 현재 원본과 그 처리본의 직접 비교로, 독립 취득 참조에 대한 보호 효과 입증과 구분한다. DPI 500은 앱 설정값이며 장치에서 조회한 값은 아니다.
 
