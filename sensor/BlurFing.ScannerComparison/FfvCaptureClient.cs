@@ -10,6 +10,8 @@ internal static class FfvCaptureClient
 {
     internal static async Task<ScannerInput> CaptureAsync(ProcessStartInfo start, CancellationToken cancellation)
     {
+        if (FfvHelperConfiguration.IsComparisonProgram(start.FileName))
+            throw new ArgumentException("비교 프로그램은 FFV 취득기로 실행할 수 없습니다. FFV 위치 설정에서 원클릭 취득기를 선택하세요.");
         var name = "BlurFing.Capture." + Guid.NewGuid().ToString("N");
         await using var pipe = new NamedPipeServerStream(name, PipeDirection.InOut, 1,
             PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);

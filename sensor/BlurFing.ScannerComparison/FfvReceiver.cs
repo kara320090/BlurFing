@@ -6,13 +6,13 @@ namespace BlurFing.ScannerComparison;
 internal static class FfvReceiver
 {
     public const string PipeName = "BlurFing.ScannerComparison.v1";
-    public static async Task ListenAsync(Func<byte[], Task> received, CancellationToken cancellation)
+    public static async Task ListenAsync(Func<byte[], Task> received, CancellationToken cancellation, string pipeName = PipeName)
     {
         while (!cancellation.IsCancellationRequested)
         {
             try
             {
-                await using var pipe = new NamedPipeServerStream(PipeName, PipeDirection.In, 1,
+                await using var pipe = new NamedPipeServerStream(pipeName, PipeDirection.In, 1,
                     PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
                 await pipe.WaitForConnectionAsync(cancellation);
                 using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellation);

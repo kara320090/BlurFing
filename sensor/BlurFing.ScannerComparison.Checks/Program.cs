@@ -138,11 +138,12 @@ tests.Add(("oversized HTTP response is rejected before parsing", async () =>
 tests.Add(("real named pipe ignores a bad sender and receives the next exact PNG", async () =>
 {
     using var stop = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+    var pipeName = "BlurFing.Checks." + Guid.NewGuid().ToString("N");
     var received = new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);
-    var listener = FfvReceiver.ListenAsync(bytes => { received.SetResult(bytes); stop.Cancel(); return Task.CompletedTask; }, stop.Token);
+    var listener = FfvReceiver.ListenAsync(bytes => { received.SetResult(bytes); stop.Cancel(); return Task.CompletedTask; }, stop.Token, pipeName);
     async Task Send(bool bad)
     {
-        using var pipe = new NamedPipeClientStream(".", FfvReceiver.PipeName, PipeDirection.Out, PipeOptions.Asynchronous);
+        using var pipe = new NamedPipeClientStream(".", pipeName, PipeDirection.Out, PipeOptions.Asynchronous);
         await pipe.ConnectAsync(stop.Token); var header = new byte[9]; Encoding.ASCII.GetBytes(bad ? "WRONG" : "BFSC1").CopyTo(header, 0);
         BinaryPrimitives.WriteInt32LittleEndian(header.AsSpan(5), source.Png.Length);
         await pipe.WriteAsync(header, stop.Token); if (!bad) await pipe.WriteAsync(source.Png, stop.Token);
@@ -170,6 +171,42 @@ System.Diagnostics.ProcessStartInfo CaptureFixture(string mode)
 {
     var start = new System.Diagnostics.ProcessStartInfo(Path.Combine(AppContext.BaseDirectory, "BlurFing.ScannerComparison.Checks.exe"));
     start.ArgumentList.Add(mode); start.CreateNoWindow = true; return start;
+}
+Check("comparison executable and legacy FFV executable are rejected as one-shot helpers", () =>
+{
+    var self = Path.Combine(AppContext.BaseDirectory, "BlurFing.ScannerComparison.exe");
+    Assert(FfvHelperConfiguration.Problem(self) is not null, "comparison program accepted as capture helper");
+    Assert(FfvHelperConfiguration.Problem(typeof(ScannerInput).Assembly.Location) is not null, "ordinary managed program accepted");
+    Assert(FfvHelperConfiguration.Resolve(self, "missing-helper.exe") is null, "invalid saved selection persisted");
+});
+tests.Add(("comparison executable is refused before spawning another UI or waiting for a pipe", async () =>
+{
+    try
+    {
+        await FfvCaptureClient.CaptureAsync(new System.Diagnostics.ProcessStartInfo(
+            Path.Combine(AppContext.BaseDirectory, "BlurFing.ScannerComparison.exe")), CancellationToken.None);
+    }
+    catch (ArgumentException) { return; }
+    throw new Exception("recursive comparison launch accepted");
+}));
+
+if (args.Length == 2 && args[0] == "--ffv-helper")
+{
+    Check("installed official SDK helper is recognized and recovers an incorrect saved path", () =>
+    {
+        var helper = Path.GetFullPath(args[1]);
+        Assert(FfvHelperConfiguration.Problem(helper) is null, "installed helper rejected: " + FfvHelperConfiguration.Problem(helper));
+        Assert(FfvHelperConfiguration.Resolve("BlurFing.ScannerComparison.exe", helper) == helper, "portable recovery failed");
+        Assert(FfvHelperConfiguration.Resolve(helper, "missing-helper.exe") == helper, "valid personal choice overwritten");
+        var scratch = Path.Combine(Path.GetTempPath(), "BlurFingScannerChecks", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(scratch);
+        try
+        {
+            var copy = Path.Combine(scratch, Path.GetFileName(helper)); File.Copy(helper, copy);
+            Assert(FfvHelperConfiguration.Problem(copy) is not null, "helper without installed SDK dependencies accepted");
+        }
+        finally { Directory.Delete(scratch, true); }
+    });
 }
 tests.Add(("one-click capture receives the fresh helper image without disk image transport", async () =>
 {

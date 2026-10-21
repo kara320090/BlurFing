@@ -37,7 +37,7 @@ internal sealed class ComparisonForm : Form
 
     public ComparisonForm(bool showPreview = false)
     {
-        Text = "BlurFing | FFV 센서 · 서버 AI · 매칭 비교";
+        Text = "BlurFing 0.2.1 | FFV 센서 · 서버 AI · 매칭 비교";
         Font = new Font("맑은 고딕", 10);
         ClientSize = new Size(1240, 800); MinimumSize = new Size(1040, 720);
         StartPosition = FormStartPosition.CenterScreen;
@@ -186,6 +186,8 @@ internal sealed class ComparisonForm : Form
     {
         using var dialog = new OpenFileDialog { Filter = "BlurFing FFV 취득기|BlurFing*.exe", Title = "공식 FFV SDK의 Bin/Win64_x64에 있는 새 BlurFing 취득기 선택" };
         if (dialog.ShowDialog(this) != DialogResult.OK) return false;
+        var problem = FfvHelperConfiguration.Problem(dialog.FileName);
+        if (problem is not null) { status.Text = problem; return false; }
         ffvHelper = dialog.FileName;
         try { SaveSettings(); }
         catch (IOException) { status.Text = "설정 저장에 실패했습니다. 저장 위치와 권한을 확인하세요."; return false; }
@@ -196,7 +198,7 @@ internal sealed class ComparisonForm : Form
     private async Task CaptureAndCompare()
     {
         if (active is not null || !consent.Checked) return;
-        if ((string.IsNullOrWhiteSpace(ffvHelper) || !File.Exists(ffvHelper)) && !ConfigureFfv()) return;
+        if (FfvHelperConfiguration.Problem(ffvHelper) is not null && !ConfigureFfv()) return;
         var token = ++generation;
         Interlocked.Increment(ref incomingSequence);
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
@@ -270,12 +272,12 @@ internal sealed class ComparisonForm : Form
             if (json.RootElement.TryGetProperty("ffv_helper", out var helper)) ffvHelper = helper.GetString();
         }
         catch (Exception) { address.Text = "http://127.0.0.1:8002"; }
-        // Portable handoff supplies only public server/SDK locations. Personal
-        // settings take precedence; consent and biometric images are not saved.
+        // Portable handoff supplies only server/SDK locations. Valid personal
+        // helpers take precedence; recover incorrect paths without saving consent.
         try
         {
             using var defaults = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "scanner-connection.json")));
-            if (string.IsNullOrWhiteSpace(ffvHelper)) ffvHelper = defaults.RootElement.GetProperty("ffv_helper").GetString();
+            ffvHelper = FfvHelperConfiguration.Resolve(ffvHelper, defaults.RootElement.GetProperty("ffv_helper").GetString());
             if (!File.Exists(SettingsPath)) address.Text = ScannerClient.Normalize(defaults.RootElement.GetProperty("address").GetString()!).AbsoluteUri;
         }
         catch (Exception) { }
