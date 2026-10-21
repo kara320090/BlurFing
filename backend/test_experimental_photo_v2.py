@@ -156,6 +156,38 @@ def test_timeout_rejects_bool_nonfinite_and_invalid_bounds(value):
         positive_timeout(value)
 
 
+@pytest.mark.parametrize("relative", [False, True])
+def test_runtime_config_preserves_interpreter_path(configured, monkeypatch, relative):
+    config, root = configured
+    executable = root / "venv" / "bin" / "python"
+    executable.parent.mkdir(parents=True)
+    executable.write_bytes(b"synthetic interpreter path; never executed")
+    monkeypatch.chdir(root)
+    supplied = executable.relative_to(root) if relative else executable
+    original_resolve = Path.resolve
+
+    def resolve(path, *args, **kwargs):
+        if path.absolute() == executable:
+            pytest.fail("Interpreter path must not be dereferenced")
+        return original_resolve(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "resolve", resolve)
+    result = PhotoRuntimeConfig(supplied, config.bridge, config.consumed_registry, config.model)
+    assert result.python == executable
+
+
+def test_runtime_config_preserves_real_interpreter_symlink(configured):
+    config, root = configured
+    executable = root / "venv-python"
+    try:
+        executable.symlink_to(sys.executable)
+    except (OSError, NotImplementedError):
+        pytest.skip("Creating symlinks requires platform support/permission")
+    result = PhotoRuntimeConfig(executable, config.bridge, config.consumed_registry, config.model)
+    assert result.python == executable.absolute()
+    assert result.python != executable.resolve()
+
+
 def test_runtime_config_explicit_paths_and_typed_engine_settings(configured):
     config, _ = configured
     assert config.timeout_seconds == 15

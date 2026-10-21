@@ -88,7 +88,10 @@ class PhotoRuntimeConfig:
             value = getattr(self, name)
             if not isinstance(value, Path) or not value.is_file():
                 raise ValueError("Configured photo runtime files must exist.")
-            object.__setattr__(self, name, value.resolve(strict=True))
+            # Linux venv interpreters are symlinks: resolving them selects the
+            # system Python and loses the configured environment's packages.
+            normalized = value.absolute() if name == "python" else value.resolve(strict=True)
+            object.__setattr__(self, name, normalized)
         if self.model is not None:
             if (not isinstance(self.model, Path) or not self.model.is_dir() or
                     not (self.model / "final_config.private.json").is_file() or

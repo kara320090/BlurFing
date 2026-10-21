@@ -1,0 +1,35 @@
+# TEMPLATE ONLY: replace every @TOKEN@ before verification/installation.
+# See README-photo-v23.md. Never overwrite a running service with this template.
+# Use a dedicated non-root account and explicit absolute paths.
+[Unit]
+Description=BlurFing experimental photo V23
+Wants=network-online.target docker.service
+After=network-online.target docker.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=exec
+User=@SERVICE_USER@
+Group=@SERVICE_GROUP@
+WorkingDirectory=@WORKING_DIRECTORY@
+Environment=PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+UMask=0077
+ExecStart=@API_PYTHON@ -B -u @REPO_ROOT@/backend/serve_photo_gateway.py --repo @REPO_ROOT@ --config @RUNTIME_CONFIG@ --gateway @DOCKER_GATEWAY@
+# Do not report startup finished until the photo app answers HTTP 200.
+# This check does not prove image inference or protection performance.
+ExecStartPost=/usr/bin/curl --fail --silent --show-error --noproxy * --retry 60 --retry-all-errors --retry-delay 2 --retry-max-time 210 --max-time 5 http://127.0.0.1:8001/ready
+Restart=on-failure
+RestartSec=15s
+TimeoutStartSec=240s
+TimeoutStopSec=90s
+# Let Uvicorn drain/close its worker first; reap the entire cgroup on timeout.
+KillMode=mixed
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=blurfing-photo-v23
+
+[Install]
+WantedBy=multi-user.target
