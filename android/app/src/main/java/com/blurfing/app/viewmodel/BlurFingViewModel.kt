@@ -12,6 +12,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.blurfing.app.BuildConfig
 import com.blurfing.app.model.NormalizedRegion
+import com.blurfing.app.detection.FingertipRegions
+import com.blurfing.app.detection.MediaPipeFingertipDetector
 import com.blurfing.app.model.ProtectionMethod
 import com.blurfing.app.model.ProtectionRequest
 import com.blurfing.app.model.ProtectionResponse
@@ -85,7 +87,9 @@ sealed interface UiState {
         val pendingShare: ProtectedShare? = null,
         val shareError: String? = null,
         val processingTiming: ProcessingTiming? = null,
-        val processingRun: ProcessingRunInfo? = null
+        val processingRun: ProcessingRunInfo? = null,
+        val isDetecting: Boolean = false,
+        val detectionMessage: String? = null
     ) : UiState
     data class Error(
         val message: String,
@@ -103,7 +107,9 @@ open class BlurFingViewModel(
     private val readinessCheck: suspend (String) -> BackendReadiness = { BackendReadinessClient().check(it) },
     private val prepareShare: suspend (Context, Bitmap, ProcessingSettings, Boolean) -> ProtectedShare =
         { context, bitmap, settings, mock -> ProtectedShareFiles.prepare(context, bitmap, settings, mock) },
-    private val monotonicMs: () -> Long = SystemClock::elapsedRealtime
+    private val monotonicMs: () -> Long = SystemClock::elapsedRealtime,
+    private val detectFingertips: suspend (Context, Bitmap) -> List<NormalizedRegion> =
+        { context, bitmap -> MediaPipeFingertipDetector.detect(context, bitmap) }
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Idle)
@@ -155,6 +161,8 @@ open class BlurFingViewModel(
     private var activeRequestId: String? = null
     private var activeRepository: ProtectionRepository? = null
     private var imageLoadingJob: Job? = null
+    private var detectionJob: Job? = null
+    private var detectionId: String? = null
     private var activeSavingJob: Job? = null
     private var activeSaveId: String? = null
     private var sharingJob: Job? = null
@@ -197,6 +205,7 @@ open class BlurFingViewModel(
     }
 
     private fun importImage(uri: Uri, context: Context, onFinished: (() -> Unit)? = null): Job {
+        cancelDetection()
         regionHistory.clear()
         cancelSaving()
         cancelProtection()
@@ -209,7 +218,6 @@ open class BlurFingViewModel(
             try {
                 val normalizedBitmap = SelectedImageLoader.load(context.applicationContext, uri)
 
-                // 자동 탐지 모듈이 연결되기 전에는 임의의 후보를 만들지 않는다.
                 val initialRegions = emptyList<NormalizedRegion>()
 
                 var sessionNotice: String? = null
@@ -230,8 +238,10 @@ open class BlurFingViewModel(
                     originalUri = uri,
                     originalBitmap = normalizedBitmap,
                     regions = initialRegions,
-                    sessionNotice = sessionNotice
+                    sessionNotice = sessionNotice,
+                    isDetecting = true
                 )
+                detectRegions(context)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -249,10 +259,65 @@ open class BlurFingViewModel(
         return job
     }
 
+    /** Local hand landmarks propose editable fingertip pads without uploading the photo. */
+    fun detectRegions(context: Context) {
+        val current = _uiState.value as? UiState.Ready ?: return
+        if (current.step != ScreenStep.REGION_EDITOR || current.isProcessing || detectionId != null) return
+        val id = UUID.randomUUID().toString()
+        detectionId = id
+        _uiState.value = current.copy(isDetecting = true, detectionMessage = "사진에서 손끝 후보를 찾는 중입니다…")
+        detectionJob = viewModelScope.launch {
+            try {
+                val candidates = detectFingertips(context.applicationContext, current.originalBitmap)
+                val latest = _uiState.value as? UiState.Ready ?: return@launch
+                if (detectionId != id || latest.originalBitmap !== current.originalBitmap ||
+                    latest.step != ScreenStep.REGION_EDITOR) return@launch
+                detectionId = null
+                detectionJob = null
+                val merged = FingertipRegions.merge(latest.regions, candidates)
+                applyRegions(merged, fromDetection = true)
+                val updated = _uiState.value as? UiState.Ready ?: return@launch
+                _uiState.value = updated.copy(isDetecting = false, detectionMessage = when {
+                    candidates.isEmpty() -> "손끝 후보를 찾지 못했습니다. 손이 선명한 사진으로 다시 탐지하거나 ‘영역 추가’를 사용해 주세요."
+                    merged.size == latest.regions.size -> "이미 선택한 영역에 손끝 후보가 포함되어 있습니다. 필요한 부분을 수정해 주세요."
+                    else -> "손끝 후보 ${merged.size - latest.regions.size}개를 추가했습니다. 손톱·손등이 포함되지 않았는지 확인해 주세요."
+                })
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                if (detectionId == id) {
+                    val latest = _uiState.value as? UiState.Ready
+                    if (latest?.originalBitmap === current.originalBitmap) {
+                        _uiState.value = latest.copy(isDetecting = false,
+                            detectionMessage = "자동 탐지를 실행하지 못했습니다. 다시 탐지하거나 ‘영역 추가’로 계속할 수 있습니다.")
+                    }
+                }
+            } finally {
+                if (detectionId == id) {
+                    detectionId = null
+                    detectionJob = null
+                }
+            }
+        }
+    }
+
+    private fun cancelDetection(manualEdit: Boolean = false) {
+        detectionId = null
+        detectionJob?.cancel()
+        detectionJob = null
+        val current = _uiState.value as? UiState.Ready ?: return
+        if (current.isDetecting) _uiState.value = current.copy(isDetecting = false,
+            detectionMessage = if (manualEdit) "수동 편집을 유지했습니다. 필요하면 손끝 자동 탐지를 다시 실행해 주세요."
+                else current.detectionMessage)
+    }
+
     fun navigateToStep(step: ScreenStep) {
         val current = _uiState.value
         if (current is UiState.Ready && !current.isProcessing) {
-            if (step != current.step) cancelSaving()
+            if (step != current.step) {
+                cancelSaving()
+                cancelDetection()
+            }
             val latest = _uiState.value as? UiState.Ready ?: return
             _uiState.value = latest.copy(step = step, processingError = null)
         }
@@ -294,9 +359,10 @@ open class BlurFingViewModel(
         }
     }
 
-    private fun applyRegions(updated: List<NormalizedRegion>, record: Boolean = true) {
+    private fun applyRegions(updated: List<NormalizedRegion>, record: Boolean = true, fromDetection: Boolean = false) {
         val current = _uiState.value as? UiState.Ready ?: return
         if (current.isProcessing || current.step != ScreenStep.REGION_EDITOR || updated == current.regions) return
+        if (!fromDetection) cancelDetection(manualEdit = true)
         if (record) regionHistory.record(current.regions)
         cancelSaving()
         val latest = _uiState.value as? UiState.Ready ?: return
@@ -328,6 +394,7 @@ open class BlurFingViewModel(
         strength: Float = 0.5f,
         serverUrl: String? = null
     ) {
+        cancelDetection()
         val current = _uiState.value as? UiState.Ready ?: return
         if (current.isProcessing) return
         val repository = try {
@@ -545,6 +612,7 @@ open class BlurFingViewModel(
     }
 
     fun resetToIdle() {
+        cancelDetection()
         clearReadiness()
         regionHistory.clear()
         draftSession?.clear()

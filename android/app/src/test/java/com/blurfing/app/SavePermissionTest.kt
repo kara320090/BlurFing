@@ -50,6 +50,7 @@ class SavePermissionTest {
                     appliedRegions = request.regions.orEmpty(), warnings = listOf("MOCK_RESULT")))
             override fun cancelRequest(requestId: String) {}
         }
+        prepareNativeGraphicsFixture()
         vm = BlurFingViewModel(repository, saveImage = { _, bitmap ->
             savedBitmaps.add(bitmap)
             Result.success(Uri.parse("content://media/external/images/media/801"))

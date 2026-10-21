@@ -1,9 +1,42 @@
+import java.net.URI
+import java.security.MessageDigest
+import java.io.File
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
 }
+
+// Public Google model: pinned download at build time; no model weights or private images in Git.
+val handModelAssets = layout.buildDirectory.dir("generated/hand-model-assets")
+val prepareHandModel = tasks.register("prepareHandModel") {
+    val modelUrl = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task"
+    val expectedSha = "fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1"
+    inputs.property("modelUrl", modelUrl)
+    inputs.property("modelSha256", expectedSha)
+    val modelFile = handModelAssets.map { it.file("hand_landmarker.task") }
+    outputs.file(modelFile)
+    doLast {
+        fun sha(file: File) = MessageDigest.getInstance("SHA-256").digest(file.readBytes())
+            .joinToString("") { "%02x".format(it) }
+        val target = modelFile.get().asFile
+        if (!target.isFile || sha(target) != expectedSha) {
+            target.parentFile.mkdirs()
+            val temporary = File(target.parentFile, "hand_landmarker.task.download")
+            try {
+                val connection = URI(modelUrl).toURL().openConnection().apply {
+                    connectTimeout = 30_000; readTimeout = 60_000
+                }
+                connection.getInputStream().use { input -> temporary.outputStream().use { input.copyTo(it) } }
+                check(sha(temporary) == expectedSha) { "Hand model SHA256 mismatch" }
+                temporary.copyTo(target, overwrite = true)
+            } finally { temporary.delete() }
+        }
+    }
+}
+tasks.named("preBuild") { dependsOn(prepareHandModel) }
 
 android {
     namespace = "com.blurfing.app"
@@ -13,8 +46,8 @@ android {
         applicationId = "com.blurfing.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.0.2"
+        versionCode = 4
+        versionName = "1.0.3"
 
         val revision = providers.gradleProperty("blurfingRevision").orElse("unrecorded").get()
         require(revision.matches(Regex("[0-9a-f]{7,40}|unrecorded")))
@@ -65,6 +98,8 @@ android {
         unitTests.isIncludeAndroidResources = true
     }
     sourceSets.getByName("androidTest").assets.srcDir("src/test/resources")
+    sourceSets.getByName("main").assets.srcDir(handModelAssets)
+    androidResources { noCompress += "task" }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -93,6 +128,7 @@ dependencies {
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.google.mediapipe:tasks-vision:1.1.1")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:4.14.1")

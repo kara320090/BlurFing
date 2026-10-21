@@ -71,6 +71,11 @@ class MainActivity : ComponentActivity() {
                     val processingSettings by viewModel.settings.collectAsState()
                     val backendReadiness by viewModel.readiness.collectAsState()
                     val context = LocalContext.current
+                    LaunchedEffect((uiState as? UiState.Ready)?.originalBitmap) {
+                        val photo = uiState as? UiState.Ready
+                        if (photo?.step == ScreenStep.REGION_EDITOR && photo.regions.isEmpty() &&
+                            photo.detectionMessage == null && !photo.isDetecting) viewModel.detectRegions(context)
+                    }
                     var showProcessingCancelConfirmation by rememberSaveable { mutableStateOf(false) }
                     val isProcessing = (uiState as? UiState.Ready)?.isProcessing == true
                     BackHandler(enabled = uiState is UiState.Ready) {
@@ -201,6 +206,9 @@ class MainActivity : ComponentActivity() {
                                         bitmap = state.originalBitmap,
                                         regions = state.regions,
                                         sessionNotice = state.sessionNotice,
+                                        isDetecting = state.isDetecting,
+                                        detectionMessage = state.detectionMessage,
+                                        onAutoDetect = { viewModel.detectRegions(this@MainActivity) },
                                         onAddRegion = { viewModel.addRegion() },
                                         onDeleteRegion = { index -> viewModel.deleteRegion(index) },
                                         onUpdateRegion = { index, region -> viewModel.updateRegion(index, region) },

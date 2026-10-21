@@ -36,7 +36,10 @@ import java.io.File
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class BackNavigationTest {
     private val store = ViewModelStore()
-    @Before fun setup() { Dispatchers.setMain(Dispatchers.Unconfined) }
+    @Before fun setup() {
+        prepareNativeGraphicsFixture()
+        Dispatchers.setMain(Dispatchers.Unconfined)
+    }
     @After fun cleanup() { store.clear(); Dispatchers.resetMain() }
 
     private suspend fun load(vm: BlurFingViewModel): UiState.Ready {

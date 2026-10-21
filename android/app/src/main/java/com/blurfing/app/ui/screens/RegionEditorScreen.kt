@@ -44,7 +44,10 @@ fun RegionEditorScreen(
     canRedo: Boolean = false,
     onUndo: () -> Unit = {},
     onRedo: () -> Unit = {},
-    onClearRegions: () -> Unit = {}
+    onClearRegions: () -> Unit = {},
+    isDetecting: Boolean = false,
+    detectionMessage: String? = null,
+    onAutoDetect: () -> Unit = {}
 ) {
     var selectedIndex by remember { mutableStateOf<Int?>(if (regions.isNotEmpty()) 0 else null) }
     var viewWidth by remember { mutableStateOf(0f) }
@@ -91,13 +94,22 @@ fun RegionEditorScreen(
                     color = MaterialTheme.colorScheme.primary)
             }
             Text(
-                text = if (regions.isEmpty()) "자동 탐지는 아직 연결되지 않았습니다. ‘영역 추가’로 지문이 보이는 손끝을 직접 지정해 주세요."
-                    else "수동 선택 영역 ${regions.size}개 · 지문이 보이는 손끝 패드에 맞추세요. 손톱과 손등은 제외하세요.",
+                text = if (regions.isEmpty()) "손끝 후보를 확인한 뒤 필요한 영역을 직접 추가·수정할 수 있습니다."
+                    else "선택 영역 ${regions.size}개 · 지문이 보이는 손끝 패드에 맞추세요. 손톱과 손등은 제외하세요.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedButton(onClick = onAutoDetect, enabled = !isDetecting) { Text("손끝 자동 탐지") }
+                if (isDetecting) {
+                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                    Text("손끝 탐지 중…", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            detectionMessage?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
 
             // 이미지 및 오버레이 캔버스
             Box(
