@@ -10,11 +10,13 @@ internal sealed class ComparisonForm : Form
     private readonly Button check = new() { Text = "서버 확인", AutoSize = true };
     private readonly Button import = new() { Text = "저장한 센서 영상 열기", AutoSize = true };
     private readonly Button compare = new() { Text = "서버 AI 처리 · 매칭", AutoSize = true };
+    private readonly Button capture = new() { Text = "지문 취득 후 자동 비교", AutoSize = true, BackColor = Color.FromArgb(223, 232, 255) };
+    private readonly Button configureFfv = new() { Text = "FFV 위치 설정", AutoSize = true };
     private readonly Button cancel = new() { Text = "처리 취소", AutoSize = true, Enabled = false };
     private readonly Button export = new() { Text = "3열 비교 자료 저장", AutoSize = true, Enabled = false };
     private readonly Button preview = new() { Text = "합성 화면 확인", AutoSize = true };
     private readonly CheckBox consent = new() { Text = "선택한 서버로 연구용 지문 영상 전송", AutoSize = true };
-    private readonly CheckBox automatic = new() { Text = "FFV 새 취득 후 자동 처리", AutoSize = true };
+    private readonly CheckBox automatic = new() { Text = "기존 FFV 창의 새 취득 자동 처리", AutoSize = true };
     private readonly PictureBox original = new() { Dock = DockStyle.Fill, SizeMode = PictureBoxSizeMode.Zoom, BackColor = Color.FromArgb(239, 243, 248) };
     private readonly PictureBox processed = new() { Dock = DockStyle.Fill, SizeMode = PictureBoxSizeMode.Zoom, BackColor = Color.FromArgb(239, 243, 248) };
     private readonly Label origin = new() { Text = "FFV 새 취득 대기", AutoSize = true, Dock = DockStyle.Fill, Padding = new Padding(8) };
@@ -29,6 +31,8 @@ internal sealed class ComparisonForm : Form
     private ScannerInput? input;
     private ScannerResult? result;
     private string? lastExport;
+    private string? ffvHelper;
+    private bool capturePending;
     private static string SettingsPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BlurFing", "ScannerComparison", "settings.json");
 
     public ComparisonForm(bool showPreview = false)
@@ -40,6 +44,7 @@ internal sealed class ComparisonForm : Form
         BackColor = Color.White;
         var layout = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(20), ColumnCount = 1, RowCount = 7 };
         foreach (var size in new[] { 60, 44, 42, 40 }) layout.RowStyles.Add(new RowStyle(SizeType.Absolute, size));
+        layout.RowStyles[3] = new RowStyle(SizeType.AutoSize);
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 100));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 35));
@@ -53,7 +58,7 @@ internal sealed class ComparisonForm : Form
         var resolution = Row(); resolution.Controls.AddRange([new Label { Text = "설정 DPI", AutoSize = true, Padding = new Padding(6, 6, 0, 0) }, dpi]);
         server.Controls.Add(resolution, 3, 0); layout.Controls.Add(server, 0, 1);
         var approvals = Row(); approvals.Controls.AddRange([consent, automatic]); layout.Controls.Add(approvals, 0, 2);
-        var actions = Row(); actions.Controls.AddRange([import, compare, cancel, export, preview]); layout.Controls.Add(actions, 0, 3);
+        var actions = Row(); actions.Controls.AddRange([capture, configureFfv, import, compare, cancel, export, preview]); layout.Controls.Add(actions, 0, 3);
         var columns = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, Padding = new Padding(0, 10, 0, 10) };
         columns.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 37)); columns.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 37)); columns.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 26));
         columns.Controls.Add(ImagePanel("01  센서 원본", original, origin), 0, 0);
@@ -70,7 +75,9 @@ internal sealed class ComparisonForm : Form
         preview.Click += (_, _) => ShowSynthetic();
         check.Click += async (_, _) => await CheckServer();
         compare.Click += async (_, _) => await Compare();
-        cancel.Click += (_, _) => { generation++; active?.Cancel(); active = null; status.Text = "처리를 취소했습니다. 원본은 유지됩니다."; UpdateControls(); };
+        capture.Click += async (_, _) => await CaptureAndCompare();
+        configureFfv.Click += (_, _) => ConfigureFfv();
+        cancel.Click += (_, _) => { generation++; active?.Cancel(); status.Text = "취득·처리를 취소하는 중입니다. 이전 응답은 표시하지 않습니다."; UpdateControls(); };
         export.Click += (_, _) => Export();
         FormClosing += (_, _) => { generation++; active?.Cancel(); lifetime.Cancel(); };
         FormClosed += (_, _) => { original.Image?.Dispose(); processed.Image?.Dispose(); lifetime.Dispose(); };
@@ -79,19 +86,22 @@ internal sealed class ComparisonForm : Form
             if (showPreview) ShowSynthetic();
             _ = FfvReceiver.ListenAsync(async png =>
             {
+                // Requested capture has its own per-process pipe. A legacy FFV
+                // preview, including an old database selection, cannot replace it.
+                if (capturePending) return;
                 var incoming = Interlocked.Increment(ref incomingSequence);
                 try
                 {
                     if (!IsDisposed && !lifetime.IsCancellationRequested) BeginInvoke(() =>
                     {
-                        if (incoming != Interlocked.Read(ref incomingSequence)) return;
+                        if (capturePending || incoming != Interlocked.Read(ref incomingSequence)) return;
                         generation++; active?.Cancel(); active = null; ClearResult(); UpdateControls();
                         origin.Text = "FFV 새 영상을 확인하는 중입니다…";
                     });
                     var next = await Task.Run(() => ScannerInput.Decode(png, "FFV 연동 새 취득 영상"));
                     if (!IsDisposed && !lifetime.IsCancellationRequested) BeginInvoke(async () =>
                     {
-                        if (incoming != Interlocked.Read(ref incomingSequence)) return;
+                        if (capturePending || incoming != Interlocked.Read(ref incomingSequence)) return;
                         UseInput(next);
                         status.Text = "FFV 새 영상을 받았습니다. " + (automatic.Checked && consent.Checked ? "서버 처리를 시작합니다." : "서버 전송을 선택한 후 처리할 수 있습니다.");
                         if (automatic.Checked && consent.Checked) await Compare();
@@ -99,13 +109,13 @@ internal sealed class ComparisonForm : Form
                 }
                 catch (Exception) { if (!IsDisposed && !lifetime.IsCancellationRequested) BeginInvoke(() =>
                 {
-                    if (incoming != Interlocked.Read(ref incomingSequence)) return;
+                    if (capturePending || incoming != Interlocked.Read(ref incomingSequence)) return;
                     ClearResult(); origin.Text = "새 FFV 영상 읽기 실패 · 이전 원본 유지";
                     status.Text = "FFV 영상 형식·크기를 확인해 주세요. 새 처리본과 점수는 없습니다."; UpdateControls();
                 }); }
             }, lifetime.Token);
         };
-        status.Text = "FFV 확장의 Send to comparison을 켠 뒤 새로 취득하세요. 저장한 PNG/BMP도 열 수 있습니다.\r\n서버 확인은 설정만 검사합니다. 실제 AI·매칭 실행 확인은 영상을 처리한 뒤 가능합니다.";
+        status.Text = "서버 주소와 연구용 전송을 확인한 후 ‘지문 취득 후 자동 비교’를 누르세요. 최초 1회 FFV 위치·스캐너 모듈을 선택합니다.\r\nAndroid와 같은 서버의 /scanner/ 주소를 사용할 수 있습니다. 센서 API 설치는 별도로 필요합니다.";
         UpdateControls();
     }
 
@@ -121,6 +131,8 @@ internal sealed class ComparisonForm : Form
     private void UpdateControls()
     {
         compare.Enabled = input is not null && consent.Checked && active is null;
+        capture.Enabled = consent.Checked && active is null;
+        configureFfv.Enabled = import.Enabled = preview.Enabled = active is null;
         cancel.Enabled = active is not null; export.Enabled = result is not null && active is null;
         consent.Enabled = active is null; automatic.Enabled = consent.Checked && active is null; check.Enabled = active is null;
         address.Enabled = dpi.Enabled = active is null;
@@ -170,6 +182,57 @@ internal sealed class ComparisonForm : Form
         catch (Exception error) { status.Text = SafeMessage(error); }
         finally { UpdateControls(); }
     }
+    private bool ConfigureFfv()
+    {
+        using var dialog = new OpenFileDialog { Filter = "BlurFing FFV 취득기|BlurFing*.exe", Title = "공식 FFV SDK의 Bin/Win64_x64에 있는 새 BlurFing 취득기 선택" };
+        if (dialog.ShowDialog(this) != DialogResult.OK) return false;
+        ffvHelper = dialog.FileName;
+        try { SaveSettings(); }
+        catch (IOException) { status.Text = "설정 저장에 실패했습니다. 저장 위치와 권한을 확인하세요."; return false; }
+        catch (UnauthorizedAccessException) { status.Text = "설정을 저장할 권한이 없습니다."; return false; }
+        status.Text = "FFV 취득기 위치를 저장했습니다. 이전 FFV 앱이 센서를 사용 중이면 먼저 닫아 주세요.";
+        return true;
+    }
+    private async Task CaptureAndCompare()
+    {
+        if (active is not null || !consent.Checked) return;
+        if ((string.IsNullOrWhiteSpace(ffvHelper) || !File.Exists(ffvHelper)) && !ConfigureFfv()) return;
+        var token = ++generation;
+        Interlocked.Increment(ref incomingSequence);
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
+        active = cancellation; capturePending = true; ClearResult();
+        input = null; original.Image?.Dispose(); original.Image = null; origin.Text = "새 센서 취득 대기";
+        UpdateControls(); status.Text = "센서 API 연결 확인 중입니다…";
+        var captured = false;
+        try
+        {
+            using var client = new ScannerClient(address.Text);
+            using (var checkDeadline = CancellationTokenSource.CreateLinkedTokenSource(cancellation.Token))
+            {
+                checkDeadline.CancelAfter(TimeSpan.FromSeconds(15));
+                await client.CheckAsync(checkDeadline.Token);
+            }
+            if (token != generation || cancellation.IsCancellationRequested) return;
+            SaveSettings(); status.Text = "센서에 손가락을 올려 주세요. 새 지문 취득 후 서버 처리·매칭을 자동 실행합니다.";
+            var next = await FfvCaptureClient.CaptureAsync(new ProcessStartInfo(ffvHelper!), cancellation.Token);
+            if (token != generation || cancellation.IsCancellationRequested) return;
+            input = next; original.Image = next.Preview();
+            origin.Text = $"{next.Origin}\n{next.Width} × {next.Height} px · 원본 해상도";
+            captured = true;
+        }
+        catch (Exception error) { if (token == generation && !IsDisposed) status.Text = SafeMessage(error); }
+        finally
+        {
+            if (!captured) capturePending = false;
+            if (ReferenceEquals(active, cancellation)) active = null;
+            if (!IsDisposed) UpdateControls();
+        }
+        try
+        {
+            if (captured && token == generation && !IsDisposed && consent.Checked && !cancellation.IsCancellationRequested) await Compare();
+        }
+        finally { capturePending = false; }
+    }
     private async Task Compare()
     {
         if (input is null || !consent.Checked || active is not null) return;
@@ -204,13 +267,23 @@ internal sealed class ComparisonForm : Form
             using var json = JsonDocument.Parse(File.ReadAllText(SettingsPath));
             address.Text = json.RootElement.GetProperty("address").GetString();
             dpi.Value = Math.Clamp(json.RootElement.GetProperty("dpi").GetInt32(), 100, 2000);
+            if (json.RootElement.TryGetProperty("ffv_helper", out var helper)) ffvHelper = helper.GetString();
         }
         catch (Exception) { address.Text = "http://127.0.0.1:8002"; }
+        // Portable handoff supplies only public server/SDK locations. Personal
+        // settings take precedence; consent and biometric images are not saved.
+        try
+        {
+            using var defaults = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "scanner-connection.json")));
+            if (string.IsNullOrWhiteSpace(ffvHelper)) ffvHelper = defaults.RootElement.GetProperty("ffv_helper").GetString();
+            if (!File.Exists(SettingsPath)) address.Text = ScannerClient.Normalize(defaults.RootElement.GetProperty("address").GetString()!).AbsoluteUri;
+        }
+        catch (Exception) { }
     }
     private void SaveSettings()
     {
         Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
-        File.WriteAllText(SettingsPath, JsonSerializer.Serialize(new { address = address.Text.Trim(), dpi = (int)dpi.Value }));
+        File.WriteAllText(SettingsPath, JsonSerializer.Serialize(new { address = address.Text.Trim(), dpi = (int)dpi.Value, ffv_helper = ffvHelper }));
     }
     private void Export()
     {

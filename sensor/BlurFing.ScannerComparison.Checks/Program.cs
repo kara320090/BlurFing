@@ -9,6 +9,21 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using BlurFing.ScannerComparison;
 
+// Child used only by this checks executable: exercises the actual one-shot
+// process/pipe lifetime without loading a driver or pretending to scan a finger.
+if (args.Length == 3 && args[1] == "--capture-once")
+{
+    using var fixturePipe = new NamedPipeClientStream(".", args[2], PipeDirection.InOut);
+    fixturePipe.Connect(5000);
+    if (args[0] == "--fixture-wait") { fixturePipe.ReadByte(); return 0; }
+    using var writer = new BinaryWriter(fixturePipe);
+    writer.Write(Encoding.ASCII.GetBytes(args[0] == "--fixture-invalid" ? "WRONG" : "BFSC2"));
+    var fixtureBytes = args[0] == "--fixture-ok" ? ScannerInput.SyntheticPattern().Png : [];
+    writer.Write((byte)(args[0] == "--fixture-cancel" ? 1 : args[0] == "--fixture-cleanup" ? 3 : 0));
+    writer.Write(fixtureBytes.Length); writer.Write(fixtureBytes); writer.Flush();
+    return 0;
+}
+
 var tests = new List<(string Name, Func<Task> Run)>();
 void Check(string name, Action action) => tests.Add((name, () => { action(); return Task.CompletedTask; }));
 void Assert(bool condition, string detail) { if (!condition) throw new Exception(detail); }
@@ -151,6 +166,36 @@ Check("export retains both PNG bytes, raw score metadata and three panels", () =
     finally { if (Directory.Exists(scratch)) Directory.Delete(scratch, true); }
 });
 
+System.Diagnostics.ProcessStartInfo CaptureFixture(string mode)
+{
+    var start = new System.Diagnostics.ProcessStartInfo(Path.Combine(AppContext.BaseDirectory, "BlurFing.ScannerComparison.Checks.exe"));
+    start.ArgumentList.Add(mode); start.CreateNoWindow = true; return start;
+}
+tests.Add(("one-click capture receives the fresh helper image without disk image transport", async () =>
+{
+    var captured = await FfvCaptureClient.CaptureAsync(CaptureFixture("--fixture-ok"), CancellationToken.None);
+    Assert(captured.Gray.SequenceEqual(source.Gray) && captured.Origin.Contains("새로 취득"), "capture pixels/origin mismatch");
+}));
+tests.Add(("one-click capture rejects bad framing and cleanup failure without an image", async () =>
+{
+    foreach (var mode in new[] { "--fixture-invalid", "--fixture-cleanup" })
+    {
+        try { await FfvCaptureClient.CaptureAsync(CaptureFixture(mode), CancellationToken.None); throw new Exception("invalid capture accepted"); }
+        catch (Exception error) when (error is InvalidDataException or InvalidOperationException) { }
+    }
+}));
+tests.Add(("cancelled acquisition cannot become a valid capture", async () =>
+{
+    try { await FfvCaptureClient.CaptureAsync(CaptureFixture("--fixture-cancel"), CancellationToken.None); throw new Exception("cancel ignored"); }
+    catch (OperationCanceledException) { }
+    using var stop = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+    try { await FfvCaptureClient.CaptureAsync(CaptureFixture("--fixture-wait"), stop.Token); throw new Exception("owner cancel ignored"); }
+    catch (OperationCanceledException) { }
+    // A subsequent fresh process still works; cancellation didn't poison its channel.
+    var next = await FfvCaptureClient.CaptureAsync(CaptureFixture("--fixture-ok"), CancellationToken.None);
+    Assert(next.Gray.SequenceEqual(source.Gray), "next request failed");
+}));
+
 if (args.Length == 2 && args[0] == "--live-url")
 {
     tests.Add(("controlled local HTTP server runs PNG upload, child and response validation", async () =>
@@ -159,6 +204,21 @@ if (args.Length == 2 && args[0] == "--live-url")
         await client.CheckAsync(CancellationToken.None);
         var result = await client.CompareAsync(source, "synthetic-check", 500, CancellationToken.None);
         Assert(result.ChangedPixels == 1 && result.EngineVersion == "synthetic-contract-fixture", "not the controlled test runtime");
+    }));
+    tests.Add(("one-click child image reaches local API worker, validated score and export", async () =>
+    {
+        var captured = await FfvCaptureClient.CaptureAsync(CaptureFixture("--fixture-ok"), CancellationToken.None);
+        using var client = new ScannerClient(args[1]);
+        var result = await client.CompareAsync(captured, "oneclick-synthetic-check", 500, CancellationToken.None);
+        Assert(result.Score == 123.5 && result.EngineVersion == "synthetic-contract-fixture", "fixture worker response mismatch");
+        var scratch = Path.Combine(Path.GetTempPath(), "BlurFingScannerChecks", Guid.NewGuid().ToString("N"));
+        try
+        {
+            var folder = ComparisonExport.Save(scratch, captured, result);
+            Assert(File.ReadAllBytes(Path.Combine(folder, "original.png")).SequenceEqual(captured.Png), "fresh capture bytes lost");
+            Assert(File.Exists(Path.Combine(folder, "hstack.png")), "comparison export missing");
+        }
+        finally { if (Directory.Exists(scratch)) Directory.Delete(scratch, true); }
     }));
     tests.Add(("real HTTP cancellation reaches the running child", async () =>
     {

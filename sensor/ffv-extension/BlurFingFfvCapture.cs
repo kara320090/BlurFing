@@ -18,8 +18,9 @@ internal static class BlurFingFfvCapture
         File.AppendAllText(Path.Combine(folder, "startup.log"), DateTime.Now.ToString("o") + " " + text + Environment.NewLine);
     }
     [STAThread]
-    private static void Main()
+    private static void Main(string[] args)
     {
+        if (args.Length == 2 && args[0] == "--capture-once") { BlurFingOneShot.Run(args[1]); return; }
         Stage("Starting");
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);

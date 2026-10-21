@@ -1,0 +1,29 @@
+# TEMPLATE: replace all @TOKENS@ with actual absolute paths before installation.
+[Unit]
+Description=BlurFing experimental scanner comparison
+After=network-online.target docker.service
+Wants=network-online.target docker.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=exec
+User=@SERVICE_USER@
+Group=@SERVICE_GROUP@
+WorkingDirectory=@REPO_ROOT@
+Environment=PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+UMask=0077
+ExecStart=@API_PYTHON@ -B -u @REPO_ROOT@/sensor/server/serve_gateway.py --config @RUNTIME_CONFIG@ --gateway @DOCKER_GATEWAY@
+ExecStartPost=/usr/bin/curl --fail --silent --show-error --noproxy * --retry 30 --retry-all-errors --retry-delay 2 --retry-max-time 180 --max-time 5 http://127.0.0.1:8002/ready
+Restart=on-failure
+RestartSec=15s
+TimeoutStartSec=240s
+TimeoutStopSec=90s
+KillMode=mixed
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
