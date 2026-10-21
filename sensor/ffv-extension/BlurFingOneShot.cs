@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.IO.Pipes;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -49,6 +50,70 @@ internal static class BlurFingOneShot
             using (BinaryWriter writer = new BinaryWriter(pipe))
             {
                 writer.Write(new byte[] { 66, 70, 83, 67, 50, 1, 0, 0, 0, 0 }); writer.Flush();
+            }
+        }
+    }
+
+    internal static byte[] EncodeScannerBitmap(Bitmap image)
+    {
+        if (image.Width < 1 || image.Height < 1 || (long)image.Width * image.Height > 4000000)
+            throw new InvalidDataException("Scanner bitmap dimensions");
+        using (Bitmap canonical = new Bitmap(image.Width, image.Height, PixelFormat.Format8bppIndexed))
+        {
+            ColorPalette palette = canonical.Palette;
+            for (int i = 0; i < 256; i++) palette.Entries[i] = Color.FromArgb(255, i, i, i);
+            canonical.Palette = palette;
+            BitmapData data = canonical.LockBits(new Rectangle(0, 0, image.Width, image.Height), ImageLockMode.WriteOnly, canonical.PixelFormat);
+            try
+            {
+                byte[] row = new byte[Math.Abs(data.Stride)];
+                for (int y = 0; y < image.Height; y++)
+                {
+                    for (int x = 0; x < image.Width; x++)
+                    {
+                        // SDK GetBitmap is a physical grayscale HBITMAP. Its unused
+                        // palette alpha is not input transparency. Copy luminance
+                        // exactly; never resize, enhance or convert color to gray.
+                        Color pixel = image.GetPixel(x, y);
+                        if (pixel.R != pixel.G || pixel.G != pixel.B) throw new InvalidDataException("Scanner bitmap is not grayscale");
+                        row[x] = pixel.R;
+                    }
+                    Marshal.Copy(row, 0, IntPtr.Add(data.Scan0, y * data.Stride), row.Length);
+                }
+            }
+            finally { canonical.UnlockBits(data); }
+            using (MemoryStream output = new MemoryStream())
+            {
+                canonical.Save(output, ImageFormat.Png);
+                if (output.Length > 4 * 1024 * 1024) throw new InvalidDataException("Scanner PNG size");
+                return output.ToArray();
+            }
+        }
+    }
+
+    internal static void CheckBitmapTransport(string pipeName, bool canonicalize)
+    {
+        if (!Regex.IsMatch(pipeName, @"\ABlurFing\.Capture\.[0-9a-f]{32}\z")) return;
+        using (Bitmap image = new Bitmap(3, 2, PixelFormat.Format8bppIndexed))
+        using (NamedPipeClientStream pipe = OpenPipe(pipeName))
+        {
+            ColorPalette palette = image.Palette;
+            for (int i = 0; i < 256; i++) palette.Entries[i] = Color.FromArgb(0, i, i, i);
+            image.Palette = palette;
+            BitmapData data = image.LockBits(new Rectangle(0, 0, 3, 2), ImageLockMode.WriteOnly, image.PixelFormat);
+            try
+            {
+                Marshal.Copy(new byte[] { 12, 34, 56, 0 }, 0, data.Scan0, 4);
+                Marshal.Copy(new byte[] { 78, 90, 123, 0 }, 0, IntPtr.Add(data.Scan0, data.Stride), 4);
+            }
+            finally { image.UnlockBits(data); }
+            byte[] bytes;
+            if (canonicalize) bytes = EncodeScannerBitmap(image);
+            else { using (MemoryStream stream = new MemoryStream()) { image.Save(stream, ImageFormat.Png); bytes = stream.ToArray(); } }
+            pipe.Connect(5000);
+            using (BinaryWriter writer = new BinaryWriter(pipe))
+            {
+                writer.Write(new byte[] { 66, 70, 83, 67, 50, 0 }); writer.Write(bytes.Length); writer.Write(bytes); writer.Flush();
             }
         }
     }
@@ -124,14 +189,16 @@ internal static class BlurFingOneShot
                         byte failureStatus = 2;
                         try
                         {
+                            if (Volatile.Read(ref cancelled) != 0) { status = 1; return; }
+                            // Match the official FFV C# sample: initialize the SDK
+                            // on its STA UI thread; only Enroll runs on a worker.
+                            engine = new Nffv(Path.Combine(scratch, "capture.dat"), Guid.NewGuid().ToString("N"), modules);
+                            Stage("engine-opened-" + Thread.CurrentThread.GetApartmentState().ToString());
                             png = await Task.Run(delegate
                             {
                                 if (Volatile.Read(ref cancelled) != 0) return (byte[])null;
                                 // FFV exposes Enroll/GetBitmap, not raw Capture. Use a new
                                 // private database for THIS request, then remove it before send.
-                                engine = new Nffv(Path.Combine(scratch, "capture.dat"), Guid.NewGuid().ToString("N"), modules);
-                                Stage("engine-opened");
-                                if (Volatile.Read(ref cancelled) != 0) return (byte[])null;
                                 NffvStatus outcome;
                                 NffvUser user = engine.Enroll(20000, out outcome);
                                 Stage("enroll-status-" + outcome.ToString());
@@ -140,11 +207,16 @@ internal static class BlurFingOneShot
                                     : outcome == NffvStatus.QualityCheckFailed ? (byte)6 : (byte)2;
                                 if (Volatile.Read(ref cancelled) != 0 || outcome != NffvStatus.TemplateCreated || user == null) return (byte[])null;
                                 using (Bitmap image = user.GetBitmap())
-                                using (MemoryStream stream = new MemoryStream())
                                 {
-                                    image.Save(stream, ImageFormat.Png);
-                                    if (stream.Length > 4 * 1024 * 1024) throw new InvalidDataException();
-                                    return stream.ToArray();
+                                    Stage("bitmap-" + image.Width + "x" + image.Height + "-" + image.PixelFormat.ToString());
+                                    if ((image.PixelFormat & PixelFormat.Indexed) != 0)
+                                    {
+                                        Color[] entries = image.Palette.Entries;
+                                        int alphaMin = 255, alphaMax = 0;
+                                        foreach (Color color in entries) { alphaMin = Math.Min(alphaMin, color.A); alphaMax = Math.Max(alphaMax, color.A); }
+                                        Stage("bitmap-palette-alpha-" + alphaMin + "-" + alphaMax);
+                                    }
+                                    return EncodeScannerBitmap(image);
                                 }
                             });
                             status = Volatile.Read(ref cancelled) != 0 ? (byte)1 : png != null ? (byte)0 : failureStatus;

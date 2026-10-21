@@ -37,7 +37,7 @@ internal sealed class ComparisonForm : Form
 
     public ComparisonForm(bool showPreview = false)
     {
-        Text = "BlurFing 0.2.2 | FFV 센서 · 서버 AI · 매칭 비교";
+        Text = "BlurFing 0.2.3 | FFV 센서 · 서버 AI · 매칭 비교";
         Font = new Font("맑은 고딕", 10);
         ClientSize = new Size(1240, 800); MinimumSize = new Size(1040, 720);
         StartPosition = FormStartPosition.CenterScreen;
@@ -107,11 +107,11 @@ internal sealed class ComparisonForm : Form
                         if (automatic.Checked && consent.Checked) await Compare();
                     });
                 }
-                catch (Exception) { if (!IsDisposed && !lifetime.IsCancellationRequested) BeginInvoke(() =>
+                catch (Exception error) { if (!IsDisposed && !lifetime.IsCancellationRequested) BeginInvoke(() =>
                 {
                     if (capturePending || incoming != Interlocked.Read(ref incomingSequence)) return;
                     ClearResult(); origin.Text = "새 FFV 영상 읽기 실패 · 이전 원본 유지";
-                    status.Text = "FFV 영상 형식·크기를 확인해 주세요. 새 처리본과 점수는 없습니다."; UpdateControls();
+                    status.Text = "FFV 영상 읽기 실패: " + SafeMessage(error); UpdateControls();
                 }); }
             }, lifetime.Token);
         };
@@ -259,7 +259,7 @@ internal sealed class ComparisonForm : Form
     private static string SafeMessage(Exception error) => error switch
     {
         OperationCanceledException => "요청을 취소했거나 응답 시간이 초과됐습니다. 원본은 유지됩니다.",
-        ArgumentException or InvalidOperationException => error.Message,
+        ArgumentException or InvalidOperationException or InvalidDataException => error.Message,
         _ => "서버 연결·반환 영상·매칭 정보 검증에 실패했습니다. 원본은 유지됩니다."
     };
     private void LoadSettings()

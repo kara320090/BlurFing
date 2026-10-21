@@ -217,6 +217,23 @@ if (args.Length == 2 && args[0] == "--ffv-helper")
         catch (OperationCanceledException) when (!stop.IsCancellationRequested) { return; }
         throw new Exception("duplex transport did not return its explicit cancellation frame before deadline");
     }));
+    tests.Add(("SDK indexed bitmap reserved alpha normalizes without changing grayscale samples", async () =>
+    {
+        using var stop = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var start = new System.Diagnostics.ProcessStartInfo(Path.GetFullPath(args[1]));
+        start.ArgumentList.Add("--bitmap-self-check"); start.CreateNoWindow = true;
+        var actual = await FfvCaptureClient.CaptureAsync(start, stop.Token);
+        Assert(actual.Width == 3 && actual.Height == 2 && actual.Gray.SequenceEqual(new byte[] { 12, 34, 56, 78, 90, 123 }), "SDK grayscale samples changed");
+    }));
+    tests.Add(("unadapted indexed PNG alpha is still rejected by the ordinary input validator", async () =>
+    {
+        using var stop = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var start = new System.Diagnostics.ProcessStartInfo(Path.GetFullPath(args[1]));
+        start.ArgumentList.Add("--bitmap-raw-self-check"); start.CreateNoWindow = true;
+        try { await FfvCaptureClient.CaptureAsync(start, stop.Token); }
+        catch (InvalidDataException) { return; }
+        throw new Exception("transparent indexed input was accepted without the SDK boundary adapter");
+    }));
 }
 tests.Add(("scanner absence, acquisition timeout and poor quality stay distinct failures", async () =>
 {
