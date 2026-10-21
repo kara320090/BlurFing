@@ -1,8 +1,10 @@
-# Ubuntu 센서 비교 API — 내일 연결할 준비 소스
+# Ubuntu 센서 비교 API
+
+2026-10-21: Android와 **같은 HTTPS 호스트의 `/scanner/` 경로**를 연결하는 검사·백업·원복 도구와 gateway 실행기를 추가했다. [최신 서버 적용 절차](../ONE_CLICK.md#학교-서버-적용)를 먼저 따른다. 실제 학교 센서 API 배포·추론은 아직 확인하지 않았다.
 
 `scanner_api:app`은 기존 Android V1/PHOTO V2와 분리된 센서 전용 API다. 원본 지문 PNG → 기존 `protect_image` scanner 경로 → SourceAFIS 원본/처리본 직접 매칭 → 고정 JSON을 반환한다. PHOTO fallback, 신원 확률, 새로운 매칭 임계값, 모델 학습은 추가하지 않는다.
 
-사용자가 실제 학교 서버 연결은 내일 진행하기로 했다. 기존 Docker·Nginx·Tunnel·학교 서버 설정은 이번 작업에서 변경하지 않았다.
+센서 서비스·경로를 추가할 준비 소스다. 이 PC에서 학교 Docker·Nginx·Tunnel 설정을 변경한 것은 아니다.
 
 ## 실행 환경
 
@@ -27,7 +29,7 @@ cd /home/user/BlurFing/sensor/server
 
 `/ready`의 200은 Python·AI 소스 경로 설정이 있다는 뜻이다. 추론·NBIS·Java·센서 동작의 성공 승인이 아니다. worker 1개를 사용한다. SourceAFIS만 미준비인 경우 유효한 처리 이미지는 반환하되 점수는 `unavailable`/null이다. 처리기 자체의 실패는 503이다.
 
-## 내일 실제 연결 순서
+## 실제 연결 순서
 
 1. 학교 Ubuntu에 이번 API/worker 소스와 기존 AI scanner runtime을 준비한다.
 2. Ubuntu loopback에서 `/ready`와 동의된 입력 1건으로 실제 처리·매칭·취소·임시 자료 정리를 확인한다.
