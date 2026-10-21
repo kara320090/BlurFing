@@ -6,6 +6,8 @@ import org.junit.Assume.assumeTrue
 import org.junit.Test
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.nio.ByteBuffer
+import java.util.zip.CRC32
 
 class ExperimentalPngCodecTest {
     private fun fixture(name: String)=javaClass.getResourceAsStream("/experimental-png/$name")!!.use { it.readBytes() }
@@ -40,6 +42,41 @@ class ExperimentalPngCodecTest {
         repeat(invalid.length()) { i -> val name=invalid.getString(i)
             rejects { ExperimentalPngCodec.rows(ExperimentalPngCodec.parse(fixture("invalid-$name.png"),2)) { _,_-> } }
         }
+    }
+    @Test fun bulkReadsAcrossTinyAndEmptyIdatChunksKeepAllFiltersExact() {
+        fun chunk(type: String, data: ByteArray): ByteArray {
+            val name=type.toByteArray(Charsets.US_ASCII);val crc=CRC32().apply { update(name);update(data) }
+            return ByteBuffer.allocate(data.size+12).putInt(data.size).put(name).put(data).putInt(crc.value.toInt()).array()
+        }
+        val manifest=JSONObject(fixture("manifest.json").toString(Charsets.UTF_8))
+        for(mode in listOf("RGB","L"))for(filter in 0..4) {
+            val name="$mode-filter$filter.png";val bytes=fixture(name)
+            val data=ByteArrayOutputStream();var at=8
+            while(at<bytes.size) {
+                val size=ByteBuffer.wrap(bytes,at,4).int
+                if(bytes.copyOfRange(at+4,at+8).toString(Charsets.US_ASCII)=="IDAT")data.write(bytes,at+8,size)
+                at+=size+12
+            }
+            for(span in listOf(1,7,65536)) {
+                val packed=data.toByteArray();val split=ByteArrayOutputStream();split.write(bytes,0,33)
+                split.write(chunk("IDAT",byteArrayOf()))
+                var offset=0
+                while(offset<packed.size) { val end=minOf(offset+span,packed.size);split.write(chunk("IDAT",packed.copyOfRange(offset,end)));offset=end }
+                split.write(chunk("IDAT",byteArrayOf()));split.write(chunk("IEND",byteArrayOf()))
+                val raw=ByteArrayOutputStream()
+                ExperimentalPngCodec.rows(ExperimentalPngCodec.parse(split.toByteArray(),if(mode=="RGB")2 else 0)) { _,row -> raw.write(row) }
+                assertEquals("$name span=$span",manifest.getJSONObject(name).getString("pixel_sha256"),ExperimentalPngCodec.hash(raw.toByteArray()))
+            }
+        }
+    }
+    @Test fun largerInputBufferStillChecksCancellationBeforeEachRow() {
+        var rows=0;var checks=0
+        try {
+            ExperimentalPngCodec.rows(ExperimentalPngCodec.parse(fixture("RGB-filter1.png"),2),
+                { if(++checks==3)throw java.util.concurrent.CancellationException("synthetic cancel") }) { _,_->rows++ }
+            fail("Cancelled row stream completed")
+        } catch(_: java.util.concurrent.CancellationException) { }
+        assertEquals(3,checks);assertEquals(2,rows)
     }
     @Test fun canonicalMinimalLittleEndianAndPillowBigEndianExifHaveTheSamePixels() {
         fun raw(name: String): ByteArray { val output=ByteArrayOutputStream();ExperimentalPngCodec.rows(ExperimentalPngCodec.parse(fixture(name),2)) { _,row -> output.write(row) };return output.toByteArray() }

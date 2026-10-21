@@ -50,7 +50,7 @@ class BackNavigationTest {
         try {
             source.outputStream().use { assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)) }
             vm.onImageSelected(Uri.fromFile(source), context)
-            withTimeout(5000) { vm.uiState.first { it is UiState.Ready } }
+            withTimeout(5000) { vm.uiState.first { it is UiState.Ready && !it.isDetecting } }
             vm.addRegion()
             return vm.uiState.value as UiState.Ready
         } finally { bitmap.recycle(); source.delete() }

@@ -8,6 +8,7 @@ object ExperimentalPhotoMemory {
     private const val PREVIEWS = 8L * 1024 * 1024
     // BAOS capacity <=16MiB + final PNG <=15MiB + IDAT buffers <=128KiB.
     private const val ENCODER = 32L * 1024 * 1024
+    private const val PNG_STREAMS = 2L * 64 * 1024 // two simultaneous full-resolution row readers
 
     data class Plan(val peakBytes: Long, val additionalBytes: Long)
     fun dimensions(width: Int, height: Int): Long {
@@ -17,25 +18,25 @@ object ExperimentalPhotoMemory {
     }
     fun upload(width: Int, height: Int): Plan {
         val n = dimensions(width, height)
-        val extra = ENCODER + 16L*width + PREVIEWS
+        val extra = ENCODER + 16L*width + PREVIEWS + PNG_STREAMS
         return Plan(4*n + extra, extra)
     }
     fun importPhoto(width: Int, height: Int,inputBytes: Int=MAX_PNG_BYTES): Plan {
         val n = dimensions(width,height)
         require(inputBytes in 1..MAX_PNG_BYTES)
         // Raw orientation copy is released before encoding; source stores PNG, never a full Bitmap.
-        val buffers = maxOf(8*n,4*n+ENCODER+PREVIEWS)+16L*maxOf(width,height)
+        val buffers = maxOf(8*n,4*n+ENCODER+PREVIEWS)+16L*maxOf(width,height)+PNG_STREAMS
         return Plan(buffers+inputBytes,buffers)
     }
     fun canonical(width: Int,height: Int,bytes: Int): Plan {
         dimensions(width,height);require(bytes in 1..MAX_PNG_BYTES)
-        return Plan(bytes+PREVIEWS+16L*width,PREVIEWS+16L*width)
+        return Plan(bytes+PREVIEWS+16L*width+PNG_STREAMS,PREVIEWS+16L*width+PNG_STREAMS)
     }
     fun decode(width: Int, height: Int, uploadBytes: Int, returnedPngBytes: Int, base64Chars: Long): Plan {
         val n = dimensions(width,height)
         require(uploadBytes in 1..MAX_PNG_BYTES && returnedPngBytes in 1..MAX_PNG_BYTES)
         val masks = 2*((n+7)/8)
-        val extra = 4*n + returnedPngBytes + MAX_PNG_BYTES + masks + 24L*width + PREVIEWS
+        val extra = 4*n + returnedPngBytes + MAX_PNG_BYTES + masks + 24L*width + PREVIEWS + PNG_STREAMS
         // Mask PNGs are streamed into compact bits: no full mask Bitmap/IntArray.
         return Plan(uploadBytes + 2*base64Chars + extra, extra)
     }

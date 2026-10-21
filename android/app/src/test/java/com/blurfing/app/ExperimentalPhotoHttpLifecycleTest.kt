@@ -3,6 +3,7 @@ package com.blurfing.app.experimental
 import android.net.Uri
 import androidx.lifecycle.ViewModelStore
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.serialization.encodeToString
@@ -24,6 +25,47 @@ import java.util.concurrent.TimeUnit
 @Config(sdk=[28])
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class ExperimentalPhotoHttpLifecycleTest {
+    @Test fun readinessAndProcessingReuseConnectionAndAddressChangeUsesTheNewServer()=runBlocking {
+        Dispatchers.setMain(Dispatchers.Unconfined);val store=ViewModelStore()
+        try {
+            MockWebServer().use { first -> MockWebServer().use { second ->
+                val source=fixtures.source();val created=mutableListOf<String>()
+                val ready=ExperimentalServerReadiness("ready","photo-experimental-v2","experimental",listOf("native_v12"),false)
+                for(server in listOf(first,second)) {
+                    server.dispatcher=object: okhttp3.mockwebserver.Dispatcher() {
+                        override fun dispatch(request: okhttp3.mockwebserver.RecordedRequest): MockResponse {
+                            if(request.path=="/v2/ready")return json(Json.encodeToString(ready))
+                            val id=request.body.readUtf8().substringAfter("name=\"request_id\"")
+                                .substringAfter("\r\n\r\n").substringBefore("\r\n")
+                            return json(Json.encodeToString(fixtures.response(source).copy(requestId=id)))
+                        }
+                    };server.start()
+                }
+                val vm=ExperimentalPhotoViewModel({ address ->
+                    created+=address
+                    ExperimentalPhotoRepository(address,allowLocalHttp=true,checkMemory=false)
+                },{ _,_->source });store.put("connection",vm)
+                vm.setAddress(first.url("/").toString())
+                vm.select(RuntimeEnvironment.getApplication(),Uri.parse("content://synthetic/connection"))
+                vm.checkServer()
+                withTimeout(5000) { vm.state.first { !it.checkingServer } }
+                assertNotNull(vm.state.value.readiness)
+                vm.start()
+                withTimeout(5000) { vm.state.first { !it.busy } }
+                val firstId=vm.state.value.result!!.requestId
+                assertEquals(1,created.size)
+                assertEquals(0,first.takeRequest().sequenceNumber)
+                assertEquals(1,first.takeRequest().sequenceNumber)
+                vm.setAddress(second.url("/").toString());vm.start()
+                vm.confirmReplacement(vm.state.value.replacement!!.token)
+                withTimeout(5000) { vm.state.first { !it.busy } }
+                assertNotNull(vm.state.value.result);assertNotEquals(firstId,vm.state.value.result!!.requestId)
+                assertEquals(listOf(first.url("/").toString(),second.url("/").toString()),created)
+                assertEquals("/v2/photo/protect",second.takeRequest().path)
+                assertEquals(2,first.requestCount)
+            } }
+        } finally { store.clear();Dispatchers.resetMain() }
+    }
     @Test fun experimentDefaultsToPublicOriginAndKeepsLocalDevelopmentAddresses() {
         assertEquals(com.blurfing.app.repository.BackendAddress.DEFAULT_SERVER,ExperimentalPhotoState().serverAddress)
         assertEquals("http://10.0.2.2:8001",EXPERIMENTAL_PHOTO_EMULATOR_DEFAULT)

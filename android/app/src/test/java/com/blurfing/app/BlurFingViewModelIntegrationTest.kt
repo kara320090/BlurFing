@@ -34,6 +34,8 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 import okhttp3.OkHttpClient
+import okhttp3.ConnectionPool
+import okhttp3.Protocol
 import okhttp3.tls.HandshakeCertificates
 import okhttp3.tls.HeldCertificate
 
@@ -88,7 +90,9 @@ class BlurFingViewModelIntegrationTest {
                     .compress(Bitmap.CompressFormat.PNG, 100, it)
             }
             vm.onImageSelected(Uri.fromFile(file), context)
-            withTimeout(5000) { vm.uiState.first { it is UiState.Ready } }
+            // Import now starts local detection. Wait for that input stage before
+            // editing regions; Unconfined tests can resume on the import thread.
+            withTimeout(5000) { vm.uiState.first { it is UiState.Ready && !it.isDetecting } }
             vm.addRegion()
             vm.addRegion()
             return vm.uiState.value as UiState.Ready
@@ -158,6 +162,58 @@ class BlurFingViewModelIntegrationTest {
             assertEquals(Color.BLUE, completed.originalBitmap.getPixel(0, 0))
             assertEquals("/v1/protect", server.takeRequest().path)
         }
+    }
+    @Test fun repeatedServerRunsReuseAnActualTlsConnectionButSendFreshRequests() = runBlocking {
+        MockWebServer().use { server ->
+            val certificates=configureHttps(server)
+            server.dispatcher=object: okhttp3.mockwebserver.Dispatcher() {
+                override fun dispatch(request: RecordedRequest): MockResponse {
+                    val id=request.body.readUtf8().substringAfter("name=\"request_id\"")
+                        .substringAfter("\r\n\r\n").substringBefore("\r\n")
+                    return MockResponse().setBody(Json.encodeToString(ProtectionResponse.serializer(),response(ProtectionRequest(id))))
+                }
+            }
+            server.start();var created=0
+            val vm=BlurFingViewModel(apiRepositoryFactory={
+                created++
+                ApiProtectionRepository(baseUrl=it,client=certificates.newBuilder()
+                    .connectionPool(ConnectionPool()).protocols(listOf(Protocol.HTTP_1_1)).build())
+            })
+            load(vm)
+            val ids=mutableListOf<String>()
+            repeat(2) { run ->
+                if(run>0)vm.navigateToStep(ScreenStep.REGION_EDITOR)
+                vm.startProtection(serverUrl=server.url("/").toString()+if(run==0)"" else " ")
+                val done=withTimeout(10000) { vm.uiState.first { it is UiState.Ready && !it.isProcessing } as UiState.Ready }
+                assertNull(done.processingError);assertEquals(ScreenStep.COMPARISON,done.step)
+                ids+=done.protectionResponse!!.requestId
+            }
+            assertEquals(1,created);assertEquals(2,ids.toSet().size)
+            assertEquals(0,server.takeRequest().sequenceNumber)
+            assertEquals(1,server.takeRequest().sequenceNumber)
+        }
+    }
+    @Test fun switchingEndpointNeverSendsTheNextPhotoToThePreviousRepository() = runBlocking {
+        val created=mutableListOf<String>();val sent=mutableListOf<String>()
+        val vm=BlurFingViewModel(apiRepositoryFactory={ address ->
+            created+=address
+            object: ProtectionRepository {
+                override suspend fun protectImage(request: ProtectionRequest,imageBytes: ByteArray): Result<ProtectionResponse> {
+                    sent+=address;return Result.success(response(request))
+                }
+                override fun cancelRequest(requestId: String)=Unit
+            }
+        })
+        load(vm)
+        val endpoints=listOf("https://a.example","https://a.example/","https://b.example","https://a.example")
+        endpoints.forEachIndexed { index,address ->
+            if(index>0)vm.navigateToStep(ScreenStep.REGION_EDITOR)
+            vm.startProtection(serverUrl=address)
+            val done=withTimeout(5000) { vm.uiState.first { it is UiState.Ready && !it.isProcessing } as UiState.Ready }
+            assertNull(done.processingError)
+        }
+        assertEquals(listOf("https://a.example","https://b.example","https://a.example"),created)
+        assertEquals(endpoints.map { it.trimEnd('/') },sent)
     }
 
     @Test fun resetWhileRequestFinishesCannotRestoreOldPhoto() = runBlocking {

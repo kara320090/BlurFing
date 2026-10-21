@@ -99,9 +99,19 @@ object ExperimentalPngCodec {
             return if(chunk==png.idats.size) -1 else { consumed++;png.bytes[at++].toInt() and 255 }
         }
         override fun read(b: ByteArray, off: Int, len: Int): Int {
+            if(off<0 || len<0 || off>b.size-len)throw IndexOutOfBoundsException()
             if(len==0)return 0
             var n=0
-            while(n<len) { val value=read();if(value<0)break;b[off+n++]=value.toByte() }
+            while(n<len) {
+                while(chunk<png.idats.size && at>png.idats[chunk].last) {
+                    chunk++
+                    if(chunk<png.idats.size)at=png.idats[chunk].first
+                }
+                if(chunk==png.idats.size)break
+                val count=minOf(len-n,png.idats[chunk].last-at+1)
+                png.bytes.copyInto(b,off+n,at,at+count)
+                at+=count;consumed+=count;n+=count
+            }
             return if(n==0)-1 else n
         }
     }
@@ -115,7 +125,7 @@ object ExperimentalPngCodec {
         val length=Math.multiplyExact(png.width,bpp);var previous=ByteArray(length);var current=ByteArray(length)
         val inflater=Inflater()
         private val idat=IdatStream(png)
-        private val input=InflaterInputStream(idat,inflater)
+        private val input=InflaterInputStream(idat,inflater,64*1024)
         private var y=0
         fun next(): ByteArray {
                     require(y++<png.height)
@@ -123,12 +133,19 @@ object ExperimentalPngCodec {
                     val filter=input.read(); require(filter in 0..4)
                     var got=0
                     while(got<length) { val n=input.read(current,got,length-got);require(n>0);got+=n }
-                    for(x in current.indices) {
-                        val a=if(x>=bpp)current[x-bpp].toInt() and 255 else 0
-                        val b=previous[x].toInt() and 255
-                        val c=if(x>=bpp)previous[x-bpp].toInt() and 255 else 0
-                        val predictor=when(filter) { 0->0;1->a;2->b;3->(a+b)/2;else->paeth(a,b,c) }
-                        current[x]=((current[x].toInt() and 255)+predictor).toByte()
+                    // Dispatch once per row. Filters 0/1/2 don't need the
+                    // average/Paeth neighbours; byte arithmetic is modulo 256.
+                    when(filter) {
+                        0 -> Unit
+                        1 -> for(x in bpp until length)current[x]=(current[x].toInt()+current[x-bpp].toInt()).toByte()
+                        2 -> for(x in current.indices)current[x]=(current[x].toInt()+previous[x].toInt()).toByte()
+                        else -> for(x in current.indices) {
+                            val a=if(x>=bpp)current[x-bpp].toInt() and 255 else 0
+                            val b=previous[x].toInt() and 255
+                            val c=if(x>=bpp)previous[x-bpp].toInt() and 255 else 0
+                            val predictor=if(filter==3)(a+b)/2 else paeth(a,b,c)
+                            current[x]=((current[x].toInt() and 255)+predictor).toByte()
+                        }
                     }
                     val swap=previous;previous=current;current=swap
                     return previous

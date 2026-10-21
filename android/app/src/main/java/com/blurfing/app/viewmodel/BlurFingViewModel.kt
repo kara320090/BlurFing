@@ -160,6 +160,15 @@ open class BlurFingViewModel(
     private var activeProcessingJob: Job? = null
     private var activeRequestId: String? = null
     private var activeRepository: ProtectionRepository? = null
+    private var apiAddress: String? = null
+    private var apiRepository: ProtectionRepository? = null
+
+    private fun repositoryFor(address: String): ProtectionRepository {
+        if (address == apiAddress) apiRepository?.let { return it }
+        // Retain only the selected endpoint's transport, never a photo/result.
+        // Reusing its OkHttp pool avoids a fresh connection on every retry/photo.
+        return apiRepositoryFactory(address).also { apiAddress = address; apiRepository = it }
+    }
     private var imageLoadingJob: Job? = null
     private var detectionJob: Job? = null
     private var detectionId: String? = null
@@ -401,7 +410,7 @@ open class BlurFingViewModel(
             require(strength.isFinite() && strength in 0f..1f) { "보호 강도를 확인해 주세요." }
             require(current.regions.isNotEmpty()) { "손끝 영역을 한 개 이상 지정해 주세요." }
             if (serverUrl == null) protectionRepository else {
-                apiRepositoryFactory(BackendAddress.normalize(serverUrl, BuildConfig.DEBUG))
+                repositoryFor(BackendAddress.normalize(serverUrl, BuildConfig.DEBUG))
             }
         } catch (e: IllegalArgumentException) {
             _uiState.value = current.copy(processingError = e.message)

@@ -46,8 +46,8 @@ android {
         applicationId = "com.blurfing.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4
-        versionName = "1.0.3"
+        versionCode = 5
+        versionName = "1.0.4"
 
         val revision = providers.gradleProperty("blurfingRevision").orElse("unrecorded").get()
         require(revision.matches(Regex("[0-9a-f]{7,40}|unrecorded")))

@@ -69,7 +69,7 @@ class SavePermissionTest {
         try {
             input.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
             vm.onImageSelected(Uri.fromFile(input), context)
-            withTimeout(5000) { vm.uiState.first { it is UiState.Ready } }
+            withTimeout(5000) { vm.uiState.first { it is UiState.Ready && !it.isDetecting } }
             vm.addRegion()
             vm.addRegion()
             return vm.uiState.value as UiState.Ready

@@ -58,6 +58,14 @@ class ExperimentalPhotoViewModel(
     private var settings: ExperimentalPhotoSettings?=null
     private var session: ExperimentalPhotoSession?=null
     private var service: ExperimentalPhotoService?=null
+    private var transportAddress: String?=null
+    private var transport: ExperimentalPhotoService?=null
+    private fun serviceFor(address: String): ExperimentalPhotoService {
+        if(address==transportAddress)transport?.let { return it }
+        // A single endpoint transport shares connections for readiness and new
+        // inference requests. Address changes replace it; no result is cached.
+        return serviceFactory(address).also { transportAddress=address;transport=it }
+    }
     private var requestId: String?=null
     private var importStartedAtMs: Long?=null
     private data class PendingSave(val generation: Long,val result: ValidatedExperimentalPhoto)
@@ -126,7 +134,7 @@ class ExperimentalPhotoViewModel(
         mutable.value=state.copy(checkingServer=true,readiness=null,message=null)
         task=viewModelScope.launch {
             try {
-                val ready=serviceFactory(state.serverAddress).readiness()
+                val ready=serviceFor(state.serverAddress).readiness()
                 coroutineContext.ensureActive();ready.verify()
                 if(token==generation)mutable.value=mutable.value.copy(checkingServer=false,readiness=ready,
                     message=if(state.engine.id in ready.photoEngines)"선택한 엔진의 서버 설정이 확인됐습니다. 실제 사진 처리·보호 성능 확인은 별도입니다."
@@ -246,7 +254,7 @@ class ExperimentalPhotoViewModel(
         task=viewModelScope.launch {
             try {
                 checkpoint(source,null,token)
-                val api=serviceFactory(state.serverAddress);service=api
+                val api=serviceFor(state.serverAddress);service=api
                 val result=api.protect(source,state.engine,id);coroutineContext.ensureActive()
                 require(result.requestId==id && result.engine==state.engine)
                 checkpoint(source,result,token)
