@@ -234,6 +234,14 @@ if (args.Length == 2 && args[0] == "--ffv-helper")
         catch (InvalidDataException) { return; }
         throw new Exception("transparent indexed input was accepted without the SDK boundary adapter");
     }));
+    tests.Add(("raw device callback filters empty/no-contact frames and preserves exact source pixels", async () =>
+    {
+        using var stop = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var start = new System.Diagnostics.ProcessStartInfo(Path.GetFullPath(args[1]));
+        start.ArgumentList.Add("--raw-frame-self-check"); start.CreateNoWindow = true;
+        var actual = await FfvCaptureClient.CaptureAsync(start, stop.Token);
+        Assert(actual.Width == 3 && actual.Height == 2 && actual.Gray.SequenceEqual(new byte[] { 12, 34, 56, 78, 90, 123 }), "raw SDK samples or dimensions changed");
+    }));
 }
 tests.Add(("scanner absence, acquisition timeout and poor quality stay distinct failures", async () =>
 {

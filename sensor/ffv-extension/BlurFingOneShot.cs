@@ -15,7 +15,7 @@ using Neurotec.Biometrics;
 
 internal static class BlurFingOneShot
 {
-    private static void Stage(string stage)
+    internal static void Stage(string stage)
     {
         try
         {

@@ -11,7 +11,7 @@ internal sealed class ComparisonForm : Form
     private readonly Button import = new() { Text = "저장한 센서 영상 열기", AutoSize = true };
     private readonly Button compare = new() { Text = "서버 AI 처리 · 매칭", AutoSize = true };
     private readonly Button capture = new() { Text = "지문 취득 후 자동 비교", AutoSize = true, BackColor = Color.FromArgb(223, 232, 255) };
-    private readonly Button configureFfv = new() { Text = "FFV 위치 설정", AutoSize = true };
+    private readonly Button configureFfv = new() { Text = "취득기 위치 설정", AutoSize = true };
     private readonly Button cancel = new() { Text = "처리 취소", AutoSize = true, Enabled = false };
     private readonly Button export = new() { Text = "3열 비교 자료 저장", AutoSize = true, Enabled = false };
     private readonly Button preview = new() { Text = "합성 화면 확인", AutoSize = true };
@@ -19,7 +19,7 @@ internal sealed class ComparisonForm : Form
     private readonly CheckBox automatic = new() { Text = "기존 FFV 창의 새 취득 자동 처리", AutoSize = true };
     private readonly PictureBox original = new() { Dock = DockStyle.Fill, SizeMode = PictureBoxSizeMode.Zoom, BackColor = Color.FromArgb(239, 243, 248) };
     private readonly PictureBox processed = new() { Dock = DockStyle.Fill, SizeMode = PictureBoxSizeMode.Zoom, BackColor = Color.FromArgb(239, 243, 248) };
-    private readonly Label origin = new() { Text = "FFV 새 취득 대기", AutoSize = true, Dock = DockStyle.Fill, Padding = new Padding(8) };
+    private readonly Label origin = new() { Text = "센서 원본 취득 대기", AutoSize = true, Dock = DockStyle.Fill, Padding = new Padding(8) };
     private readonly Label protection = new() { Text = "아직 처리하지 않았습니다", AutoSize = true, Dock = DockStyle.Fill, Padding = new Padding(8) };
     private readonly Label score = new() { Text = "미측정", AutoSize = true, Font = new Font("Segoe UI", 36, FontStyle.Bold), ForeColor = Color.FromArgb(61, 65, 135) };
     private readonly Label scoreDetail = new() { Text = "SourceAFIS 원시 유사도 점수\n\n원본과 AI 처리본을 비교합니다.\n백분율·본인 일치 확률이 아닙니다.", AutoSize = true, MaximumSize = new Size(270, 0), Padding = new Padding(0, 12, 0, 0) };
@@ -37,7 +37,7 @@ internal sealed class ComparisonForm : Form
 
     public ComparisonForm(bool showPreview = false)
     {
-        Text = "BlurFing 0.2.3 | FFV 센서 · 서버 AI · 매칭 비교";
+        Text = "BlurFing 0.2.4 | BioMini 센서 · 서버 AI · 매칭 비교";
         Font = new Font("맑은 고딕", 10);
         ClientSize = new Size(1240, 800); MinimumSize = new Size(1040, 720);
         StartPosition = FormStartPosition.CenterScreen;
@@ -48,7 +48,7 @@ internal sealed class ComparisonForm : Form
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 100));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 35));
-        layout.Controls.Add(new Label { Text = "FFV 지문  /  AI 처리와 매칭 비교", AutoSize = true,
+        layout.Controls.Add(new Label { Text = "센서 원본  /  AI 처리와 매칭 비교", AutoSize = true,
             Font = new Font(Font.FontFamily, 22, FontStyle.Bold), ForeColor = Color.FromArgb(29, 44, 65) }, 0, 0);
         var server = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 4 };
         server.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90)); server.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -115,7 +115,7 @@ internal sealed class ComparisonForm : Form
                 }); }
             }, lifetime.Token);
         };
-        status.Text = "서버 주소와 연구용 전송을 확인한 후 ‘지문 취득 후 자동 비교’를 누르세요. 최초 1회 FFV 위치·스캐너 모듈을 선택합니다.\r\nAndroid와 같은 서버의 /scanner/ 주소를 사용할 수 있습니다. 센서 API 설치는 별도로 필요합니다.";
+        status.Text = "‘선택한 서버로 연구용 지문 영상 전송’만 체크한 후 ‘지문 취득 후 자동 비교’를 누르세요.\r\nBioMini의 회색조 원본을 직접 취득해 같은 서버의 /scanner/ 경로에서 처리합니다.";
         UpdateControls();
     }
 
@@ -184,7 +184,7 @@ internal sealed class ComparisonForm : Form
     }
     private bool ConfigureFfv()
     {
-        using var dialog = new OpenFileDialog { Filter = "BlurFing FFV 취득기|BlurFing*.exe", Title = "공식 FFV SDK의 Bin/Win64_x64에 있는 새 BlurFing 취득기 선택" };
+        using var dialog = new OpenFileDialog { Filter = "BlurFing 센서 원본 취득기|BlurFing*.exe", Title = "설치된 공식 SDK의 Bin/Win64_x64에 있는 BlurFingBioMiniRaw 취득기 선택" };
         if (dialog.ShowDialog(this) != DialogResult.OK) return false;
         var problem = FfvHelperConfiguration.Problem(dialog.FileName);
         if (problem is not null) { status.Text = problem; return false; }
@@ -192,7 +192,7 @@ internal sealed class ComparisonForm : Form
         try { SaveSettings(); }
         catch (IOException) { status.Text = "설정 저장에 실패했습니다. 저장 위치와 권한을 확인하세요."; return false; }
         catch (UnauthorizedAccessException) { status.Text = "설정을 저장할 권한이 없습니다."; return false; }
-        status.Text = "FFV 취득기 위치를 저장했습니다. 이전 FFV 앱이 센서를 사용 중이면 먼저 닫아 주세요.";
+        status.Text = "센서 원본 취득기 위치를 저장했습니다. 다른 센서 앱이 장치를 사용 중이면 먼저 닫아 주세요.";
         return true;
     }
     private async Task CaptureAndCompare()

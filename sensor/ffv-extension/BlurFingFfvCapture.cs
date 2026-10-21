@@ -20,9 +20,10 @@ internal static class BlurFingFfvCapture
     [STAThread]
     private static void Main(string[] args)
     {
+        if (args.Length == 3 && args[0] == "--raw-frame-self-check" && args[1] == "--capture-once") { BlurFingRawOneShot.CheckFrameTransport(args[2]); return; }
         if (args.Length == 3 && args[0] == "--transport-self-check" && args[1] == "--capture-once") { BlurFingOneShot.CheckTransport(args[2]); return; }
         if (args.Length == 3 && (args[0] == "--bitmap-self-check" || args[0] == "--bitmap-raw-self-check") && args[1] == "--capture-once") { BlurFingOneShot.CheckBitmapTransport(args[2], args[0] == "--bitmap-self-check"); return; }
-        if (args.Length == 2 && args[0] == "--capture-once") { BlurFingOneShot.Run(args[1]); return; }
+        if (args.Length == 2 && args[0] == "--capture-once") { BlurFingRawOneShot.Run(args[1]); return; }
         Stage("Starting");
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);

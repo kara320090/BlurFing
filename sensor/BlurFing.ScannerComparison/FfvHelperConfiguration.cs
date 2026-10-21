@@ -21,15 +21,18 @@ internal static class FfvHelperConfiguration
             if (!metadata.TypeDefinitions.Any(handle =>
             {
                 var type = metadata.GetTypeDefinition(handle);
-                return metadata.GetString(type.Name) == "BlurFingOneShot" && type.GetMethods().Any(method =>
+                return metadata.GetString(type.Name) == "BlurFingRawOneShot" && type.GetMethods().Any(method =>
                     metadata.GetString(metadata.GetMethodDefinition(method).Name) == "Run");
-            })) return "새 지문 원클릭 취득 기능이 없는 파일입니다. BlurFingFfvOneClick 취득기를 선택하세요.";
+            })) return "센서 원본 직접 취득 기능이 없는 파일입니다. BlurFingBioMiniRaw 취득기를 선택하세요.";
             var directory = Path.GetDirectoryName(Path.GetFullPath(path))!;
             foreach (var dependency in new[] { "CSharpSample.exe", "Neurotec.Biometrics.Nffv.dll", "Nffv.dll", "NffvServer.exe" })
                 if (!File.Exists(Path.Combine(directory, dependency)))
                     return "FFV SDK 종속 파일이 없습니다. 전달 폴더의 EXE만 선택하지 말고 전체 공식 SDK의 Bin/Win64_x64에 있는 취득기를 선택하세요.";
             if (!Directory.Exists(Path.Combine(directory, "FScanners")))
                 return "FFV 스캐너 모듈 폴더가 없습니다. 전체 공식 SDK의 Bin/Win64_x64에 있는 취득기를 선택하세요.";
+            if (!File.Exists(Path.Combine(directory, "FScanners", "NdmSupremaBioMini", "UFScanner.dll")) ||
+                !File.Exists(Path.Combine(directory, "FScanners", "NdmSupremaBioMini", "tensorflowlite_c.dll")))
+                return "BioMini 원본 취득 모듈이 없습니다. 전체 공식 SDK의 스캐너 폴더를 확인하세요.";
             return null;
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or BadImageFormatException)

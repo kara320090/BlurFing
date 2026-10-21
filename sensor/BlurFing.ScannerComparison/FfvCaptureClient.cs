@@ -41,7 +41,7 @@ internal static class FfvCaptureClient
                 if (header[5] == 1) throw new OperationCanceledException("FFV 취득 취소", cancellation);
                 throw new InvalidOperationException(header[5] switch
                 {
-                    3 => "FFV 임시 지문 자료 정리에 실패했습니다. 취득기 안내를 확인하세요. 서버로 전송하지 않았습니다.",
+                    3 => "센서 취득 종료·정리에 실패했습니다. 취득기를 확인하세요. 서버로 전송하지 않았습니다.",
                     4 => "FFV가 연결된 센서를 찾지 못했습니다. 다른 FFV 프로그램을 닫고 USB·드라이버를 확인하세요.",
                     5 => "20초 안에 지문 취득을 완료하지 못했습니다. 손가락을 센서 중앙에 올리고 다시 시도하세요.",
                     6 => "센서 영상의 품질 검사를 통과하지 못했습니다. 접촉 상태를 바꾸고 다시 시도하세요.",
@@ -51,12 +51,12 @@ internal static class FfvCaptureClient
             if (length < 32 || length > ScannerInput.MaxBytes) throw new InvalidDataException("FFV 영상 크기 오류");
             var png = new byte[length]; await pipe.ReadExactlyAsync(png, deadline.Token);
             deadline.Token.ThrowIfCancellationRequested();
-            return ScannerInput.Decode(png, "FFV 버튼으로 새로 취득한 센서 영상");
+            return ScannerInput.Decode(png, "BioMini에서 새로 취득한 회색조 원본");
         }
         finally
         {
-            // Closing the pipe requests Nffv.Cancel in the helper, including while
-            // selecting a scanner. Never kill another FFV instance or its service.
+            // Closing the pipe requests cancellation in this helper. Never kill
+            // another sensor instance or its service.
             pipe.Dispose();
             if (!process.HasExited)
             {
