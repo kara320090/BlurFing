@@ -1,7 +1,8 @@
 # BlurFing Google Play 배포 준비
 
-2026-10-21 기준 다음 후보는 `com.blurfing.app`, `versionName=1.0.2`, `versionCode=3`이다.
-콘솔에서 기존에 사용한 최대 코드가 2임을 확인하고 정했다. 실제 업로드 직전에 모든 트랙의 최대 코드를 다시 확인한다.
+2026-10-21 기준 다음 후보는 `com.blurfing.app`, `versionName=1.0.3`, `versionCode=4`이다.
+1.0.2(3)의 실제 내부 테스트 출시 이후 [기기 내 손끝 탐지](AUTOMATIC_FINGERTIPS_20261021.md)를 추가했다.
+실제 업로드 직전에 모든 트랙의 최대 코드를 다시 확인한다.
 Android 사진 AI의 HTTPS 연결 변경을 포함하며 고속 모드 선택은 서버 설정 `fast_v32`에서 수행한다.
 
 ## 빌드와 실제 배포 구분
