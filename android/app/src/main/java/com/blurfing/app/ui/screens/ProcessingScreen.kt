@@ -1,5 +1,7 @@
 package com.blurfing.app.ui.screens
 
+import com.blurfing.app.ui.components.BrandTopBar
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -43,20 +45,7 @@ fun ProcessingScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("보호 설정 및 처리") },
-                navigationIcon = {
-                    if (!isProcessing) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "뒤로가기")
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            )
+            BrandTopBar("보호 설정 및 처리", if (isProcessing) null else onBack)
         },
         modifier = modifier.fillMaxSize()
     ) { paddingValues ->
@@ -94,6 +83,7 @@ fun ProcessingScreen(
                 }
             } else {
                 Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     shape = RoundedCornerShape(16.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                     modifier = Modifier.fillMaxWidth()

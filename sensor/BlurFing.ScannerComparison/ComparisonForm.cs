@@ -3,26 +3,26 @@ using System.Text.Json;
 
 namespace BlurFing.ScannerComparison;
 
-internal sealed class ComparisonForm : Form
+internal sealed partial class ComparisonForm : Form
 {
     private readonly TextBox address = new() { Dock = DockStyle.Fill, PlaceholderText = "Ubuntu 센서 비교 서버의 HTTPS 주소" };
     private readonly NumericUpDown dpi = new() { Minimum = 100, Maximum = 2000, Value = 500, Width = 75 };
-    private readonly Button check = new() { Text = "서버 확인", AutoSize = true };
-    private readonly Button import = new() { Text = "저장한 센서 영상 열기", AutoSize = true };
-    private readonly Button compare = new() { Text = "서버 AI 처리 · 매칭", AutoSize = true };
-    private readonly Button capture = new() { Text = "지문 취득 후 자동 비교", AutoSize = true, BackColor = Color.FromArgb(223, 232, 255) };
-    private readonly Button configureFfv = new() { Text = "취득기 위치 설정", AutoSize = true };
-    private readonly Button cancel = new() { Text = "처리 취소", AutoSize = true, Enabled = false };
-    private readonly Button export = new() { Text = "3열 비교 자료 저장", AutoSize = true, Enabled = false };
-    private readonly Button preview = new() { Text = "합성 화면 확인", AutoSize = true };
+    private readonly Button check = new DesignButton() { Text = "서버 확인" };
+    private readonly Button import = new DesignButton() { Text = "저장한 센서 영상 열기" };
+    private readonly Button compare = new DesignButton() { Text = "서버 AI 처리 · 매칭" };
+    private readonly Button capture = new DesignButton(true) { Text = "지문 취득 후 자동 비교" };
+    private readonly Button configureFfv = new DesignButton() { Text = "취득기 위치 설정" };
+    private readonly Button cancel = new DesignButton() { Text = "처리 취소", Enabled = false };
+    private readonly Button export = new DesignButton() { Text = "3열 비교 자료 저장", Enabled = false };
+    private readonly Button preview = new DesignButton() { Text = "합성 화면 확인" };
     private readonly CheckBox consent = new() { Text = "선택한 서버로 연구용 지문 영상 전송", AutoSize = true };
     private readonly CheckBox automatic = new() { Text = "기존 FFV 창의 새 취득 자동 처리", AutoSize = true };
-    private readonly PictureBox original = new() { Dock = DockStyle.Fill, SizeMode = PictureBoxSizeMode.Zoom, BackColor = Color.FromArgb(239, 243, 248) };
-    private readonly PictureBox processed = new() { Dock = DockStyle.Fill, SizeMode = PictureBoxSizeMode.Zoom, BackColor = Color.FromArgb(239, 243, 248) };
+    private readonly PictureBox original = new PreviewBox() { Dock = DockStyle.Fill, SizeMode = PictureBoxSizeMode.Zoom };
+    private readonly PictureBox processed = new PreviewBox() { Dock = DockStyle.Fill, SizeMode = PictureBoxSizeMode.Zoom, EmptyText = "AI 처리본이 여기에 표시돼요" };
     private readonly Label origin = new() { Text = "센서 원본 취득 대기", AutoSize = true, Dock = DockStyle.Fill, Padding = new Padding(8) };
     private readonly Label protection = new() { Text = "아직 처리하지 않았습니다", AutoSize = true, Dock = DockStyle.Fill, Padding = new Padding(8) };
     private readonly Label score = new() { Text = "미측정", AutoSize = true, Font = new Font("Segoe UI", 36, FontStyle.Bold), ForeColor = Color.FromArgb(61, 65, 135) };
-    private readonly Label scoreDetail = new() { Text = "SourceAFIS 원시 유사도 점수\n\n원본과 AI 처리본을 비교합니다.\n백분율·본인 일치 확률이 아닙니다.", AutoSize = true, MaximumSize = new Size(270, 0), Padding = new Padding(0, 12, 0, 0) };
+    private readonly Label scoreDetail = new() { Text = "원본과 처리본의\n유사도를 비교합니다.\n\n숫자는 백분율이나\n신원 확률이 아닙니다.", AutoSize = true, MaximumSize = new Size(270, 0), Padding = new Padding(0, 12, 0, 0) };
     private readonly TextBox status = new() { Multiline = true, ReadOnly = true, Dock = DockStyle.Fill, ScrollBars = ScrollBars.Vertical };
     private readonly CancellationTokenSource lifetime = new();
     private CancellationTokenSource? active;
@@ -37,37 +37,7 @@ internal sealed class ComparisonForm : Form
 
     public ComparisonForm(bool showPreview = false)
     {
-        Text = "BlurFing 0.2.4 | BioMini 센서 · 서버 AI · 매칭 비교";
-        Font = new Font("맑은 고딕", 10);
-        ClientSize = new Size(1240, 800); MinimumSize = new Size(1040, 720);
-        StartPosition = FormStartPosition.CenterScreen;
-        BackColor = Color.White;
-        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(20), ColumnCount = 1, RowCount = 7 };
-        foreach (var size in new[] { 60, 44, 42, 40 }) layout.RowStyles.Add(new RowStyle(SizeType.Absolute, size));
-        layout.RowStyles[3] = new RowStyle(SizeType.AutoSize);
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 100));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 35));
-        layout.Controls.Add(new Label { Text = "센서 원본  /  AI 처리와 매칭 비교", AutoSize = true,
-            Font = new Font(Font.FontFamily, 22, FontStyle.Bold), ForeColor = Color.FromArgb(29, 44, 65) }, 0, 0);
-        var server = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 4 };
-        server.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90)); server.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        server.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); server.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 190));
-        server.Controls.Add(new Label { Text = "비교 서버", AutoSize = true, Padding = new Padding(0, 6, 0, 0) }, 0, 0);
-        server.Controls.Add(address, 1, 0); server.Controls.Add(check, 2, 0);
-        var resolution = Row(); resolution.Controls.AddRange([new Label { Text = "설정 DPI", AutoSize = true, Padding = new Padding(6, 6, 0, 0) }, dpi]);
-        server.Controls.Add(resolution, 3, 0); layout.Controls.Add(server, 0, 1);
-        var approvals = Row(); approvals.Controls.AddRange([consent, automatic]); layout.Controls.Add(approvals, 0, 2);
-        var actions = Row(); actions.Controls.AddRange([capture, configureFfv, import, compare, cancel, export, preview]); layout.Controls.Add(actions, 0, 3);
-        var columns = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, Padding = new Padding(0, 10, 0, 10) };
-        columns.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 37)); columns.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 37)); columns.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 26));
-        columns.Controls.Add(ImagePanel("01  센서 원본", original, origin), 0, 0);
-        columns.Controls.Add(ImagePanel("02  서버 AI 처리본", processed, protection), 1, 0);
-        var scores = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, Padding = new Padding(15), BackColor = Color.FromArgb(245, 246, 252) };
-        scores.Controls.AddRange([new Label { Text = "03  원본 ↔ 처리본 매칭", AutoSize = true, Font = new Font(Font, FontStyle.Bold) }, score, scoreDetail]);
-        columns.Controls.Add(scores, 2, 0); layout.Controls.Add(columns, 0, 4); layout.Controls.Add(status, 0, 5);
-        layout.Controls.Add(new Label { Text = "실험 처리입니다. 점수 감소·특징 추출 실패만으로 지문 보호 성공을 판단하지 않습니다.", Dock = DockStyle.Fill, ForeColor = Color.DimGray, AutoSize = true }, 0, 6);
-        Controls.Add(layout);
+        InitializeDesign();
         LoadSettings();
         address.TextChanged += (_, _) => { consent.Checked = false; automatic.Checked = false; UpdateControls(); };
         consent.CheckedChanged += (_, _) => { if (!consent.Checked) automatic.Checked = false; UpdateControls(); };
@@ -122,10 +92,12 @@ internal sealed class ComparisonForm : Form
     private static FlowLayoutPanel Row() => new() { Dock = DockStyle.Fill, AutoSize = true, WrapContents = true };
     private static Control ImagePanel(string title, PictureBox image, Label caption)
     {
-        var panel = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 3, Padding = new Padding(5) };
-        panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 34)); panel.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 80));
-        panel.Controls.Add(new Label { Text = title, AutoSize = true, Font = new Font("맑은 고딕", 12, FontStyle.Bold) }, 0, 0);
-        panel.Controls.Add(image, 0, 1); panel.Controls.Add(caption, 0, 2); return panel;
+        var card = new DesignCard { Dock = DockStyle.Fill, Margin = new Padding(0, 0, 8, 0) };
+        var panel = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 3, BackColor = Color.White };
+        panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 34)); panel.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
+        caption.Font = new Font("맑은 고딕", 9); caption.ForeColor = Design.Muted; caption.Padding = new Padding(0, 12, 0, 0);
+        panel.Controls.Add(new Label { Text = title, AutoSize = true, ForeColor = Design.Ink, Font = new Font("맑은 고딕", 11, FontStyle.Bold) }, 0, 0);
+        panel.Controls.Add(image, 0, 1); panel.Controls.Add(caption, 0, 2); card.Controls.Add(panel); return card;
     }
 
     private void UpdateControls()
@@ -136,12 +108,13 @@ internal sealed class ComparisonForm : Form
         cancel.Enabled = active is not null; export.Enabled = result is not null && active is null;
         consent.Enabled = active is null; automatic.Enabled = consent.Checked && active is null; check.Enabled = active is null;
         address.Enabled = dpi.Enabled = active is null;
+        UpdateDesignState();
     }
     private void ClearResult()
     {
         result = null; processed.Image?.Dispose(); processed.Image = null; score.Text = "미측정";
         protection.Text = "아직 처리하지 않았습니다";
-        scoreDetail.Text = "SourceAFIS 원시 유사도 점수\n\n원본과 AI 처리본을 비교합니다.\n백분율·본인 일치 확률이 아닙니다.";
+        scoreDetail.Text = "원본과 처리본의\n유사도를 비교합니다.\n\n숫자는 백분율이나\n신원 확률이 아닙니다.";
     }
     private void UseInput(ScannerInput next)
     {

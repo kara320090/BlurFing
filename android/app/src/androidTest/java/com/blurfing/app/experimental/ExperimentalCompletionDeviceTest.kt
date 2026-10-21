@@ -1,5 +1,7 @@
 package com.blurfing.app.experimental
 
+import com.blurfing.app.captureDesignArtifact
+
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.graphics.Bitmap
@@ -58,11 +60,13 @@ class ExperimentalCompletionDeviceTest {
                     model.setAddress(endpoint);model.select(context,Uri.fromFile(file))
                 }
                 compose.waitUntil(15000) { model.state.value.source!=null && !model.state.value.hasActiveWork }
+                compose.onNodeWithText("서버 및 처리 설정").performScrollTo().performClick()
                 compose.onNodeWithText("서버 연결 확인 · 사진 전송 없음").performScrollTo().performClick()
                 compose.waitUntil(10000) { model.state.value.readiness!=null }
                 assertEquals(0,posts.get())
                 compose.onNodeWithText("선택한 AI 실험 실행").performScrollTo().performClick()
                 compose.waitUntil(20000) { model.state.value.result!=null && !model.state.value.busy }
+                compose.captureDesignArtifact("automatic-comparison")
                 val result=model.state.value.result!!
                 assertEquals(1L,result.changedPixels);assertTrue(model.state.value.hasUnsavedResult)
                 compose.onNodeWithText("나란히 비교").performScrollTo().assertIsDisplayed()

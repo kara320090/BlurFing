@@ -54,6 +54,8 @@ class WorkflowDeviceTest {
     }
 
     @Test fun selectedImageThroughEditorPreviewComparisonAndRealGallerySave() {
+        compose.runOnUiThread { vm.resetToIdle() }
+        compose.captureDesignArtifact("home")
         val source = File(compose.activity.cacheDir, "workflow-synthetic.png").also(::image)
         val original = source.readBytes()
         val before = outputIds()
@@ -63,11 +65,13 @@ class WorkflowDeviceTest {
             ready(ScreenStep.REGION_EDITOR)
             compose.onNodeWithText("영역 추가").performClick()
             compose.onNodeWithText("영역 추가").performClick()
+            compose.captureDesignArtifact("regions")
             compose.runOnIdle { assertEquals(2, (vm.uiState.value as UiState.Ready).regions.size) }
             compose.onNodeWithText("선택 삭제").performClick()
             compose.onNodeWithText("보호 설정 (BF-04)").performClick()
             compose.onNodeWithText("Mock 프리뷰 만들기").performScrollTo().performClick()
             ready(ScreenStep.COMPARISON)
+            compose.captureDesignArtifact("comparison")
             compose.onNodeWithText("원본 보기").performClick()
             compose.onNodeWithContentDescription("원본 이미지").assertIsDisplayed()
             compose.onNodeWithText("보호본 보기").performClick()

@@ -26,6 +26,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import com.blurfing.app.model.NormalizedRegion
 import com.blurfing.app.ui.components.FingertipOverlayCanvas
+import com.blurfing.app.ui.components.BrandTopBar
+import com.blurfing.app.ui.components.WorkflowSteps
 import com.blurfing.app.utils.CoordinateTransformer
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,18 +69,7 @@ fun RegionEditorScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("손끝 영역 확인 및 수정 (BF-03)") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "뒤로가기")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            )
+            BrandTopBar("손끝 영역 확인", onBack)
         },
         modifier = modifier.fillMaxSize()
     ) { paddingValues ->
@@ -89,6 +80,7 @@ fun RegionEditorScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            WorkflowSteps(1)
             sessionNotice?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary)

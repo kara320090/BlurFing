@@ -1,5 +1,8 @@
 package com.blurfing.app.ui.screens
 
+import com.blurfing.app.ui.components.BrandTopBar
+import com.blurfing.app.ui.components.WorkflowSteps
+
 import android.graphics.Bitmap
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -62,12 +65,11 @@ fun ComparisonScreen(
     val evaluation = remember(response) { EvaluationPresentation.from(response) }
 
     Scaffold(topBar = {
-        TopAppBar(title = { Text("전후 비교 및 저장") }, navigationIcon = {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로가기") }
-        })
+        BrandTopBar("전후 비교 및 저장", onBack)
     }, modifier = modifier.fillMaxSize()) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            WorkflowSteps(2)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(selected = !sideBySide, onClick = { sideBySide = false }, label = { Text("한 장씩") })
                 FilterChip(selected = sideBySide, onClick = { sideBySide = true }, label = { Text("나란히 비교") })

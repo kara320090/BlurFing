@@ -2,6 +2,8 @@ package com.blurfing.app.experimental
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -9,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -91,8 +94,8 @@ internal fun ExperimentalPhotoComparison(source: ExperimentalPhotoUpload,result:
     if(!sideBySide)TextButton(onClick={originalOnly=!originalOnly}) { Text(if(originalOnly)"처리본 보기" else "원본 보기") }
     images?.let { (original,processed) ->
         if(sideBySide)Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-            Column(Modifier.weight(1f)) { Text("원본");Image(original.asImageBitmap(),"AI 비교 원본",Modifier.fillMaxWidth().height(280.dp)) }
-            Column(Modifier.weight(1f)) { Text(if(overlay)"처리본 · 마스크" else "처리본");Image(processed.asImageBitmap(),"AI 비교 처리본",Modifier.fillMaxWidth().height(280.dp)) }
+            Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(8.dp)) { Text("원본",style=MaterialTheme.typography.titleSmall);Image(original.asImageBitmap(),"AI 비교 원본",Modifier.fillMaxWidth().height(280.dp).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surfaceVariant).padding(6.dp)) }
+            Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(8.dp)) { Text(if(overlay)"처리본 · 마스크" else "처리본",style=MaterialTheme.typography.titleSmall);Image(processed.asImageBitmap(),"AI 비교 처리본",Modifier.fillMaxWidth().height(280.dp).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surfaceVariant).padding(6.dp)) }
         } else {
             Text(if(originalOnly)"원본" else if(overlay)"처리본 · 마스크" else "처리본")
             Image((if(originalOnly)original else processed).asImageBitmap(),if(originalOnly)"AI 비교 원본" else "AI 비교 처리본",Modifier.fillMaxWidth().height(300.dp))

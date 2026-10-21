@@ -19,7 +19,7 @@ class ExperimentalAutoEntryDeviceTest {
     @get:Rule val compose=createAndroidComposeRule<MainActivity>()
 
     @Test fun mainAutomaticEntryOpensV23ReadyForPhotoSelection() {
-        compose.onNodeWithText("자동 지문 보호 · V23 실험").performScrollTo().performClick()
+        compose.onNodeWithTag("open_automatic_photo").performScrollTo().performClick()
         var activity: ExperimentalPhotoActivity?=null
         compose.waitUntil(10000) {
             InstrumentationRegistry.getInstrumentation().runOnMainSync {
