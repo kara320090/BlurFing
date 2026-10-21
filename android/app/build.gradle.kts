@@ -7,14 +7,14 @@ plugins {
 
 android {
     namespace = "com.blurfing.app"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.blurfing.app"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        targetSdk = 36
+        versionCode = 3
+        versionName = "1.0.2"
 
         val revision = providers.gradleProperty("blurfingRevision").orElse("unrecorded").get()
         require(revision.matches(Regex("[0-9a-f]{7,40}|unrecorded")))
@@ -26,8 +26,23 @@ android {
         }
     }
 
+    val uploadStorePath = providers.environmentVariable("BLURFING_KEYSTORE_PATH").orNull
+    if (uploadStorePath != null) {
+        signingConfigs {
+            create("upload") {
+                storeFile = file(uploadStorePath)
+                storePassword = providers.environmentVariable("BLURFING_KEYSTORE_PASSWORD").get()
+                keyAlias = providers.environmentVariable("BLURFING_KEY_ALIAS").get()
+                keyPassword = providers.environmentVariable("BLURFING_KEY_PASSWORD").get()
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (uploadStorePath != null) {
+                signingConfig = signingConfigs.getByName("upload")
+            }
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -82,6 +97,7 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:4.14.1")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    testImplementation("com.squareup.okhttp3:okhttp-tls:4.12.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
     testImplementation("org.json:json:20240303")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")

@@ -6,6 +6,7 @@ import android.net.Uri
 import com.blurfing.app.model.ProtectionRequest
 import com.blurfing.app.model.ProtectionResponse
 import com.blurfing.app.repository.ProtectionRepository
+import com.blurfing.app.repository.ApiProtectionRepository
 import com.blurfing.app.viewmodel.BlurFingViewModel
 import com.blurfing.app.viewmodel.ScreenStep
 import com.blurfing.app.viewmodel.UiState
@@ -32,6 +33,9 @@ import kotlinx.serialization.json.Json
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
+import okhttp3.OkHttpClient
+import okhttp3.tls.HandshakeCertificates
+import okhttp3.tls.HeldCertificate
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -39,6 +43,27 @@ import okhttp3.mockwebserver.RecordedRequest
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class BlurFingViewModelIntegrationTest {
     private val store = ViewModelStore()
+
+    // 배포 빌드의 HTTPS 정책을 그대로 사용하면서 합성 응답을 검증한다.
+    // 테스트용 인증서는 이 클라이언트에만 신뢰시키며 앱의 인증서 정책을 바꾸지 않는다.
+    private fun configureHttps(server: MockWebServer): OkHttpClient {
+        val certificate = HeldCertificate.Builder()
+            .commonName("localhost")
+            .addSubjectAlternativeName("localhost")
+            .addSubjectAlternativeName("127.0.0.1")
+            .addSubjectAlternativeName("::1")
+            .build()
+        val serverCertificates = HandshakeCertificates.Builder()
+            .heldCertificate(certificate).build()
+        val clientCertificates = HandshakeCertificates.Builder()
+            .addTrustedCertificate(certificate.certificate).build()
+        server.useHttps(serverCertificates.sslSocketFactory(), false)
+        return OkHttpClient.Builder()
+            .sslSocketFactory(clientCertificates.sslSocketFactory(), clientCertificates.trustManager)
+            .followRedirects(false)
+            .followSslRedirects(false)
+            .build()
+    }
     @Before fun setUp() { Dispatchers.setMain(Dispatchers.Unconfined) }
     @After fun tearDown() {
         store.clear()
@@ -105,6 +130,7 @@ class BlurFingViewModelIntegrationTest {
 
     @Test fun syntheticHttpServerImageReachesComparisonScreenState() = runBlocking {
         MockWebServer().use { server ->
+            val httpsClient = configureHttps(server)
             server.dispatcher = object : okhttp3.mockwebserver.Dispatcher() {
                 override fun dispatch(request: RecordedRequest): MockResponse {
                     val multipart = request.body.readUtf8()
@@ -117,7 +143,9 @@ class BlurFingViewModelIntegrationTest {
                 }
             }
             server.start()
-            val vm = BlurFingViewModel()
+            val vm = BlurFingViewModel(apiRepositoryFactory = {
+                ApiProtectionRepository(baseUrl = it, client = httpsClient)
+            })
             load(vm)
             vm.startProtection(serverUrl = server.url("/").toString())
             val completed = withTimeout(10000) {
@@ -161,8 +189,11 @@ class BlurFingViewModelIntegrationTest {
 
     @Test fun unavailableBackendPreservesPhotoAndAllowsLocalPreview() = runBlocking {
         MockWebServer().use { server ->
+            val httpsClient = configureHttps(server)
             server.start()
-            val vm = BlurFingViewModel()
+            val vm = BlurFingViewModel(apiRepositoryFactory = {
+                ApiProtectionRepository(baseUrl = it, client = httpsClient)
+            })
             val loaded = load(vm)
             vm.deleteRegion(1)
             val editedRegions = (vm.uiState.value as UiState.Ready).regions
