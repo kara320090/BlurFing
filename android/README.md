@@ -2,6 +2,8 @@
 
 주담당: 이봉헌 (Android 앱 개발 및 시스템 통합, 팀장)
 
+2026-10-21 Play 배포 준비: Android 16 API 36, AGP 8.10.1, Gradle 8.11.1로 빌드 환경을 맞추고 다음 후보 버전을 1.0.2 / versionCode 3으로 지정했습니다. 업로드 서명·Play Console 프로덕션 권한·실제 HTTPS 서버 연결은 별도 확인이 필요합니다. [배포 파일과 서명 절차](docs/PLAY_RELEASE.md)를 따릅니다. 서명 없는 AAB 빌드 성공을 스토어 출시로 표시하지 않습니다.
+
 2026-10-20: V2 설정 유지·서버 준비 확인·오류 안내·촬영·확대 비교·PNG 공유·작업 복원을 연결했습니다. [최종 구현 범위](../docs/android-completion-20261020.md)와 [검증 기록](../docs/worklogs/2026-10-20-이봉헌-android-completion.md)을 먼저 확인하세요. 아래 기능별 수치는 각 작업 당시의 기록이며 학교 서버·실물 기기·성능 승인 상태와 구분합니다.
 
 SNS 사진 속 손가락 지문 노출을 줄이는 Android 보호 앱 프로젝트입니다.
@@ -56,10 +58,10 @@ SNS 사진 속 손가락 지문 노출을 줄이는 Android 보호 앱 프로젝
 
 - **JDK**: Java 21 LTS 권장 (로컬 환경: `C:\Program Files\BlueJ\jdk` 확인)
 - **Android SDK**: `C:\Users\soma\AppData\Local\Android\Sdk`
-  - `compileSdk`: 35 (Android 15)
+  - `compileSdk`: 36 (Android 16)
   - `minSdk`: 26 (Android 8.0 Oreo)
-  - `targetSdk`: 35
-- **빌드 도구**: Gradle 8.9+, Android Gradle Plugin 8.7.0
+  - `targetSdk`: 36
+- **빌드 도구**: Gradle 8.11.1, Android Gradle Plugin 8.10.1
 
 ---
 
