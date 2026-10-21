@@ -37,7 +37,7 @@ internal sealed class ComparisonForm : Form
 
     public ComparisonForm(bool showPreview = false)
     {
-        Text = "BlurFing 0.2.1 | FFV 센서 · 서버 AI · 매칭 비교";
+        Text = "BlurFing 0.2.2 | FFV 센서 · 서버 AI · 매칭 비교";
         Font = new Font("맑은 고딕", 10);
         ClientSize = new Size(1240, 800); MinimumSize = new Size(1040, 720);
         StartPosition = FormStartPosition.CenterScreen;

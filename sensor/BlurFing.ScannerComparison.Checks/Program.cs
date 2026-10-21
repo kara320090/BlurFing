@@ -19,7 +19,8 @@ if (args.Length == 3 && args[1] == "--capture-once")
     using var writer = new BinaryWriter(fixturePipe);
     writer.Write(Encoding.ASCII.GetBytes(args[0] == "--fixture-invalid" ? "WRONG" : "BFSC2"));
     var fixtureBytes = args[0] == "--fixture-ok" ? ScannerInput.SyntheticPattern().Png : [];
-    writer.Write((byte)(args[0] == "--fixture-cancel" ? 1 : args[0] == "--fixture-cleanup" ? 3 : 0));
+    writer.Write((byte)(args[0] == "--fixture-cancel" ? 1 : args[0] == "--fixture-cleanup" ? 3
+        : args[0] == "--fixture-noscan" ? 4 : args[0] == "--fixture-timeout" ? 5 : args[0] == "--fixture-quality" ? 6 : 0));
     writer.Write(fixtureBytes.Length); writer.Write(fixtureBytes); writer.Flush();
     return 0;
 }
@@ -207,7 +208,26 @@ if (args.Length == 2 && args[0] == "--ffv-helper")
         }
         finally { Directory.Delete(scratch, true); }
     });
+    tests.Add(("installed Framework helper sends a frame while its cancellation read is pending", async () =>
+    {
+        using var stop = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+        var start = new System.Diagnostics.ProcessStartInfo(Path.GetFullPath(args[1]));
+        start.ArgumentList.Add("--transport-self-check"); start.CreateNoWindow = true;
+        try { await FfvCaptureClient.CaptureAsync(start, stop.Token); }
+        catch (OperationCanceledException) when (!stop.IsCancellationRequested) { return; }
+        throw new Exception("duplex transport did not return its explicit cancellation frame before deadline");
+    }));
 }
+tests.Add(("scanner absence, acquisition timeout and poor quality stay distinct failures", async () =>
+{
+    foreach (var failure in new[] { (Mode: "--fixture-noscan", Text: "센서를 찾지"),
+        (Mode: "--fixture-timeout", Text: "20초"), (Mode: "--fixture-quality", Text: "품질 검사") })
+    {
+        try { await FfvCaptureClient.CaptureAsync(CaptureFixture(failure.Mode), CancellationToken.None); }
+        catch (InvalidOperationException error) when (error.Message.Contains(failure.Text)) { continue; }
+        throw new Exception("missing precise acquisition failure: " + failure.Mode);
+    }
+}));
 tests.Add(("one-click capture receives the fresh helper image without disk image transport", async () =>
 {
     var captured = await FfvCaptureClient.CaptureAsync(CaptureFixture("--fixture-ok"), CancellationToken.None);

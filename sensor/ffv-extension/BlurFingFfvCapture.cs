@@ -20,6 +20,7 @@ internal static class BlurFingFfvCapture
     [STAThread]
     private static void Main(string[] args)
     {
+        if (args.Length == 3 && args[0] == "--transport-self-check" && args[1] == "--capture-once") { BlurFingOneShot.CheckTransport(args[2]); return; }
         if (args.Length == 2 && args[0] == "--capture-once") { BlurFingOneShot.Run(args[1]); return; }
         Stage("Starting");
         Application.EnableVisualStyles();

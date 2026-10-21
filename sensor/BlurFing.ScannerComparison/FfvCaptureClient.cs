@@ -37,11 +37,16 @@ internal static class FfvCaptureClient
             var length = BinaryPrimitives.ReadInt32LittleEndian(header.AsSpan(6));
             if (header[5] != 0)
             {
-                if (length != 0 || header[5] > 3) throw new InvalidDataException("FFV 취득 응답 형식 오류");
+                if (length != 0 || header[5] > 6) throw new InvalidDataException("FFV 취득 응답 형식 오류");
                 if (header[5] == 1) throw new OperationCanceledException("FFV 취득 취소", cancellation);
-                throw new InvalidOperationException(header[5] == 3
-                    ? "FFV 임시 지문 자료 정리에 실패했습니다. 취득기 안내를 확인하세요. 서버로 전송하지 않았습니다."
-                    : "새 지문 취득에 실패했습니다. 센서 연결·손가락 접촉·SDK 드라이버를 확인하세요.");
+                throw new InvalidOperationException(header[5] switch
+                {
+                    3 => "FFV 임시 지문 자료 정리에 실패했습니다. 취득기 안내를 확인하세요. 서버로 전송하지 않았습니다.",
+                    4 => "FFV가 연결된 센서를 찾지 못했습니다. 다른 FFV 프로그램을 닫고 USB·드라이버를 확인하세요.",
+                    5 => "20초 안에 지문 취득을 완료하지 못했습니다. 손가락을 센서 중앙에 올리고 다시 시도하세요.",
+                    6 => "센서 영상의 품질 검사를 통과하지 못했습니다. 접촉 상태를 바꾸고 다시 시도하세요.",
+                    _ => "새 지문 취득에 실패했습니다. FFVOneShot/last-attempt.log의 마지막 단계를 확인하세요."
+                });
             }
             if (length < 32 || length > ScannerInput.MaxBytes) throw new InvalidDataException("FFV 영상 크기 오류");
             var png = new byte[length]; await pipe.ReadExactlyAsync(png, deadline.Token);

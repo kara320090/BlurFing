@@ -14,13 +14,54 @@ using Neurotec.Biometrics;
 
 internal static class BlurFingOneShot
 {
+    private static void Stage(string stage)
+    {
+        try
+        {
+            string root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BlurFing", "FFVOneShot");
+            Directory.CreateDirectory(root);
+            string path = Path.Combine(root, "last-attempt.log");
+            if (stage == "start") File.WriteAllText(path, "");
+            // Fixed stages, SDK status and exception TYPE only; no images, user IDs,
+            // templates, database passwords, exception messages or stack traces.
+            File.AppendAllText(path, DateTime.Now.ToString("o") + " " + stage + Environment.NewLine);
+        }
+        catch { }
+    }
+
+    internal static NamedPipeClientStream OpenPipe(string pipeName)
+    {
+        // A blocking cancellation read must not serialize writes on the same
+        // synchronous Windows pipe handle. Both directions use overlapped I/O.
+        return new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
+    }
+
+    internal static void CheckTransport(string pipeName)
+    {
+        if (!Regex.IsMatch(pipeName, @"\ABlurFing\.Capture\.[0-9a-f]{32}\z")) return;
+        using (NamedPipeClientStream pipe = OpenPipe(pipeName))
+        {
+            pipe.Connect(5000);
+            ManualResetEvent reading = new ManualResetEvent(false);
+            Task.Factory.StartNew(delegate { reading.Set(); try { pipe.ReadByte(); } catch { } });
+            reading.WaitOne(); Thread.Sleep(100);
+            // Transport contract check: cancellation frame, no SDK/GUI/biometric data.
+            using (BinaryWriter writer = new BinaryWriter(pipe))
+            {
+                writer.Write(new byte[] { 66, 70, 83, 67, 50, 1, 0, 0, 0, 0 }); writer.Flush();
+            }
+        }
+    }
+
     internal static void Run(string pipeName)
     {
         if (!Regex.IsMatch(pipeName, @"\ABlurFing\.Capture\.[0-9a-f]{32}\z")) return;
-        using (NamedPipeClientStream pipe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut))
+        Stage("start");
+        using (NamedPipeClientStream pipe = OpenPipe(pipeName))
         {
             try { pipe.Connect(5000); }
             catch { return; }
+            Stage("pipe-connected");
             Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
             Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
             string root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BlurFing", "FFVOneShot");
@@ -41,6 +82,7 @@ internal static class BlurFingOneShot
                 Directory.CreateDirectory(scratch);
                 string modules = null;
                 string[] available = Nffv.GetAvailableScannerModules().Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                Stage("modules-enumerated");
                 if (File.Exists(modulesFile))
                 {
                     string saved = File.ReadAllText(modulesFile);
@@ -79,6 +121,7 @@ internal static class BlurFingOneShot
                     };
                     progress.Shown += async delegate
                     {
+                        byte failureStatus = 2;
                         try
                         {
                             png = await Task.Run(delegate
@@ -87,9 +130,14 @@ internal static class BlurFingOneShot
                                 // FFV exposes Enroll/GetBitmap, not raw Capture. Use a new
                                 // private database for THIS request, then remove it before send.
                                 engine = new Nffv(Path.Combine(scratch, "capture.dat"), Guid.NewGuid().ToString("N"), modules);
+                                Stage("engine-opened");
                                 if (Volatile.Read(ref cancelled) != 0) return (byte[])null;
                                 NffvStatus outcome;
                                 NffvUser user = engine.Enroll(20000, out outcome);
+                                Stage("enroll-status-" + outcome.ToString());
+                                failureStatus = outcome == NffvStatus.NoScanner ? (byte)4
+                                    : outcome == NffvStatus.ScannerTimeout ? (byte)5
+                                    : outcome == NffvStatus.QualityCheckFailed ? (byte)6 : (byte)2;
                                 if (Volatile.Read(ref cancelled) != 0 || outcome != NffvStatus.TemplateCreated || user == null) return (byte[])null;
                                 using (Bitmap image = user.GetBitmap())
                                 using (MemoryStream stream = new MemoryStream())
@@ -99,15 +147,15 @@ internal static class BlurFingOneShot
                                     return stream.ToArray();
                                 }
                             });
-                            status = Volatile.Read(ref cancelled) != 0 ? (byte)1 : png != null ? (byte)0 : (byte)2;
+                            status = Volatile.Read(ref cancelled) != 0 ? (byte)1 : png != null ? (byte)0 : failureStatus;
                         }
-                        catch { status = Volatile.Read(ref cancelled) != 0 ? (byte)1 : (byte)2; }
+                        catch (Exception error) { Stage("capture-error-" + error.GetType().Name); status = Volatile.Read(ref cancelled) != 0 ? (byte)1 : (byte)2; }
                         finally { complete = true; progress.Close(); }
                     };
                     progress.ShowDialog();
                 }
             }
-            catch { status = Volatile.Read(ref cancelled) != 0 ? (byte)1 : (byte)2; }
+            catch (Exception error) { Stage("setup-error-" + error.GetType().Name); status = Volatile.Read(ref cancelled) != 0 ? (byte)1 : (byte)2; }
             finally
             {
                 dialog = null;
@@ -121,6 +169,7 @@ internal static class BlurFingOneShot
                 try { if (Directory.Exists(scratch)) Directory.Delete(scratch, true); } catch { cleaned = false; }
                 if (!cleaned) { status = 3; png = null; }
                 if (Volatile.Read(ref cancelled) != 0 && status != 3) status = 1;
+                Stage("cleanup-" + (cleaned ? "ok" : "failed"));
                 try
                 {
                     using (BinaryWriter writer = new BinaryWriter(pipe))
@@ -129,6 +178,7 @@ internal static class BlurFingOneShot
                         writer.Write(status == 0 ? png.Length : 0);
                         if (status == 0) writer.Write(png);
                         writer.Flush();
+                        Stage("response-sent-" + status.ToString());
                     }
                 }
                 catch { }
