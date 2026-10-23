@@ -56,6 +56,14 @@ JsonObject Reply(bool measured = true, bool changed = true)
 }
 ScannerResult Parse(JsonObject value) => ScannerResult.Parse(Encoding.UTF8.GetBytes(value.ToJsonString()), source, "synthetic-check", 500);
 
+if (args.Length == 3 && args[0] == "--render-export-preview")
+{
+    var raw = double.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture);
+    var reply = Reply(); reply["match"]!["score"] = raw;
+    Console.WriteLine(ComparisonExport.Save(Path.GetFullPath(args[1]), source, Parse(reply)));
+    return 0;
+}
+
 Check("synthetic input is explicit and grayscale PNG pixels survive canonicalization", () =>
 {
     var again = ScannerInput.Decode(source.Png, "roundtrip", true);
@@ -80,6 +88,36 @@ Check("measured score remains raw and is never capped at 100 percent", () =>
 Check("missing matcher stays unmeasured and rejected output stays explicit", () =>
 {
     var result = Parse(Reply(false, false)); Assert(result.Score is null && result.ScoreText == "미측정" && result.ProtectionStatus == "rejected", "false measurement");
+});
+Check("display scale handles reported low and high scores with a fixed reference", () =>
+{
+    foreach (var example in new[] { (Raw: 0.0, Index: 0.0, Text: "0.0"), (Raw: 0.9, Index: 2.200488997555012, Text: "2.2"),
+        (Raw: 40.0, Index: 50.0, Text: "50.0"), (Raw: 298.0, Index: 88.16568047337278, Text: "88.2") })
+    {
+        var reply = Reply(); reply["match"]!["score"] = example.Raw; var result = Parse(reply);
+        Assert(result.Score == example.Raw && Math.Abs(result.Score100!.Value - example.Index) < 1e-10
+            && result.Score100Text == example.Text, "raw/index/reference mismatch");
+    }
+});
+Check("display scale stays ordered and bounded without treating invalid values as zero", () =>
+{
+    double previous = -1;
+    foreach (var raw in new[] { 0, .9, 40, 100, 298, 1000, 1e100, double.MaxValue })
+    {
+        var value = MatchScoreScale.Convert(raw)!.Value;
+        Assert(double.IsFinite(value) && value >= previous && value >= 0 && value <= 100, "scale range/order");
+        previous = value;
+    }
+    foreach (var invalid in new double?[] { null, -1, double.NaN, double.PositiveInfinity, double.NegativeInfinity })
+        Assert(MatchScoreScale.Convert(invalid) is null && MatchScoreScale.Format(invalid) == "미측정", "false zero measurement");
+});
+Check("unmeasured results never acquire a display index", () =>
+{
+    var result = Parse(Reply(false));
+    Assert(result.Score100 is null && result.Score100Text == "미측정", "unavailable became a score");
+    var reply = Reply(false); reply["match"]!["status"] = "unmeasurable";
+    result = Parse(reply);
+    Assert(result.Score100 is null && result.Score100Text == "미측정", "unmeasurable became a score");
 });
 foreach (var field in new[] { "request_id", "source_sha256", "source_pixel_sha256", "processed_sha256", "protection_engine" })
     Check("wrong identity rejected: " + field, () => { var reply = Reply(); reply[field] = "obsolete"; Reject(() => Parse(reply)); });
@@ -164,6 +202,24 @@ Check("export retains both PNG bytes, raw score metadata and three panels", () =
         using var receipt = JsonDocument.Parse(File.ReadAllText(Path.Combine(folder, "comparison.json")));
         Assert(receipt.RootElement.GetProperty("similarity_score").GetDouble() == 201.75 && receipt.RootElement.GetProperty("input_synthetic").GetBoolean(), "false measurement metadata");
         Assert(receipt.RootElement.GetProperty("input_origin").GetString() == source.Origin, "input origin lost");
+        Assert(Math.Abs(receipt.RootElement.GetProperty("similarity_index_100").GetDouble() - result.Score100!.Value) < 1e-10,
+            "exported display index disagrees with UI");
+        Assert(receipt.RootElement.GetProperty("similarity_index_method").GetString() == MatchScoreScale.Method &&
+            receipt.RootElement.GetProperty("similarity_index_reference").GetDouble() == 40 &&
+            receipt.RootElement.GetProperty("similarity_index_formula").GetString() == MatchScoreScale.Formula &&
+            receipt.RootElement.GetProperty("similarity_index_unit").GetString()!.Contains("not_probability"), "display scale provenance lost");
+    }
+    finally { if (Directory.Exists(scratch)) Directory.Delete(scratch, true); }
+});
+Check("unavailable matcher export keeps both raw and display score null", () =>
+{
+    var scratch = Path.Combine(Path.GetTempPath(), "BlurFingScannerChecks", Guid.NewGuid().ToString("N"));
+    try
+    {
+        var folder = ComparisonExport.Save(scratch, source, Parse(Reply(false)));
+        using var receipt = JsonDocument.Parse(File.ReadAllText(Path.Combine(folder, "comparison.json")));
+        Assert(receipt.RootElement.GetProperty("similarity_score").ValueKind == JsonValueKind.Null &&
+            receipt.RootElement.GetProperty("similarity_index_100").ValueKind == JsonValueKind.Null, "export created false zero");
     }
     finally { if (Directory.Exists(scratch)) Directory.Delete(scratch, true); }
 });
