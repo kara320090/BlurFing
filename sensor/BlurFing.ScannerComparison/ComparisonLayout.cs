@@ -7,7 +7,7 @@ internal sealed partial class ComparisonForm
 
     private void InitializeDesign()
     {
-        Text = "BlurFing 0.3.0 | 센서 지문 비교"; Font = new Font("맑은 고딕", 10);
+        Text = "BlurFing 0.3.1 | 센서 지문 비교"; Font = new Font("맑은 고딕", 10);
         ClientSize = new Size(1280, 860); MinimumSize = new Size(1080, 770);
         StartPosition = FormStartPosition.CenterScreen; BackColor = Design.Canvas; ForeColor = Design.Ink; DoubleBuffered = true;
         var layout = new TableLayoutPanel { Dock = DockStyle.Fill, BackColor = Design.Canvas, Padding = new Padding(24, 20, 24, 16), ColumnCount = 1, RowCount = 7 };
@@ -70,8 +70,8 @@ internal sealed partial class ComparisonForm
         var detailScroll = new Panel { Dock = DockStyle.Fill, AutoScroll = true, BackColor = Color.White };
         detailScroll.Controls.Add(scoreDetail);
         detailScroll.SizeChanged += (_, _) => scoreDetail.MaximumSize = new Size(Math.Max(80, detailScroll.ClientSize.Width - SystemInformation.VerticalScrollBarWidth), 0);
-        scoreLayout.Controls.Add(new Label { Text = "03  매칭 점수", AutoSize = true, Font = new Font(Font, FontStyle.Bold) }, 0, 0); scoreLayout.Controls.Add(score, 0, 1);
-        scoreLayout.Controls.Add(new Label { Text = "SourceAFIS · 원시 유사도", AutoSize = true, ForeColor = Design.Muted }, 0, 2); scoreLayout.Controls.Add(detailScroll, 0, 3);
+        scoreLayout.Controls.Add(new Label { Text = "03  전후 유사도", AutoSize = true, Font = new Font(Font, FontStyle.Bold) }, 0, 0); scoreLayout.Controls.Add(score, 0, 1);
+        scoreLayout.Controls.Add(new Label { Text = "100점 환산 · 높을수록 유사", AutoSize = true, ForeColor = Design.Muted }, 0, 2); scoreLayout.Controls.Add(detailScroll, 0, 3);
         scores.Controls.Add(scoreLayout); columns.Controls.Add(scores, 2, 0); layout.Controls.Add(columns, 0, 4);
 
         var statusCard = new DesignCard { Dock = DockStyle.Fill, Padding = new Padding(16, 12, 16, 10), Margin = new Padding(0, 0, 0, 10) };
@@ -80,7 +80,7 @@ internal sealed partial class ComparisonForm
         messages.Controls.Add(new Label { Text = "진행 상태", AutoSize = true, Font = new Font(Font.FontFamily, 9, FontStyle.Bold), ForeColor = Design.Muted }, 0, 0);
         status.BorderStyle = BorderStyle.None; status.BackColor = Color.White; status.ForeColor = Design.Ink; status.Font = new Font(Font.FontFamily, 9);
         messages.Controls.Add(status, 0, 1); statusCard.Controls.Add(messages); layout.Controls.Add(statusCard, 0, 5);
-        layout.Controls.Add(new Label { Text = "연구용 비교 도구 · 원시 점수는 백분율이 아니며, 점수 감소만으로 보호 성공을 판단하지 않습니다.", AutoSize = true, ForeColor = Design.Muted, Font = new Font(Font.FontFamily, 8.5f), Dock = DockStyle.Fill }, 0, 6);
+        layout.Controls.Add(new Label { Text = "연구용 비교 도구 · 100점 환산 지수는 확률·인식률이 아니며, 점수 감소만으로 보호 성공을 판단하지 않습니다.", AutoSize = true, ForeColor = Design.Muted, Font = new Font(Font.FontFamily, 8.5f), Dock = DockStyle.Fill }, 0, 6);
         Controls.Add(layout);
     }
 
@@ -90,10 +90,16 @@ internal sealed partial class ComparisonForm
             : result is not null ? "비교 완료" : input?.Synthetic == true ? "합성 화면 예시" : input is not null ? "원본 준비됨" : "새 취득 대기";
     }
 
-    internal void RenderDesignPreview(string path, bool sample = true, bool tools = false)
+    internal void RenderDesignPreview(string path, bool sample = true, bool tools = false, double? exampleScore = null)
     {
         address.Text = "https://school-server.example/scanner/";
         if (sample) { ShowSynthetic(); consent.Checked = true; }
+        if (exampleScore is { } raw)
+        {
+            score.Text = MatchScoreScale.Format(raw);
+            scoreDetail.Text = $"원시 점수 예시: {raw.ToString(System.Globalization.CultureInfo.InvariantCulture)}\n합성 환산 예시 · 실측 아님\n\n환산: 100 × s / (s + 40)\n40점 → 환산 50점\n확률·인식률 아님";
+            status.Text = "합성 화면·환산식 확인용 예시입니다. 실제 센서·AI 매칭 결과가 아닙니다.";
+        }
         if (tools) Controls.Find("advancedTools", true)[0].Visible = true;
         // Render our own control tree, without displaying a window or attaching
         // the live capture listener. No desktop/window screenshot is taken.

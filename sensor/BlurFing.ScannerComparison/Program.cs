@@ -12,6 +12,14 @@ internal static class Program
         // Never recursively open this UI if an older client chooses us as helper.
         if (args.Contains("--capture-once")) return;
         ApplicationConfiguration.Initialize();
+        if (args.Length == 3 && args[0] is "--render-score-preview" or "--render-compact-score-preview")
+        {
+            var raw = double.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture);
+            if (MatchScoreScale.Convert(raw) is null) throw new ArgumentException("Invalid example score");
+            using var preview = new ComparisonForm();
+            if (args[0] == "--render-compact-score-preview") preview.ClientSize = new Size(1080, 770);
+            preview.RenderDesignPreview(args[1], exampleScore: raw); return;
+        }
         if (args.Length == 2 && args[0] is "--render-preview" or "--render-empty-preview" or "--render-compact-preview" or "--render-tools-preview")
         {
             using var preview = new ComparisonForm();

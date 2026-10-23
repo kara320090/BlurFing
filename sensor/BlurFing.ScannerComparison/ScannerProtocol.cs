@@ -89,6 +89,8 @@ internal sealed record ScannerResult(byte[] Png, string RequestId, string Protec
     DateTimeOffset? MeasuredAt, long ProcessingMs)
 {
     public string ScoreText => Score is { } score ? score.ToString("0.###", CultureInfo.InvariantCulture) : "미측정";
+    public double? Score100 => MatchStatus == "measured" ? MatchScoreScale.Convert(Score) : null;
+    public string Score100Text => MatchStatus == "measured" ? MatchScoreScale.Format(Score) : "미측정";
     public string StatusText => ProtectionStatus == "rejected" ? "처리 거절 · 원본 반환" : "실험 처리본 · 보호 효과 미승인";
 
     public static ScannerResult Parse(byte[] json, ScannerInput source, string requestId, int dpi)

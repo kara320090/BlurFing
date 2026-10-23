@@ -22,7 +22,7 @@ internal sealed partial class ComparisonForm : Form
     private readonly Label origin = new() { Text = "센서 원본 취득 대기", AutoSize = true, Dock = DockStyle.Fill, Padding = new Padding(8) };
     private readonly Label protection = new() { Text = "아직 처리하지 않았습니다", AutoSize = true, Dock = DockStyle.Fill, Padding = new Padding(8) };
     private readonly Label score = new() { Text = "미측정", AutoSize = true, Font = new Font("Segoe UI", 36, FontStyle.Bold), ForeColor = Color.FromArgb(61, 65, 135) };
-    private readonly Label scoreDetail = new() { Text = "원본과 처리본의\n유사도를 비교합니다.\n\n숫자는 백분율이나\n신원 확률이 아닙니다.", AutoSize = true, MaximumSize = new Size(270, 0), Padding = new Padding(0, 12, 0, 0) };
+    private readonly Label scoreDetail = new() { Text = MatchScoreScale.EmptyExplanation, AutoSize = true, MaximumSize = new Size(270, 0), Padding = new Padding(0, 12, 0, 0) };
     private readonly TextBox status = new() { Multiline = true, ReadOnly = true, Dock = DockStyle.Fill, ScrollBars = ScrollBars.Vertical };
     private readonly CancellationTokenSource lifetime = new();
     private CancellationTokenSource? active;
@@ -114,7 +114,7 @@ internal sealed partial class ComparisonForm : Form
     {
         result = null; processed.Image?.Dispose(); processed.Image = null; score.Text = "미측정";
         protection.Text = "아직 처리하지 않았습니다";
-        scoreDetail.Text = "원본과 처리본의\n유사도를 비교합니다.\n\n숫자는 백분율이나\n신원 확률이 아닙니다.";
+        scoreDetail.Text = MatchScoreScale.EmptyExplanation;
     }
     private void UseInput(ScannerInput next)
     {
@@ -222,8 +222,8 @@ internal sealed partial class ComparisonForm : Form
             if (token != generation || !ReferenceEquals(input, source) || cancellation.IsCancellationRequested) return;
             using var stream = new MemoryStream(reply.Png); using var image = Image.FromStream(stream);
             processed.Image = new Bitmap(image); result = reply; protection.Text = $"{reply.StatusText}\n변경 {reply.ChangedPixels:N0} 픽셀";
-            score.Text = reply.ScoreText;
-            scoreDetail.Text = $"SourceAFIS {reply.EngineVersion ?? "미준비"}\n설정 DPI {reply.Dpi}\n원본 특징점 {reply.ProbeMinutiae?.ToString() ?? "미측정"}\n처리본 특징점 {reply.CandidateMinutiae?.ToString() ?? "미측정"}\n\n{(reply.MatchStatus == "measured" ? "원본 ↔ AI 처리본 직접 비교" : reply.MatchStatus == "unmeasurable" ? "특징점이 없어 측정 불가" : "매칭 실행 환경 미준비·실행 실패")}\n\n확률·백분율 아님";
+            score.Text = reply.Score100Text;
+            scoreDetail.Text = $"원시 점수: {reply.ScoreText}\nSourceAFIS {reply.EngineVersion ?? "미준비"}\n설정 DPI {reply.Dpi}\n원본 특징점 {reply.ProbeMinutiae?.ToString() ?? "미측정"}\n처리본 특징점 {reply.CandidateMinutiae?.ToString() ?? "미측정"}\n\n{(reply.MatchStatus == "measured" ? "처리 전 ↔ 후 직접 비교" : reply.MatchStatus == "unmeasurable" ? "특징점이 없어 측정 불가" : "매칭 실행 환경 미준비·실행 실패")}\n\n환산: 100 × s / (s + 40)\ns = SourceAFIS 원시 점수\n40점 → 환산 50점\n확률·인식률 아님";
             status.Text = $"검증된 현재 요청 결과를 표시했습니다. 서버 처리 {reply.ProcessingMs:N0}ms.\r\n원본·처리본·비교 기록과 hstack.png를 저장할 수 있습니다.";
         }
         catch (Exception error) { if (token == generation && !IsDisposed) status.Text = SafeMessage(error); }
